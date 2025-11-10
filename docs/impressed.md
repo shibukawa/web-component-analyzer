@@ -1,0 +1,1 @@
+# 初期設計。typescript API利用を進めてきた

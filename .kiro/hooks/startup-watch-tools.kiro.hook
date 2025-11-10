@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Startup Watch Tools",
+  "description": "Automatically starts vitest and eslint in watch mode when kiro is initialized",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/config.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Start vitest in watch mode and eslint in watch mode. Run these commands in the background: 'pnpm run test -- --watch' and 'pnpm run lint -- --watch'. Keep them running throughout the session."
+  }
+}
