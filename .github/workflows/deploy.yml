@@ -28,8 +28,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      - name: Build all packages
-        run: pnpm run build
+      - name: Build analyzer package first
+        run: |
+          cd packages/analyzer
+          pnpm run build
+          cd ../..
+      
+      - name: Verify analyzer build
+        run: ls -la packages/analyzer/dist/
+      
+      - name: Build web package
+        run: pnpm --filter @web-component-analyzer/web run build
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
