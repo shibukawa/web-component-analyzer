@@ -103,6 +103,8 @@ export interface HookInfo {
   stateVariable?: string; // The state variable name (e.g., 'state')
   dispatchVariable?: string; // The dispatch variable name (e.g., 'dispatch')
   reducerName?: string; // The reducer function name (e.g., 'counterReducer')
+  // useState initial value
+  initialValue?: string; // Initial value variable name for useState (e.g., 'initialTasks')
 }
 
 /**

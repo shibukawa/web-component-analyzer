@@ -561,6 +561,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     }
 
     const funcExpr = firstArg.expression;
+    console.log(`[ProcessAnalyzer] analyzeFunction - funcExpr.type:`, funcExpr.type);
     if (funcExpr.type === 'ArrowFunctionExpression' || funcExpr.type === 'FunctionExpression') {
       const result = this.analyzeFunctionBody(funcExpr);
       console.log(`[ProcessAnalyzer] analyzeFunction result - references:`, result.references, 'externalCalls:', result.externalCalls);
@@ -574,6 +575,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       };
     }
 
+    console.log(`[ProcessAnalyzer] analyzeFunction - not a function expression, returning empty`);
     return { references: [], externalCalls: [] };
   }
 
@@ -586,14 +588,20 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     const references = new Set<string>();
     const externalCalls: ExternalCallInfo[] = [];
 
+    console.log(`[ProcessAnalyzer] analyzeFunctionBody - func.type:`, func.type, 'body.type:', func.body?.type);
+
     // Handle arrow function with expression body
     if (func.type === 'ArrowFunctionExpression' && func.body.type !== 'BlockStatement') {
+      console.log(`[ProcessAnalyzer] Arrow function with expression body`);
       this.extractReferencesFromExpression(func.body, references, externalCalls);
     }
     // Handle block statement body
     else if (func.body && func.body.type === 'BlockStatement') {
+      console.log(`[ProcessAnalyzer] Block statement body with ${func.body.stmts.length} statements`);
       this.extractReferencesFromBlockStatement(func.body, references, externalCalls);
     }
+
+    console.log(`[ProcessAnalyzer] analyzeFunctionBody result - references:`, Array.from(references));
 
     return {
       references: Array.from(references),
@@ -609,9 +617,12 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     references: Set<string>,
     externalCalls: ExternalCallInfo[]
   ): void {
+    console.log(`[ProcessAnalyzer] extractReferencesFromBlockStatement - ${block.stmts.length} statements`);
     for (const statement of block.stmts) {
+      console.log(`[ProcessAnalyzer]   Statement type:`, statement.type);
       this.extractReferencesFromStatement(statement, references, externalCalls);
     }
+    console.log(`[ProcessAnalyzer] extractReferencesFromBlockStatement done - references:`, Array.from(references));
   }
 
   /**
@@ -673,6 +684,22 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       case 'WhileStatement':
         this.extractReferencesFromExpression(statement.test, references, externalCalls);
         this.extractReferencesFromStatement(statement.body, references, externalCalls);
+        break;
+      
+      case 'SwitchStatement':
+        // Extract references from discriminant (the value being switched on)
+        this.extractReferencesFromExpression(statement.discriminant, references, externalCalls);
+        // Extract references from each case
+        for (const caseClause of statement.cases) {
+          // Extract from test expression (case value)
+          if (caseClause.test) {
+            this.extractReferencesFromExpression(caseClause.test, references, externalCalls);
+          }
+          // Extract from consequent statements
+          for (const consequent of caseClause.consequent) {
+            this.extractReferencesFromStatement(consequent, references, externalCalls);
+          }
+        }
         break;
     }
   }

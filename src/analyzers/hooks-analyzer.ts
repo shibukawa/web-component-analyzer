@@ -317,6 +317,22 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     const dependencies = this.extractDependencies(callExpression);
     const isReadWritePair = this.isReadWritePair(variables);
     const isFunctionOnly = this.isFunctionOnly(callExpression, variables);
+    
+    // Extract initial value for useState
+    let initialValue: string | undefined;
+    if (hookName === 'useState') {
+      console.log(`[HooksAnalyzer] Checking useState initial value, args:`, callExpression.arguments.length);
+      if (callExpression.arguments.length > 0) {
+        const firstArg = callExpression.arguments[0];
+        console.log(`[HooksAnalyzer] First arg spread:`, firstArg.spread, 'type:', firstArg.expression.type);
+        if (!firstArg.spread && firstArg.expression.type === 'Identifier') {
+          initialValue = firstArg.expression.value;
+          console.log(`[HooksAnalyzer] ✅ useState initial value: ${initialValue}`);
+        } else {
+          console.log(`[HooksAnalyzer] ❌ useState initial value not an Identifier`);
+        }
+      }
+    }
 
     // Extract position information
     const position = declaration.span ? {
@@ -333,6 +349,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       dependencies,
       isReadWritePair,
       isFunctionOnly,
+      initialValue,
       line: position?.line,
       column: position?.column,
     };

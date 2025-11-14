@@ -121,6 +121,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
       this.buildProcessToCustomHookFunctionEdges(analysis);
       console.log('🚚 DFD Builder: Created process to custom hook function edges');
       
+      // Build edges from props to states (initial values)
+      this.buildPropToStateInitialValueEdges(analysis);
+      console.log('🚚 DFD Builder: Created prop to state initial value edges');
+      
       // Build edges from data stores to processes (reads)
       this.buildProcessToDataStoreEdges(analysis);
       console.log('🚚 DFD Builder: Created data store to process edges');
@@ -234,6 +238,45 @@ export class DefaultDFDBuilder implements DFDBuilder {
    * Applies to both useContext and custom hooks
    */
 
+
+  /**
+   * Build edges from props to states (initial values)
+   * Creates edges when a prop is used as initial value for useState
+   */
+  private buildPropToStateInitialValueEdges(analysis: ComponentAnalysis): void {
+    const propNodes = this.nodes.filter(
+      node => node.type === 'external-entity-input' && node.metadata?.category === 'prop'
+    );
+    
+    const stateNodes = this.nodes.filter(
+      node => node.type === 'data-store' && node.metadata?.category === 'state'
+    );
+    
+    console.log('🚚 buildPropToStateInitialValueEdges: Prop nodes:', propNodes.length);
+    console.log('🚚 buildPropToStateInitialValueEdges: State nodes:', stateNodes.length);
+    
+    for (const stateNode of stateNodes) {
+      const initialValue = stateNode.metadata?.initialValue;
+      
+      if (initialValue) {
+        console.log(`🚚 State ${stateNode.label} has initial value: ${initialValue}`);
+        
+        // Find the prop node with this name
+        const propNode = propNodes.find(p => p.label === initialValue);
+        
+        if (propNode) {
+          console.log(`🚚 ✅ Creating initializes edge from ${propNode.id} to ${stateNode.id}`);
+          this.edges.push({
+            from: propNode.id,
+            to: stateNode.id,
+            label: 'initializes'
+          });
+        } else {
+          console.log(`🚚 ⚠️ Prop node not found for initial value: ${initialValue}`);
+        }
+      }
+    }
+  }
 
   /**
    * Build edges from data stores to processes
@@ -957,6 +1000,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           isReadWritePair: true,
           readVariable: readVar,
           writeVariable: writeVar,
+          initialValue: hook.initialValue, // Store initial value for edge creation
           line: hook.line,
           column: hook.column
         }

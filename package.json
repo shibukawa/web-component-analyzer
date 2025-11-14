@@ -77,7 +77,6 @@
   },
   "dependencies": {
     "@swc/core": "^1.15.1",
-    "mermaid": "^11.12.1",
-    "vis-network": "^9.1.9"
+    "mermaid": "^11.12.1"
   }
 }

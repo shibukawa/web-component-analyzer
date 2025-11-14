@@ -509,6 +509,12 @@ export class ConditionalStructureExtractor {
         const binary = node as swc.BinaryExpression;
         traverse(binary.left);
         traverse(binary.right);
+      } else if (node.type === 'UnaryExpression') {
+        const unary = node as swc.UnaryExpression;
+        traverse(unary.argument);
+      } else if (node.type === 'UpdateExpression') {
+        const update = node as swc.UpdateExpression;
+        traverse(update.argument);
       } else if (node.type === 'ConditionalExpression') {
         const cond = node as swc.ConditionalExpression;
         traverse(cond.test);
