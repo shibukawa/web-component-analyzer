@@ -1,0 +1,46 @@
+/* Theme toggle button */
+.theme-toggle {
+  background: transparent;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.theme-toggle:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Accessibility: Ensure button is keyboard accessible */
+.theme-toggle:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 1.25rem;
+    min-width: 40px;
+    min-height: 40px;
+  }
+}

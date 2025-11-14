@@ -3,15 +3,14 @@
  */
 
 import * as assert from 'assert';
-import { SWCASTParser, SWCProcessAnalyzer } from '@web-component-analyzer/analyzer';
-import * as swc from '@swc/core';
+import { SWCProcessAnalyzer } from '@web-component-analyzer/analyzer';
+import { parseComponent } from '../utils/node-parser';
+import type * as swc from '@swc/core';
 
 suite('Process Analyzer Test Suite', () => {
-  let parser: SWCASTParser;
   let analyzer: SWCProcessAnalyzer;
 
   setup(() => {
-    parser = new SWCASTParser();
     analyzer = new SWCProcessAnalyzer();
   });
 
@@ -43,7 +42,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -68,7 +67,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -90,7 +89,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -112,7 +111,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -133,7 +132,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -154,7 +153,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -175,7 +174,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -199,7 +198,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -223,7 +222,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -248,7 +247,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -273,7 +272,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -299,7 +298,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -322,7 +321,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -341,7 +340,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -361,7 +360,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -390,7 +389,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -426,7 +425,7 @@ suite('Process Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -475,7 +474,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -496,7 +495,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -520,7 +519,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -543,7 +542,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -570,7 +569,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -591,7 +590,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -611,7 +610,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -636,7 +635,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -654,7 +653,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -686,7 +685,7 @@ suite('Process Analyzer - Inline Callbacks Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const jsxElement = extractJSXElement(result.module!);
@@ -744,7 +743,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -772,7 +771,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -802,7 +801,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -838,7 +837,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -866,7 +865,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -891,7 +890,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -917,7 +916,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -951,7 +950,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -986,7 +985,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1032,7 +1031,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1067,7 +1066,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1103,7 +1102,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1135,7 +1134,7 @@ suite('Process Analyzer - useImperativeHandle Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1191,7 +1190,7 @@ suite('Process Analyzer - Imperative Handle Calls Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1223,7 +1222,7 @@ suite('Process Analyzer - Imperative Handle Calls Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1255,7 +1254,7 @@ suite('Process Analyzer - Imperative Handle Calls Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1290,7 +1289,7 @@ suite('Process Analyzer - Imperative Handle Calls Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);
@@ -1319,7 +1318,7 @@ suite('Process Analyzer - Imperative Handle Calls Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const body = extractFunctionBody(result.module!);

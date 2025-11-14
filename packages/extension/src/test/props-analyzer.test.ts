@@ -3,14 +3,13 @@
  */
 
 import * as assert from 'assert';
-import { SWCASTParser, SWCPropsAnalyzer } from '@web-component-analyzer/analyzer';
+import { SWCPropsAnalyzer } from '@web-component-analyzer/analyzer';
+import { parseComponent } from '../utils/node-parser';
 
 suite('Props Analyzer Test Suite', () => {
-  let parser: SWCASTParser;
   let analyzer: SWCPropsAnalyzer;
 
   setup(() => {
-    parser = new SWCASTParser();
     analyzer = new SWCPropsAnalyzer();
   });
 
@@ -26,7 +25,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -49,7 +48,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -67,7 +66,7 @@ suite('Props Analyzer Test Suite', () => {
       };
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -84,7 +83,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -101,7 +100,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -119,7 +118,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -140,7 +139,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -157,7 +156,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -181,7 +180,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -206,7 +205,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -234,7 +233,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -256,7 +255,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -277,7 +276,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -297,7 +296,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -320,7 +319,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -341,7 +340,7 @@ suite('Props Analyzer Test Suite', () => {
       };
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -363,7 +362,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);
@@ -388,7 +387,7 @@ suite('Props Analyzer Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     assert.ok(result.module, 'Module should be parsed');
 
     const props = await analyzer.analyzeProps(result.module!);

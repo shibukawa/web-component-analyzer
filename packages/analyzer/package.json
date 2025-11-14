@@ -1,21 +1,23 @@
 {
   "name": "@web-component-analyzer/analyzer",
   "version": "0.0.1",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "dev": "tsc --watch",
     "lint": "eslint src"
   },
-  "dependencies": {
+  "dependencies": {},
+  "peerDependencies": {
     "@swc/core": "^1.15.1"
   },
   "devDependencies": {
@@ -24,5 +26,6 @@
     "@typescript-eslint/parser": "^8.45.0",
     "eslint": "^9.36.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "license": "Apache-2.0"
 }

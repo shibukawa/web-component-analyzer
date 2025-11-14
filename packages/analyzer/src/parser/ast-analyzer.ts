@@ -2,7 +2,7 @@
  * AST Analyzer for traversing and analyzing React component AST
  */
 
-import * as swc from '@swc/core';
+import type * as swc from '@swc/core';
 import { ComponentAnalysis, JSXInfo, ProcessInfo } from './types';
 import { SWCPropsAnalyzer } from '../analyzers/props-analyzer';
 import { SWCHooksAnalyzer } from '../analyzers/hooks-analyzer';

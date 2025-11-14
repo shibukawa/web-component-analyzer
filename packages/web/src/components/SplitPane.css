@@ -1,0 +1,42 @@
+/* SplitPane with flexbox layout */
+.split-pane {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.split-pane__left,
+.split-pane__right {
+  flex: 1;
+  flex-basis: 50%;
+  overflow: auto;
+  min-width: 0; /* Prevent flex items from overflowing */
+  transition: flex-basis var(--transition-normal);
+}
+
+.split-pane__left {
+  display: flex;
+  flex-direction: column;
+}
+
+.split-pane__right {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive behavior for mobile - stacked layout */
+@media (max-width: 768px) {
+  .split-pane {
+    flex-direction: column;
+  }
+  
+  .split-pane__left,
+  .split-pane__right {
+    flex: 1;
+    flex-basis: 50%;
+    min-height: 0;
+    min-width: 100%;
+  }
+}

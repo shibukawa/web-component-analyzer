@@ -6,6 +6,7 @@ import { TypeResolver } from './services/type-resolver';
 import { DFDVisualizerService } from './visualization/dfd-visualizer-service';
 import { WebviewPanelManager } from './visualization/webview-panel-manager';
 import { DFDCommandHandler } from './visualization/command-handler';
+import { parseComponent } from './utils/node-parser';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -15,8 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create TypeResolver for accurate type-based classification
 	const typeResolver = new TypeResolver();
 	
-	// Create parser instance with TypeResolver
-	const reactParser = createReactParser(typeResolver);
+	// Create parser instance with Node.js parser and TypeResolver
+	const reactParser = createReactParser(parseComponent, typeResolver);
 	
 	// Create Webview Panel Manager
 	const webviewPanelManager = new WebviewPanelManager(context);

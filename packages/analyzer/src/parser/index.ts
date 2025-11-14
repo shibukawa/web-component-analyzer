@@ -6,11 +6,16 @@
  */
 
 import { DFDSourceData, ParseError } from './types';
-import { SWCASTParser } from './ast-parser';
+import type { ParseResult } from './ast-parser';
 import { SWCASTAnalyzer } from './ast-analyzer';
 import { DefaultDFDBuilder } from './dfd-builder';
 import { ParserErrorHandler, ParsingContext } from '../utils/error-handler';
 import { TypeResolver } from '../services/type-resolver';
+
+/**
+ * Parser function type - should be provided by the caller (Node or Browser)
+ */
+export type ParserFunction = (sourceCode: string, filePath: string) => Promise<ParseResult>;
 
 /**
  * React Parser interface
@@ -23,19 +28,19 @@ export interface ReactParser {
  * Default implementation of React Parser
  * 
  * Orchestrates the parsing pipeline:
- * 1. Parse source code into AST using SWC
+ * 1. Parse source code into AST using provided parser function
  * 2. Analyze AST to extract component information
  * 3. Build DFD source data from analysis
  * 4. Handle errors and timeouts gracefully
  */
 export class DefaultReactParser implements ReactParser {
-  private astParser: SWCASTParser;
+  private parserFn: ParserFunction;
   private astAnalyzer: SWCASTAnalyzer;
   private dfdBuilder: DefaultDFDBuilder;
   private errorHandler: ParserErrorHandler;
 
-  constructor(typeResolver?: TypeResolver) {
-    this.astParser = new SWCASTParser();
+  constructor(parserFn: ParserFunction, typeResolver?: TypeResolver) {
+    this.parserFn = parserFn;
     this.astAnalyzer = new SWCASTAnalyzer(typeResolver);
     this.dfdBuilder = new DefaultDFDBuilder();
     this.errorHandler = new ParserErrorHandler();
@@ -88,7 +93,7 @@ export class DefaultReactParser implements ReactParser {
     const errors: ParseError[] = [];
 
     // Step 1: Parse source code into AST
-    const parseResult = await this.astParser.parseSourceCode(sourceCode, filePath);
+    const parseResult = await this.parserFn(sourceCode, filePath);
 
     if (parseResult.error) {
       // Handle syntax errors
@@ -142,10 +147,11 @@ export class DefaultReactParser implements ReactParser {
 /**
  * Create a new React Parser instance
  * 
+ * @param parserFn - Parser function (Node or Browser implementation)
  * @param typeResolver - Optional TypeResolver for type information
  * @returns ReactParser instance
  */
-export function createReactParser(typeResolver?: TypeResolver): ReactParser {
-  return new DefaultReactParser(typeResolver);
+export function createReactParser(parserFn: ParserFunction, typeResolver?: TypeResolver): ReactParser {
+  return new DefaultReactParser(parserFn, typeResolver);
 }
 

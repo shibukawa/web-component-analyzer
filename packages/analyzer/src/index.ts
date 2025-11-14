@@ -1,8 +1,9 @@
 // Export all parser and analyzer functionality
 export * from './parser/types';
 export * from './parser/ast-parser';
-export * from './parser/ast-analyzer';
-export * from './parser/dfd-builder';
+export { getSWCOptions, createParseError } from './parser/ast-parser';
+export { SWCASTAnalyzer } from './parser/ast-analyzer';
+export { DefaultDFDBuilder } from './parser/dfd-builder';
 export * from './parser/index';
 export * from './analyzers/hooks-analyzer';
 export * from './analyzers/process-analyzer';

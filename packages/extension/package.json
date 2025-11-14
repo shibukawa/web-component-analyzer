@@ -57,9 +57,9 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile && pnpm run compile:webview",
-    "compile": "tsc -p ./",
+    "compile": "node esbuild.mjs",
     "compile:webview": "node esbuild.webview.mjs",
-    "watch": "tsc -watch -p ./",
+    "watch": "node esbuild.mjs --watch",
     "watch:webview": "node esbuild.webview.mjs --watch",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
@@ -67,6 +67,7 @@
     "build": "pnpm run compile && pnpm run compile:webview"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.1",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.105.0",
@@ -82,5 +83,6 @@
     "@swc/core": "^1.15.1",
     "@web-component-analyzer/analyzer": "workspace:*",
     "mermaid": "^11.12.1"
-  }
+  },
+  "license": "Apache-2.0"
 }

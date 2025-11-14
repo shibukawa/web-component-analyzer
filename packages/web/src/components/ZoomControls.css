@@ -1,0 +1,75 @@
+/* Zoom controls */
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color var(--transition-normal),
+              border-color var(--transition-normal);
+}
+
+.zoom-control-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.zoom-control-button:hover {
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
+}
+
+.zoom-control-button:active {
+  transform: scale(0.95);
+}
+
+.zoom-control-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.zoom-level {
+  font-size: 12px;
+  text-align: center;
+  color: var(--color-foreground);
+  padding: 4px 0;
+  font-weight: 600;
+  user-select: none;
+  transition: color var(--transition-normal);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .zoom-controls {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .zoom-control-button {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .zoom-level {
+    font-size: 11px;
+  }
+}

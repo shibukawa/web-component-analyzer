@@ -1,93 +1,67 @@
 /**
- * AST Parser using SWC for React component analysis
+ * AST Parser types and utilities
+ * 
+ * Note: This module no longer contains parser implementation.
+ * Parsing should be done by the caller using @swc/core (Node) or @swc/wasm-web (Browser).
  */
 
-import * as swc from '@swc/core';
-import { ParseError } from './types';
+import type { Module, ParseOptions } from '@swc/core';
+import type { ParseError } from './types';
 
-/**
- * AST Parser interface for parsing React component source code
- */
-export interface ASTParser {
-  parseSourceCode(sourceCode: string, filePath: string): Promise<ParseResult>;
-}
+export type { Module, ParseOptions };
 
 /**
  * Result of parsing source code
  */
 export interface ParseResult {
-  module?: swc.Module;
+  module?: Module;
   error?: ParseError;
 }
 
 /**
- * Implementation of AST Parser using SWC
+ * Get SWC parsing options based on file extension
+ * @param filePath - The file path to determine syntax
+ * @returns SWC parsing options
  */
-export class SWCASTParser implements ASTParser {
-  /**
-   * Parse source code into an AST using SWC
-   * @param sourceCode - The source code to parse
-   * @param filePath - The file path (used to determine syntax type)
-   * @returns Promise resolving to ParseResult with module or error
-   */
-  async parseSourceCode(sourceCode: string, filePath: string): Promise<ParseResult> {
-    try {
-      const options = this.getSWCOptions(filePath);
-      const module = await swc.parse(sourceCode, options);
-      
-      return { module };
-    } catch (error) {
-      return {
-        error: this.createParseError(error)
-      };
-    }
-  }
+export function getSWCOptions(filePath: string): ParseOptions {
+  const isTypeScript = filePath.endsWith('.tsx') || filePath.endsWith('.ts');
+  const isJSX = filePath.endsWith('.tsx') || filePath.endsWith('.jsx');
 
-  /**
-   * Get SWC parsing options based on file extension
-   * @param filePath - The file path to determine syntax
-   * @returns SWC parsing options
-   */
-  private getSWCOptions(filePath: string): swc.ParseOptions {
-    const isTypeScript = filePath.endsWith('.tsx') || filePath.endsWith('.ts');
-    const isJSX = filePath.endsWith('.tsx') || filePath.endsWith('.jsx');
-
-    if (isTypeScript) {
-      return {
-        syntax: 'typescript',
-        tsx: isJSX,
-        decorators: true,
-        dynamicImport: true,
-      };
-    } else {
-      return {
-        syntax: 'ecmascript',
-        jsx: isJSX,
-        decorators: true,
-        dynamicImport: true,
-      };
-    }
-  }
-
-  /**
-   * Create a ParseError from an unknown error
-   * @param error - The error to convert
-   * @returns ParseError object
-   */
-  private createParseError(error: unknown): ParseError {
-    if (error instanceof Error) {
-      // Try to extract line and column information from SWC error
-      const match = error.message.match(/(\d+):(\d+)/);
-      
-      return {
-        message: error.message,
-        line: match ? parseInt(match[1], 10) : undefined,
-        column: match ? parseInt(match[2], 10) : undefined,
-      };
-    }
-
+  if (isTypeScript) {
     return {
-      message: String(error),
+      syntax: 'typescript',
+      tsx: isJSX,
+      decorators: true,
+      dynamicImport: true,
+    };
+  } else {
+    return {
+      syntax: 'ecmascript',
+      jsx: isJSX,
+      decorators: true,
+      dynamicImport: true,
     };
   }
+}
+
+/**
+ * Create a ParseError from an unknown error
+ * @param error - The error to convert
+ * @returns ParseError object
+ */
+export function createParseError(error: unknown): ParseError {
+  if (error instanceof Error) {
+    // Try to extract line and column information from SWC error
+    const match = error.message.match(/(\d+):(\d+)/);
+    
+    return {
+      message: error.message,
+      line: match ? parseInt(match[1], 10) : undefined,
+      column: match ? parseInt(match[2], 10) : undefined,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
 }

@@ -3,14 +3,9 @@
  */
 
 import * as assert from 'assert';
-import { SWCASTParser } from '@web-component-analyzer/analyzer';
+import { parseComponent } from '../utils/node-parser';
 
 suite('AST Parser Test Suite', () => {
-  let parser: SWCASTParser;
-
-  setup(() => {
-    parser = new SWCASTParser();
-  });
 
   test('Parse valid TypeScript file', async () => {
     const sourceCode = `
@@ -23,7 +18,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -37,7 +32,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.jsx');
+    const result = await parseComponent(sourceCode, 'test.jsx');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -51,7 +46,7 @@ suite('AST Parser Test Suite', () => {
       // Missing closing brace for function
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.strictEqual(result.module, undefined, 'Module should not be parsed');
     assert.ok(result.error, 'Should have an error');
@@ -69,7 +64,7 @@ suite('AST Parser Test Suite', () => {
       };
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'Counter.tsx');
+    const result = await parseComponent(sourceCode, 'Counter.tsx');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -82,7 +77,7 @@ suite('AST Parser Test Suite', () => {
       };
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'Counter.jsx');
+    const result = await parseComponent(sourceCode, 'Counter.jsx');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -100,7 +95,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'utils.ts');
+    const result = await parseComponent(sourceCode, 'utils.ts');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -113,7 +108,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'utils.js');
+    const result = await parseComponent(sourceCode, 'utils.js');
     
     assert.ok(result.module, 'Module should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -132,7 +127,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.module, 'Module should be parsed with TypeScript syntax');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -145,7 +140,7 @@ suite('AST Parser Test Suite', () => {
       };
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.jsx');
+    const result = await parseComponent(sourceCode, 'test.jsx');
     
     assert.ok(result.module, 'Module should be parsed with ECMAScript syntax');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -165,7 +160,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.module, 'Module should be parsed with decorators');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -179,7 +174,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.ts');
+    const result = await parseComponent(sourceCode, 'test.ts');
     
     assert.ok(result.module, 'Module should be parsed with dynamic imports');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -193,7 +188,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.error, 'Should have an error');
     assert.ok(result.error?.message, 'Error should have a message');
@@ -232,7 +227,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'UserProfile.tsx');
+    const result = await parseComponent(sourceCode, 'UserProfile.tsx');
     
     assert.ok(result.module, 'Complex component should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -267,7 +262,7 @@ suite('AST Parser Test Suite', () => {
       }
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'Counter.tsx');
+    const result = await parseComponent(sourceCode, 'Counter.tsx');
     
     assert.ok(result.module, 'Class component should be parsed successfully');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -276,7 +271,7 @@ suite('AST Parser Test Suite', () => {
   test('Handle empty source code', async () => {
     const sourceCode = '';
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.module, 'Empty source should be parsed');
     assert.strictEqual(result.error, undefined, 'Should not have errors');
@@ -288,7 +283,7 @@ suite('AST Parser Test Suite', () => {
       /* This is a block comment */
     `;
 
-    const result = await parser.parseSourceCode(sourceCode, 'test.tsx');
+    const result = await parseComponent(sourceCode, 'test.tsx');
     
     assert.ok(result.module, 'Comments-only source should be parsed');
     assert.strictEqual(result.error, undefined, 'Should not have errors');

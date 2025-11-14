@@ -79,13 +79,18 @@ VS Code extension that provides:
 
 ### @web-component-analyzer/web
 
-Web application for analyzing components in the browser:
+Browser-based web application for analyzing React, Vue.js, and Svelte components:
 
-- Paste component code
-- View DFD visualization
-- Interactive diagram exploration
+- **Interactive Code Editor**: Monaco Editor with syntax highlighting
+- **Real-Time Visualization**: See DFD updates as you type
+- **Sample Components**: 10+ examples demonstrating different patterns
+- **URL Sharing**: Share component code via compressed URLs
+- **Themed Interface**: Light (Easter) and dark (Halloween) modes with decorations
+- **No Installation**: Runs entirely in the browser
 
-Deployed to GitHub Pages: https://[your-username].github.io/web-component-analyzer/
+**🚀 [Try the Live Demo](https://[your-username].github.io/web-component-analyzer/)**
+
+Deployed to GitHub Pages with automatic deployment via GitHub Actions.
 
 ## Development Workflow
 
