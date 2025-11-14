@@ -61,7 +61,7 @@ function counterReducer(state: CounterState, action: CounterAction): CounterStat
  * - State properties displayed in JSX
  */
 export default function ReducerCounter() {
-  const [state, dispatch] = useReducer(counterReducer, {
+  const [{ count, step, history }, dispatch] = useReducer(counterReducer, {
     count: 0,
     step: 1,
     history: [0]
@@ -69,13 +69,13 @@ export default function ReducerCounter() {
 
   // Effect that logs history changes
   useEffect(() => {
-    console.log('History updated:', state.history);
+    console.log('History updated:', history);
     
     // Dispatch action when history gets too long
-    if (state.history.length > 10) {
+    if (history.length > 10) {
       dispatch({ type: 'RESET' });
     }
-  }, [state.history]);
+  }, [history]);
 
   // Event handlers that dispatch actions
   const handleIncrement = () => {
@@ -102,9 +102,9 @@ export default function ReducerCounter() {
       <h2>Reducer Counter</h2>
       
       <div className="counter-display">
-        <p>Current Count: {state.count}</p>
-        <p>Step Size: {state.step}</p>
-        <p>History Length: {state.history.length}</p>
+        <p>Current Count: {count}</p>
+        <p>Step Size: {step}</p>
+        <p>History Length: {history.length}</p>
       </div>
 
       <div className="controls">
@@ -118,7 +118,7 @@ export default function ReducerCounter() {
           Step Size:
           <input
             type="number"
-            value={state.step}
+            value={step}
             onChange={handleStepChange}
             min="1"
           />
@@ -128,7 +128,7 @@ export default function ReducerCounter() {
       <div className="history">
         <h3>History</h3>
         <ul>
-          {state.history.map((value, index) => (
+          {history.map((value, index) => (
             <li key={index}>{value}</li>
           ))}
         </ul>

@@ -17,13 +17,48 @@
         "command": "web-component-analyzer.showStructure",
         "title": "Web Component Analyzer: Show Component Structure",
         "category": "Web Component Analyzer"
+      },
+      {
+        "command": "web-component-analyzer.showDFD",
+        "title": "Show Component DFD",
+        "category": "Web Component Analyzer"
+      },
+      {
+        "command": "web-component-analyzer.refreshDFD",
+        "title": "Refresh Component DFD",
+        "category": "Web Component Analyzer"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "web-component-analyzer.showDFD",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue)$/"
+      },
+      {
+        "command": "web-component-analyzer.refreshDFD",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue)$/"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "web-component-analyzer.showDFD",
+          "when": "resourceExtname =~ /\\.(tsx|jsx|vue)$/",
+          "group": "navigation@1"
+        }
+      ]
+    }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run compile",
+    "vscode:prepublish": "pnpm run compile && pnpm run compile:webview",
     "compile": "tsc -p ./",
+    "compile:webview": "node esbuild.webview.mjs",
     "watch": "tsc -watch -p ./",
+    "watch:webview": "node esbuild.webview.mjs --watch",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
     "test": "vscode-test"
@@ -36,10 +71,13 @@
     "@typescript-eslint/parser": "^8.45.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.12",
     "eslint": "^9.36.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@swc/core": "^1.15.1"
+    "@swc/core": "^1.15.1",
+    "mermaid": "^11.12.1",
+    "vis-network": "^9.1.9"
   }
 }

@@ -134,6 +134,7 @@ export class WebviewPanelManager {
 
     // Transform DFD data to Mermaid format
     const mermaidDiagram = transformToMermaid(dfdData);
+    console.log('[WebviewPanelManager] Generated Mermaid diagram:\n', mermaidDiagram);
 
     // Create metadata map for nodes (nodeId -> metadata)
     // Use sanitized IDs to match Mermaid node IDs
@@ -155,6 +156,19 @@ export class WebviewPanelManager {
       diagram: mermaidDiagram,
       metadata: metadata,
       theme: theme
+    });
+  }
+
+  /**
+   * Show error message in webview
+   * 
+   * @param panel - The webview panel to show error in
+   * @param errorMessage - The error message to display
+   */
+  showError(panel: vscode.WebviewPanel, errorMessage: string): void {
+    panel.webview.postMessage({
+      type: 'error',
+      message: errorMessage
     });
   }
 
@@ -222,6 +236,22 @@ export class WebviewPanelManager {
       this.handleNavigateToCode(message.data.nodeId, message.data.metadata).catch(error => {
         console.error('[DFD Visualization] Error in navigate to code handler:', error);
       });
+    });
+
+    // Register show message handler
+    messageHandler.onShowMessage((message) => {
+      const { message: text, level } = message.data;
+      switch (level) {
+        case 'info':
+          vscode.window.showInformationMessage(text);
+          break;
+        case 'warning':
+          vscode.window.showWarningMessage(text);
+          break;
+        case 'error':
+          vscode.window.showErrorMessage(text);
+          break;
+      }
     });
 
     // Handle panel disposal

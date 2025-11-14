@@ -2,12 +2,12 @@
  * Transform DFD data to vis.js network format
  */
 
-import { DFDSourceData, DFDNode, DFDEdge } from '../parser/types';
+import { DFDSourceData, DFDNode, DFDEdge, DFDSubgraph } from '../parser/types';
 
 export interface VisNode {
   id: string;
   label: string;
-  shape: 'box' | 'ellipse';
+  shape: 'box' | 'ellipse' | 'hexagon';
   color: {
     background: string;
     border: string;
@@ -24,6 +24,7 @@ export interface VisNode {
   metadata?: Record<string, any>;
   level?: number; // For hierarchical layout
   group?: string; // For clustering
+  margin?: number | { top: number; right: number; bottom: number; left: number }; // Spacing around node
 }
 
 export interface VisEdge {
@@ -36,6 +37,8 @@ export interface VisEdge {
   smooth: {
     type: 'cubicBezier';
   };
+  physics?: boolean;
+  chosen?: boolean;
 }
 
 export interface VisNetworkData {
@@ -66,6 +69,16 @@ const LIGHT_THEME_COLORS = {
     background: '#E8F5E9',
     border: '#4CAF50',
     font: '#2E7D32'
+  },
+  'subgraph': {
+    background: '#FFF9C4',
+    border: '#FBC02D',
+    font: '#F57F17'
+  },
+  'exported-handler': {
+    background: '#E8F5E9',
+    border: '#4CAF50',
+    font: '#2E7D32'
   }
 };
 
@@ -92,6 +105,16 @@ const DARK_THEME_COLORS = {
     background: '#2A4A2A',
     border: '#66BB6A',
     font: '#A5D6A7'
+  },
+  'subgraph': {
+    background: '#4A4A2A',
+    border: '#FDD835',
+    font: '#FFEB3B'
+  },
+  'exported-handler': {
+    background: '#2A4A2A',
+    border: '#66BB6A',
+    font: '#A5D6A7'
   }
 };
 
@@ -108,17 +131,29 @@ const EDGE_COLORS = {
  */
 function getNodeColors(
   nodeType: DFDNode['type'],
-  theme: 'light' | 'dark'
+  theme: 'light' | 'dark',
+  metadata?: Record<string, any>
 ): { background: string; border: string; font: string } {
   const colorMap = theme === 'dark' ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+  
+  // Check if this is an exported-handler node
+  if (metadata?.processType === 'exported-handler') {
+    return colorMap['exported-handler'];
+  }
+  
   return colorMap[nodeType];
 }
 
 /**
  * Get node shape based on type
  */
-function getNodeShape(nodeType: DFDNode['type']): 'box' | 'ellipse' {
-  // Process nodes use 'box' shape with custom shapeProperties for flowchart process symbol
+function getNodeShape(nodeType: DFDNode['type'], metadata?: Record<string, any>): 'box' | 'ellipse' | 'hexagon' {
+  // JSX elements and subgraphs use hexagon shape
+  if (nodeType === 'external-entity-output' || nodeType === 'subgraph') {
+    return 'hexagon';
+  }
+  
+  // All other nodes use box shape
   return 'box';
 }
 
@@ -126,8 +161,8 @@ function getNodeShape(nodeType: DFDNode['type']): 'box' | 'ellipse' {
  * Transform a DFD node to vis.js node format
  */
 function transformNode(node: DFDNode, theme: 'light' | 'dark'): VisNode {
-  const colors = getNodeColors(node.type, theme);
-  const shape = getNodeShape(node.type);
+  const colors = getNodeColors(node.type, theme, node.metadata);
+  const shape = getNodeShape(node.type, node.metadata);
 
   const visNode: VisNode = {
     id: node.id,
@@ -143,6 +178,11 @@ function transformNode(node: DFDNode, theme: 'light' | 'dark'): VisNode {
     },
     metadata: node.metadata
   };
+  
+  // Set tighter margins for JSX elements and subgraphs
+  if (shape === 'hexagon') {
+    visNode.margin = 5;
+  }
 
   // Set level and group for hierarchical layout
   // Level 0 = leftmost (input props), Level 4 = rightmost (output props/JSX)
@@ -164,6 +204,23 @@ function transformNode(node: DFDNode, theme: 'light' | 'dark'): VisNode {
   // Data stores (state, refs)
   else if (node.type === 'data-store') {
     visNode.level = 1;
+  }
+  // Exported handler nodes
+  else if (node.metadata?.processType === 'exported-handler') {
+    visNode.level = 2;
+    visNode.group = 'exported-handler';
+    visNode.shapeProperties = {
+      borderDashes: [2, 0, 2, 0] // Creates vertical lines on left and right
+    };
+    visNode.borderWidth = 2;
+    visNode.borderWidthSelected = 3;
+    // Include parentId for grouping
+    if (node.metadata?.parentProcessId) {
+      visNode.metadata = {
+        ...visNode.metadata,
+        parentId: node.metadata.parentProcessId
+      };
+    }
   }
   // Processes
   else if (node.type === 'process') {
@@ -218,11 +275,86 @@ function transformEdge(edge: DFDEdge, theme: 'light' | 'dark'): VisEdge {
 /**
  * Transform DFD data to vis.js format
  */
+/**
+ * Recursively collect all nodes from a subgraph tree
+ */
+function collectNodesFromSubgraph(subgraph: DFDSubgraph): DFDNode[] {
+  const nodes: DFDNode[] = [];
+  
+  for (const element of subgraph.elements) {
+    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional')) {
+      // It's a subgraph, recurse
+      nodes.push(...collectNodesFromSubgraph(element as DFDSubgraph));
+    } else {
+      // It's a node
+      nodes.push(element as DFDNode);
+    }
+  }
+  
+  return nodes;
+}
+
+/**
+ * Transform subgraph nodes with special handling for conditional subgraphs
+ */
+function transformSubgraphNodes(
+  subgraph: DFDSubgraph,
+  theme: 'light' | 'dark',
+  parentLevel: number = 3
+): VisNode[] {
+  const visNodes: VisNode[] = [];
+  
+  for (const element of subgraph.elements) {
+    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional')) {
+      // It's a nested subgraph, recurse
+      const nestedSubgraph = element as DFDSubgraph;
+      visNodes.push(...transformSubgraphNodes(nestedSubgraph, theme, parentLevel));
+    } else {
+      // It's a node
+      const node = element as DFDNode;
+      const visNode = transformNode(node, theme);
+      
+      // Override level for nodes within subgraphs
+      visNode.level = parentLevel;
+      visNode.group = `subgraph-${subgraph.id}`;
+      
+      visNodes.push(visNode);
+    }
+  }
+  
+  return visNodes;
+}
+
 export function transformDFDData(
   dfdData: DFDSourceData,
   theme: 'light' | 'dark'
 ): VisNetworkData {
-  const nodes = dfdData.nodes.map(node => transformNode(node, theme));
+  let nodes: VisNode[];
+  
+  // If we have a root subgraph, collect nodes from it
+  if (dfdData.rootSubgraph) {
+    // Transform nodes from subgraph structure
+    const subgraphNodes = transformSubgraphNodes(dfdData.rootSubgraph, theme);
+    
+    // Transform regular nodes (non-JSX nodes)
+    const regularNodes = dfdData.nodes
+      .filter(node => node.metadata?.category !== 'jsx-element' && node.metadata?.category !== 'jsx-parent')
+      .map(node => transformNode(node, theme));
+    
+    nodes = [...regularNodes, ...subgraphNodes];
+  } else {
+    // Fallback to original behavior
+    nodes = dfdData.nodes.map(node => transformNode(node, theme));
+  }
+  
+  // Add nodes from additional subgraphs (e.g., exported handlers)
+  if (dfdData.subgraphs && dfdData.subgraphs.length > 0) {
+    for (const subgraph of dfdData.subgraphs) {
+      const subgraphNodes = transformSubgraphNodes(subgraph, theme);
+      nodes = [...nodes, ...subgraphNodes];
+    }
+  }
+  
   const edges = dfdData.edges.map(edge => transformEdge(edge, theme));
 
   return {

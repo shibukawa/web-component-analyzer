@@ -7,14 +7,14 @@ import { ComponentAnalysis, JSXInfo, ProcessInfo } from './types';
 import { SWCPropsAnalyzer } from '../analyzers/props-analyzer';
 import { SWCHooksAnalyzer } from '../analyzers/hooks-analyzer';
 import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
-import { SWCJSXAnalyzer } from '../analyzers/jsx-analyzer';
+import { ConditionalStructureExtractor } from '../analyzers/conditional-extractor';
 import { TypeResolver } from '../services/type-resolver';
 
 /**
  * AST Analyzer interface for analyzing React components
  */
 export interface ASTAnalyzer {
-  analyze(module: swc.Module, filePath?: string): Promise<ComponentAnalysis | null>;
+  analyze(module: swc.Module, filePath?: string, sourceCode?: string): Promise<ComponentAnalysis | null>;
 }
 
 /**
@@ -23,23 +23,30 @@ export interface ASTAnalyzer {
 export class SWCASTAnalyzer implements ASTAnalyzer {
   private propsAnalyzer: SWCPropsAnalyzer;
   private processAnalyzer: SWCProcessAnalyzer;
-  private jsxAnalyzer: SWCJSXAnalyzer;
+  private conditionalExtractor: ConditionalStructureExtractor;
   private typeResolver?: TypeResolver;
 
   constructor(typeResolver?: TypeResolver) {
     this.typeResolver = typeResolver;
     this.propsAnalyzer = new SWCPropsAnalyzer(typeResolver);
     this.processAnalyzer = new SWCProcessAnalyzer();
-    this.jsxAnalyzer = new SWCJSXAnalyzer();
+    this.conditionalExtractor = new ConditionalStructureExtractor();
   }
 
   /**
    * Analyze a parsed module to extract component information
    * @param module - The SWC module to analyze
    * @param filePath - Optional file path for type resolution
+   * @param sourceCode - Optional source code for line number calculation
    * @returns Promise resolving to ComponentAnalysis object or null if no component found
    */
-  async analyze(module: swc.Module, filePath?: string): Promise<ComponentAnalysis | null> {
+  async analyze(module: swc.Module, filePath?: string, sourceCode?: string): Promise<ComponentAnalysis | null> {
+    // Set source code for analyzers (for line number calculation)
+    if (sourceCode) {
+      this.conditionalExtractor.setSourceCode(sourceCode);
+      this.propsAnalyzer.setSourceCode(sourceCode);
+    }
+
     // Find React component in the module
     const componentInfo = this.findReactComponent(module);
     
@@ -58,10 +65,16 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     // Extract hooks using Hooks Analyzer (with type resolution if available)
     console.log('🔍 AST Analyzer: Calling hooks analyzer...');
     const hooksAnalyzer = new SWCHooksAnalyzer(this.typeResolver, filePath);
+    if (sourceCode) {
+      hooksAnalyzer.setSourceCode(sourceCode);
+    }
     const hooks = await hooksAnalyzer.analyzeHooks(body);
     console.log('🔍 AST Analyzer: Hooks returned:', hooks.length);
 
     // Extract processes using Process Analyzer
+    if (sourceCode) {
+      this.processAnalyzer.setSourceCode(sourceCode);
+    }
     const processes = this.processAnalyzer.analyzeProcesses(body);
 
     // Extract JSX output using JSX Analyzer
@@ -241,6 +254,55 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     for (const declarator of varDecl.declarations) {
       if (!declarator.init) {
         continue;
+      }
+
+      // Check for forwardRef call
+      if (declarator.init.type === 'CallExpression') {
+        const callExpr = declarator.init as swc.CallExpression;
+        
+        // Check if it's a forwardRef call
+        if (callExpr.callee.type === 'Identifier' && callExpr.callee.value === 'forwardRef') {
+          const name = declarator.id.type === 'Identifier' ? declarator.id.value : 'AnonymousComponent';
+          
+          // Extract the function passed to forwardRef
+          if (callExpr.arguments.length > 0 && !callExpr.arguments[0].spread) {
+            const arg = callExpr.arguments[0].expression;
+            
+            if (arg.type === 'ArrowFunctionExpression' || arg.type === 'FunctionExpression') {
+              if (!arg.body) {
+                continue;
+              }
+              
+              // Check if function returns JSX
+              if (arg.body.type === 'BlockStatement') {
+                if (!this.hasJSXReturn(arg.body)) {
+                  continue;
+                }
+                
+                const body = this.extractFunctionBody(arg.body);
+                
+                return {
+                  name,
+                  type: 'functional',
+                  body,
+                  node: arg,
+                };
+              } else {
+                // Arrow function with expression body
+                if (!this.isJSXExpression(arg.body)) {
+                  continue;
+                }
+                
+                return {
+                  name,
+                  type: 'functional',
+                  body: [],
+                  node: arg,
+                };
+              }
+            }
+          }
+        }
       }
 
       // Check for arrow function or function expression
@@ -427,6 +489,7 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     const defaultJSXInfo: JSXInfo = {
       simplified: '',
       placeholders: [],
+      elements: [],
     };
 
     // For functional components, find return statement
@@ -448,9 +511,21 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
           }
         } else {
           // Expression body
-          const jsxInfo = this.jsxAnalyzer.analyzeJSX(node.body);
-          if (jsxInfo) {
-            return jsxInfo;
+          let body = node.body;
+          
+          // Unwrap ParenthesisExpression
+          while (body.type === 'ParenthesisExpression') {
+            body = (body as swc.ParenthesisExpression).expression;
+          }
+          
+          if (body.type === 'JSXElement' || body.type === 'JSXFragment') {
+            const structure = this.conditionalExtractor.extractStructure(body);
+            return {
+              simplified: '',
+              placeholders: [],
+              elements: [],
+              structure
+            };
           }
         }
       }
@@ -477,9 +552,21 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
   private findJSXInBlockStatement(body: swc.BlockStatement): JSXInfo | null {
     for (const statement of body.stmts) {
       if (statement.type === 'ReturnStatement' && statement.argument) {
-        const jsxInfo = this.jsxAnalyzer.analyzeJSX(statement);
-        if (jsxInfo) {
-          return jsxInfo;
+        let arg = statement.argument;
+        
+        // Unwrap ParenthesisExpression
+        while (arg.type === 'ParenthesisExpression') {
+          arg = (arg as swc.ParenthesisExpression).expression;
+        }
+        
+        if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+          const structure = this.conditionalExtractor.extractStructure(arg);
+          return {
+            simplified: '',
+            placeholders: [],
+            elements: [],
+            structure
+          };
         }
       }
     }

@@ -4,6 +4,7 @@
 
 import * as swc from '@swc/core';
 import { ProcessInfo, ExternalCallInfo } from '../parser/types';
+import { ImperativeHandleAnalyzer, createImperativeHandleAnalyzer } from './imperative-handle-analyzer.js';
 
 /**
  * Process Analyzer interface
@@ -17,6 +18,38 @@ export interface ProcessAnalyzer {
  * Implementation of Process Analyzer
  */
 export class SWCProcessAnalyzer implements ProcessAnalyzer {
+  private sourceCode: string = '';
+  private lineStarts: number[] = [];
+  private imperativeHandleAnalyzer: ImperativeHandleAnalyzer;
+
+  constructor() {
+    this.imperativeHandleAnalyzer = createImperativeHandleAnalyzer();
+  }
+
+  /**
+   * Set source code for line number calculation
+   * @param sourceCode - The source code string
+   */
+  setSourceCode(sourceCode: string): void {
+    this.sourceCode = sourceCode;
+    this.lineStarts = this.calculateLineStarts(sourceCode);
+    this.imperativeHandleAnalyzer.setSourceCode(sourceCode);
+  }
+
+  /**
+   * Calculate line start positions in source code
+   * @param sourceCode - The source code string
+   * @returns Array of byte positions where each line starts
+   */
+  private calculateLineStarts(sourceCode: string): number[] {
+    const lineStarts = [0]; // First line starts at position 0
+    for (let i = 0; i < sourceCode.length; i++) {
+      if (sourceCode[i] === '\n') {
+        lineStarts.push(i + 1);
+      }
+    }
+    return lineStarts;
+  }
   /**
    * Analyze processes in the component body
    * @param body - Array of module items or statements from the component
@@ -224,8 +257,41 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     }
 
     const name = this.getVariableName(declaration.id);
+    const line = callExpression.span?.start ? this.getLineNumber(callExpression.span.start) : undefined;
+    const column = callExpression.span?.start ? this.getColumnNumber(callExpression.span.start) : undefined;
+
+    // Special handling for useImperativeHandle
+    if (hookName === 'useImperativeHandle') {
+      try {
+        const exportedHandlers = this.imperativeHandleAnalyzer.analyzeImperativeHandle(callExpression);
+        
+        if (exportedHandlers.length > 0) {
+          // Extract dependencies from third argument (index 2) for useImperativeHandle
+          const dependencies = this.extractDependencies(callExpression, 2);
+          
+          console.log(`[ProcessAnalyzer] Extracted useImperativeHandle with ${exportedHandlers.length} exported handlers: ${name || hookName}, line: ${line}, column: ${column}`);
+          
+          return {
+            name: name || hookName,
+            type: 'useImperativeHandle',
+            dependencies,
+            references: [],
+            externalCalls: [],
+            exportedHandlers,
+            line,
+            column,
+          };
+        }
+      } catch (error) {
+        console.warn('[ProcessAnalyzer] Failed to analyze useImperativeHandle exported handlers, falling back to regular process:', error);
+      }
+    }
+
+    // Regular hook handling
     const dependencies = this.extractDependencies(callExpression);
     const { references, externalCalls, cleanupProcess } = this.analyzeFunction(callExpression);
+
+    console.log(`[ProcessAnalyzer] Extracted process from hook: ${name || hookName}, line: ${line}, column: ${column}`);
 
     return {
       name: name || hookName,
@@ -234,6 +300,8 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       references,
       externalCalls,
       cleanupProcess,
+      line,
+      column,
     };
   }
 
@@ -247,6 +315,37 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       return null;
     }
 
+    const line = callExpression.span?.start ? this.getLineNumber(callExpression.span.start) : undefined;
+    const column = callExpression.span?.start ? this.getColumnNumber(callExpression.span.start) : undefined;
+
+    // Special handling for useImperativeHandle
+    if (hookName === 'useImperativeHandle') {
+      try {
+        const exportedHandlers = this.imperativeHandleAnalyzer.analyzeImperativeHandle(callExpression);
+        
+        if (exportedHandlers.length > 0) {
+          // Extract dependencies from third argument (index 2) for useImperativeHandle
+          const dependencies = this.extractDependencies(callExpression, 2);
+          
+          console.log(`[ProcessAnalyzer] Extracted useImperativeHandle expression with ${exportedHandlers.length} exported handlers, line: ${line}, column: ${column}`);
+          
+          return {
+            name: hookName,
+            type: 'useImperativeHandle',
+            dependencies,
+            references: [],
+            externalCalls: [],
+            exportedHandlers,
+            line,
+            column,
+          };
+        }
+      } catch (error) {
+        console.warn('[ProcessAnalyzer] Failed to analyze useImperativeHandle exported handlers, falling back to regular process:', error);
+      }
+    }
+
+    // Regular hook handling
     const dependencies = this.extractDependencies(callExpression);
     const { references, externalCalls, cleanupProcess } = this.analyzeFunction(callExpression);
 
@@ -257,8 +356,8 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       references,
       externalCalls,
       cleanupProcess,
-      line: callExpression.span?.start ? this.getLineNumber(callExpression.span.start) : undefined,
-      column: callExpression.span?.start ? this.getColumnNumber(callExpression.span.start) : undefined,
+      line,
+      column,
     };
   }
 
@@ -295,18 +394,35 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
   }
 
   /**
-   * Get line number from span position (placeholder - needs actual implementation)
+   * Get line number from span position
    */
   private getLineNumber(position: number): number {
-    // This is a simplified version - in reality, you'd need to track line breaks
-    return 0;
+    if (this.lineStarts.length === 0) {
+      return 1; // Default to line 1 if no source code
+    }
+
+    // Binary search to find the line
+    let line = 1;
+    for (let i = 0; i < this.lineStarts.length; i++) {
+      if (this.lineStarts[i] > position) {
+        break;
+      }
+      line = i + 1;
+    }
+    return line;
   }
 
   /**
-   * Get column number from span position (placeholder - needs actual implementation)
+   * Get column number from span position
    */
   private getColumnNumber(position: number): number {
-    return position;
+    if (this.lineStarts.length === 0) {
+      return 0; // Default to column 0 if no source code
+    }
+
+    const line = this.getLineNumber(position);
+    const lineStartPos = this.lineStarts[line - 1];
+    return position - lineStartPos;
   }
 
   /**
@@ -328,11 +444,18 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     // Determine if it's an event handler or custom function
     const isEventHandler = this.isEventHandlerName(name);
 
+    const line = declaration.span?.start ? this.getLineNumber(declaration.span.start) : undefined;
+    const column = declaration.span?.start ? this.getColumnNumber(declaration.span.start) : undefined;
+
+    console.log(`[ProcessAnalyzer] Extracted function (var): ${name}, type: ${isEventHandler ? 'event-handler' : 'custom-function'}, line: ${line}, column: ${column}`);
+
     return {
       name,
       type: isEventHandler ? 'event-handler' : 'custom-function',
       references,
       externalCalls,
+      line,
+      column,
     };
   }
 
@@ -350,11 +473,18 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     // Determine if it's an event handler or custom function
     const isEventHandler = this.isEventHandlerName(name);
 
+    const line = funcDecl.span?.start ? this.getLineNumber(funcDecl.span.start) : undefined;
+    const column = funcDecl.span?.start ? this.getColumnNumber(funcDecl.span.start) : undefined;
+
+    console.log(`[ProcessAnalyzer] Extracted function (decl): ${name}, type: ${isEventHandler ? 'event-handler' : 'custom-function'}, line: ${line}, column: ${column}`);
+
     return {
       name,
       type: isEventHandler ? 'event-handler' : 'custom-function',
       references,
       externalCalls,
+      line,
+      column,
     };
   }
 
@@ -391,13 +521,15 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
   /**
    * Extract dependencies array from hook call
    */
-  private extractDependencies(callExpression: swc.CallExpression): string[] | undefined {
-    // Dependencies are typically in the second argument for useEffect, useCallback, useMemo
-    if (callExpression.arguments.length < 2) {
+  private extractDependencies(callExpression: swc.CallExpression, dependencyIndex: number = 1): string[] | undefined {
+    // Dependencies are typically in the second argument (index 1) for useEffect, useCallback, useMemo
+    // For useImperativeHandle, dependencies are in the third argument (index 2)
+    const requiredArgs = dependencyIndex + 1;
+    if (callExpression.arguments.length < requiredArgs) {
       return undefined;
     }
 
-    const depsArg = callExpression.arguments[1];
+    const depsArg = callExpression.arguments[dependencyIndex];
     if (depsArg.spread || depsArg.expression.type !== 'ArrayExpression') {
       return undefined;
     }
@@ -431,6 +563,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     const funcExpr = firstArg.expression;
     if (funcExpr.type === 'ArrowFunctionExpression' || funcExpr.type === 'FunctionExpression') {
       const result = this.analyzeFunctionBody(funcExpr);
+      console.log(`[ProcessAnalyzer] analyzeFunction result - references:`, result.references, 'externalCalls:', result.externalCalls);
       
       // Check for cleanup function (return statement in useEffect)
       const cleanupProcess = this.extractCleanupFunction(funcExpr);
@@ -565,6 +698,11 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
         this.handleCallExpression(expression, references, externalCalls);
         break;
       
+      case 'OptionalChainingExpression':
+        // Handle optional chaining like obj?.method() or obj?.prop
+        this.extractReferencesFromExpression(expression.base, references, externalCalls);
+        break;
+      
       case 'BinaryExpression':
         this.extractReferencesFromExpression(expression.left, references, externalCalls);
         this.extractReferencesFromExpression(expression.right, references, externalCalls);
@@ -592,7 +730,12 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       case 'ObjectExpression':
         for (const prop of expression.properties) {
           if (prop.type === 'KeyValueProperty') {
+            // Regular property - extract from value
             this.extractReferencesFromExpression(prop.value, references, externalCalls);
+          } else if (prop.type === 'Identifier') {
+            // Shorthand property: { user } is represented as just an Identifier in SWC
+            console.log(`[ProcessAnalyzer] Found shorthand property: ${prop.value}`);
+            references.add(prop.value);
           } else if (prop.type === 'SpreadElement') {
             // SpreadElement.arguments can be various types including Super and Import
             // We only process regular expressions
@@ -643,12 +786,42 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     if (callee.type === 'MemberExpression') {
       const functionName = this.getMemberExpressionName(callee);
       
-      // Check if it's likely an external call (not a built-in method)
-      if (functionName && this.isExternalCall(functionName)) {
+      // Check if this is a ref.current.method() pattern (imperative handle call)
+      const imperativeHandleInfo = this.checkImperativeHandleCall(callee);
+      
+      if (imperativeHandleInfo) {
+        // This is an imperative handle call
         const args = this.extractCallArguments(callExpr);
+        externalCalls.push({
+          functionName: imperativeHandleInfo.methodName,
+          arguments: args,
+          isImperativeHandleCall: true,
+          refName: imperativeHandleInfo.refName,
+          methodName: imperativeHandleInfo.methodName
+        });
+      }
+      // Check if it's likely an external call (not a built-in method)
+      else if (functionName && this.isExternalCall(functionName)) {
+        const args = this.extractCallArguments(callExpr);
+        
+        // Extract callback references from arguments
+        const callbackReferences: string[] = [];
+        for (const arg of callExpr.arguments) {
+          if (!arg.spread) {
+            const argExpr = arg.expression as any;
+            if (argExpr && typeof argExpr === 'object' && 'type' in argExpr) {
+              if (argExpr.type === 'ArrowFunctionExpression' || argExpr.type === 'FunctionExpression') {
+                const callbackAnalysis = this.analyzeFunctionBody(argExpr);
+                callbackReferences.push(...callbackAnalysis.references);
+              }
+            }
+          }
+        }
+        
         externalCalls.push({
           functionName,
           arguments: args,
+          callbackReferences: callbackReferences.length > 0 ? callbackReferences : undefined
         });
       }
       
@@ -670,10 +843,58 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
         // arg.expression can be various types, use type assertion after checking
         const argExpr = arg.expression as any;
         if (argExpr && typeof argExpr === 'object' && 'type' in argExpr) {
-          this.extractReferencesFromExpression(argExpr, references, externalCalls);
+          // If the argument is a callback function, analyze its body
+          if (argExpr.type === 'ArrowFunctionExpression' || argExpr.type === 'FunctionExpression') {
+            console.log(`[ProcessAnalyzer] Found callback function in call expression`);
+            const callbackAnalysis = this.analyzeFunctionBody(argExpr);
+            console.log(`[ProcessAnalyzer] Callback references:`, callbackAnalysis.references);
+            console.log(`[ProcessAnalyzer] Callback external calls:`, callbackAnalysis.externalCalls);
+            // Add references from callback to the parent function's references
+            callbackAnalysis.references.forEach(ref => references.add(ref));
+            // Add external calls from callback to the parent function's external calls
+            externalCalls.push(...callbackAnalysis.externalCalls);
+          } else {
+            this.extractReferencesFromExpression(argExpr, references, externalCalls);
+          }
         }
       }
     }
+  }
+
+  /**
+   * Check if a member expression is a ref.current.method() pattern
+   * Returns { refName, methodName } if it matches, null otherwise
+   */
+  private checkImperativeHandleCall(memberExpr: swc.MemberExpression): { refName: string; methodName: string } | null {
+    // Pattern: ref.current.method()
+    // memberExpr.property = method
+    // memberExpr.object = ref.current (another MemberExpression)
+    
+    if (memberExpr.property.type !== 'Identifier') {
+      return null;
+    }
+    
+    const methodName = memberExpr.property.value;
+    
+    // Check if object is ref.current
+    if (memberExpr.object.type === 'MemberExpression') {
+      const innerMember = memberExpr.object;
+      
+      // Check if property is 'current'
+      if (innerMember.property.type === 'Identifier' && innerMember.property.value === 'current') {
+        // Check if object is an identifier (the ref variable)
+        if (innerMember.object.type === 'Identifier') {
+          const refName = innerMember.object.value;
+          
+          // Check if ref name ends with 'Ref' (common pattern)
+          if (refName.endsWith('Ref') || refName.endsWith('ref')) {
+            return { refName, methodName };
+          }
+        }
+      }
+    }
+    
+    return null;
   }
 
   /**
@@ -836,7 +1057,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       // Check attributes for inline callbacks
       for (const attr of node.opening.attributes) {
         if (attr.type === 'JSXAttribute') {
-          this.extractInlineCallbackFromAttribute(attr, processes, counter);
+          this.extractInlineCallbackFromAttribute(attr, node, processes, counter);
         }
       }
 
@@ -861,6 +1082,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
    */
   private extractInlineCallbackFromAttribute(
     attr: swc.JSXAttribute,
+    element: swc.JSXElement,
     processes: ProcessInfo[],
     counter: { count: number }
   ): void {
@@ -879,7 +1101,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
 
     // Check if expression is an inline arrow function or function expression
     if (expression.type === 'ArrowFunctionExpression' || expression.type === 'FunctionExpression') {
-      const processInfo = this.extractProcessFromInlineCallback(expression, attrName, counter);
+      const processInfo = this.extractProcessFromInlineCallback(expression, attrName, element, counter);
       if (processInfo) {
         processes.push(processInfo);
       }
@@ -892,6 +1114,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
   private extractProcessFromInlineCallback(
     func: swc.ArrowFunctionExpression | swc.FunctionExpression,
     attrName: string,
+    element: swc.JSXElement,
     counter: { count: number }
   ): ProcessInfo | null {
     // Generate a unique name for the inline callback
@@ -899,11 +1122,28 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
 
     const { references, externalCalls } = this.analyzeFunctionBody(func);
 
+    const line = func.span?.start ? this.getLineNumber(func.span.start) : undefined;
+    const column = func.span?.start ? this.getColumnNumber(func.span.start) : undefined;
+
+    // Get JSX element position
+    const elementLine = element.span?.start ? this.getLineNumber(element.span.start) : undefined;
+    const elementColumn = element.span?.start ? this.getColumnNumber(element.span.start) : undefined;
+
+    console.log(`[ProcessAnalyzer] Extracted inline callback: ${name}, line: ${line}, column: ${column}, used in element at line: ${elementLine}, column: ${elementColumn}`);
+
     return {
       name,
       type: 'event-handler',
       references,
       externalCalls,
+      line,
+      column,
+      isInlineHandler: true,
+      usedInJSXElement: {
+        line: elementLine,
+        column: elementColumn,
+        attributeName: attrName
+      }
     };
   }
 }

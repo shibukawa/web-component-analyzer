@@ -3,13 +3,35 @@
 import * as vscode from 'vscode';
 import { createReactParser } from './parser';
 import { TypeResolver } from './services/type-resolver';
+import { DFDVisualizerService } from './visualization/dfd-visualizer-service';
+import { WebviewPanelManager } from './visualization/webview-panel-manager';
+import { DFDCommandHandler } from './visualization/command-handler';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	console.log('web-component-analyzer extension is now active');
 
-	// Register command to show component structure
+	// Create TypeResolver for accurate type-based classification
+	const typeResolver = new TypeResolver();
+	
+	// Create parser instance with TypeResolver
+	const reactParser = createReactParser(typeResolver);
+	
+	// Create Webview Panel Manager
+	const webviewPanelManager = new WebviewPanelManager(context);
+	
+	// Create DFD Visualizer Service
+	const dfdVisualizerService = new DFDVisualizerService(reactParser, webviewPanelManager);
+	
+	// Create and register DFD Command Handler
+	const dfdCommandHandler = new DFDCommandHandler(dfdVisualizerService);
+	dfdCommandHandler.register(context);
+	
+	// Add services to subscriptions for proper disposal
+	context.subscriptions.push(dfdVisualizerService, dfdCommandHandler);
+
+	// Register command to show component structure (legacy command - kept for backward compatibility)
 	const disposable = vscode.commands.registerCommand('web-component-analyzer.showStructure', async () => {
 		const editor = vscode.window.activeTextEditor;
 		
@@ -35,15 +57,9 @@ export function activate(context: vscode.ExtensionContext) {
 			cancellable: false
 		}, async (progress) => {
 			try {
-				// Create TypeResolver for accurate type-based classification
-				const typeResolver = new TypeResolver();
-				
-				// Create parser instance with TypeResolver
-				const parser = createReactParser(typeResolver);
-
 				// Parse the component
 				progress.report({ message: 'Parsing source code...' });
-				const dfdData = await parser.parse(sourceCode, filePath);
+				const dfdData = await reactParser.parse(sourceCode, filePath);
 
 				// Check for errors
 				if (dfdData.errors && dfdData.errors.length > 0) {
@@ -96,4 +112,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+	// Cleanup is handled automatically by VS Code disposing context.subscriptions
+}

@@ -46,21 +46,27 @@ export class DFDVisualizerService {
 			if (dfdData.errors && dfdData.errors.length > 0) {
 				const errorMessages = dfdData.errors.map(e => e.message).join(', ');
 				
-				// Check for specific error types
+				// Extract component name from document
+				const componentName = this.extractComponentName(dfdData, document);
+				
+				// Get or create webview panel
+				const panel = this.webviewPanelManager.getOrCreatePanel(document, componentName);
+				
+				// Check for specific error types and show in webview
 				if (errorMessages.includes('No React component found')) {
-					vscode.window.showErrorMessage('No React component found in this file');
+					this.webviewPanelManager.showError(panel, 'No React component detected in the file. Please ensure the file contains a valid React functional or class component.');
 					return;
 				}
 				
 				if (errorMessages.includes('timed out')) {
-					vscode.window.showErrorMessage('DFD generation timed out. Component may be too complex');
+					this.webviewPanelManager.showError(panel, 'DFD generation timed out. Component may be too complex.');
 					return;
 				}
 				
-				// Show generic parse error
-				vscode.window.showErrorMessage(`Failed to parse component: ${errorMessages}`);
+				// Show generic parse error in webview
+				this.webviewPanelManager.showError(panel, `Failed to parse component: ${errorMessages}`);
 				
-				// If there's no data at all, don't show the webview
+				// If there's no data at all, don't continue
 				if (dfdData.nodes.length === 0) {
 					return;
 				}

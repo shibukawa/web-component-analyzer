@@ -18,6 +18,8 @@ export interface PropsAnalyzer {
  */
 export class SWCPropsAnalyzer implements PropsAnalyzer {
   private typeResolver?: TypeResolver;
+  private sourceCode: string = '';
+  private lineStarts: number[] = [];
 
   /**
    * Constructor
@@ -25,6 +27,30 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
    */
   constructor(typeResolver?: TypeResolver) {
     this.typeResolver = typeResolver;
+  }
+
+  /**
+   * Set source code for line number calculation
+   * @param sourceCode - The source code string
+   */
+  setSourceCode(sourceCode: string): void {
+    this.sourceCode = sourceCode;
+    this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Calculate line start positions in source code
+   * @param sourceCode - The source code string
+   * @returns Array of byte positions where each line starts
+   */
+  private calculateLineStarts(sourceCode: string): number[] {
+    const lineStarts = [0]; // First line starts at position 0
+    for (let i = 0; i < sourceCode.length; i++) {
+      if (sourceCode[i] === '\n') {
+        lineStarts.push(i + 1);
+      }
+    }
+    return lineStarts;
   }
 
   /**
@@ -159,6 +185,15 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
     func: swc.FunctionDeclaration | swc.ArrowFunctionExpression | swc.FunctionExpression
   ): PropInfo[] {
     const props: PropInfo[] = [];
+    
+    // Check if this is likely a React component (starts with uppercase)
+    if (func.type === 'FunctionDeclaration' && func.identifier) {
+      const functionName = func.identifier.value;
+      // Skip functions that don't start with uppercase (not React components)
+      if (functionName && functionName[0] !== functionName[0].toUpperCase()) {
+        return props;
+      }
+    }
     
     // Get the first parameter (props parameter)
     if (func.params.length === 0) {
@@ -489,16 +524,45 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
    */
   private extractPosition(node: any): { line: number; column: number } | undefined {
     if (node.span) {
-      // SWC spans are 0-based, but VS Code positions are also 0-based
-      // We need to convert the byte offset to line/column
-      // For now, we'll use the span start as a simple position marker
-      // Note: This is a simplified approach - proper line/column calculation
-      // would require tracking newlines in the source code
-      return {
-        line: 0, // Will need source code to calculate actual line
-        column: node.span.start
-      };
+      const line = this.getLineFromSpan(node.span.start);
+      const column = this.getColumnFromSpan(node.span.start);
+      return { line, column };
     }
     return undefined;
+  }
+
+  /**
+   * Get line number from span position
+   * @param spanStart - Span start position (byte offset)
+   * @returns Line number (1-based)
+   */
+  private getLineFromSpan(spanStart: number): number {
+    if (this.lineStarts.length === 0) {
+      return 1; // Default to line 1 if no source code
+    }
+
+    // Find the line number: lineStarts[i] is the start of line (i+1)
+    for (let i = this.lineStarts.length - 1; i >= 0; i--) {
+      if (spanStart >= this.lineStarts[i]) {
+        return i + 1;
+      }
+    }
+    
+    return 1;
+  }
+
+  /**
+   * Get column number from span position
+   * @param spanStart - Span start position (byte offset)
+   * @returns Column number (0-based)
+   */
+  private getColumnFromSpan(spanStart: number): number {
+    if (this.lineStarts.length === 0) {
+      return 0; // Default to column 0 if no source code
+    }
+
+    const line = this.getLineFromSpan(spanStart);
+    const lineStartPos = this.lineStarts[line - 1];
+    return spanStart - lineStartPos;
   }
 }

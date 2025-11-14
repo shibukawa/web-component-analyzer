@@ -45,6 +45,7 @@ export class HTMLContentGenerator {
     <button id="zoom-in" title="Zoom In">+</button>
     <button id="zoom-out" title="Zoom Out">−</button>
     <button id="zoom-reset" title="Reset Zoom">⊙</button>
+    <button id="copy-mermaid" title="Copy Mermaid Source">📋</button>
   </div>
   <div id="error-container" class="error-container hidden">
     <div class="error-icon">⚠️</div>
@@ -270,7 +271,10 @@ export class HTMLContentGenerator {
           flowchart: {
             useMaxWidth: true,
             htmlLabels: true,
-            curve: 'basis'
+            curve: 'basis',
+            padding: 10,
+            nodeSpacing: 40,
+            rankSpacing: 60
           },
           securityLevel: 'loose'
         });
@@ -417,11 +421,36 @@ export class HTMLContentGenerator {
         });
       }
       
+      // Copy Mermaid source to clipboard
+      function copyMermaidSource() {
+        if (!currentDiagram) {
+          vscode.postMessage({
+            type: 'showMessage',
+            data: { message: 'No diagram to copy', level: 'warning' }
+          });
+          return;
+        }
+        
+        navigator.clipboard.writeText(currentDiagram).then(() => {
+          vscode.postMessage({
+            type: 'showMessage',
+            data: { message: 'Mermaid source copied to clipboard', level: 'info' }
+          });
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          vscode.postMessage({
+            type: 'showMessage',
+            data: { message: 'Failed to copy to clipboard', level: 'error' }
+          });
+        });
+      }
+      
       // Set up zoom controls
       function setupZoomControls() {
         document.getElementById('zoom-in').addEventListener('click', zoomIn);
         document.getElementById('zoom-out').addEventListener('click', zoomOut);
         document.getElementById('zoom-reset').addEventListener('click', zoomReset);
+        document.getElementById('copy-mermaid').addEventListener('click', copyMermaidSource);
         
         // Mouse wheel zoom
         const container = document.getElementById('mermaid-container');

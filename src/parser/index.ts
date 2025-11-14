@@ -114,7 +114,7 @@ export class DefaultReactParser implements ReactParser {
     }
 
     // Step 2: Analyze AST to extract component information
-    const analysis = await this.astAnalyzer.analyze(parseResult.module, filePath);
+    const analysis = await this.astAnalyzer.analyze(parseResult.module, filePath, sourceCode);
 
     if (!analysis) {
       // No React component found

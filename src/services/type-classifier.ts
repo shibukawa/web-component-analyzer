@@ -37,48 +37,71 @@ export class TypeClassifier {
    */
   isFunction(typeString: string): boolean {
     const normalized = typeString.trim();
+    
+    console.log(`[TypeClassifier] Checking if type is function: "${normalized}"`);
+
+    // Union types - check FIRST before other checks to avoid false positives
+    if (this.isUnionType(normalized)) {
+      const types = this.extractUnionTypes(normalized);
+      console.log(`[TypeClassifier] "${normalized}" is union type with members:`, types);
+      // A union type is considered a function if ALL non-undefined/non-null members are functions
+      // This handles optional function props like: ((value: string) => void) | undefined
+      const nonNullableTypes = types.filter(t => {
+        const trimmed = t.trim();
+        return trimmed !== 'undefined' && trimmed !== 'null';
+      });
+      if (nonNullableTypes.length === 0) {
+        console.log(`[TypeClassifier] Union has no non-nullable types`);
+        return false;
+      }
+      const allAreFunctions = nonNullableTypes.every(t => this.isFunction(t));
+      console.log(`[TypeClassifier] Union type, all non-nullable are functions: ${allAreFunctions}`);
+      return allAreFunctions;
+    }
 
     // Arrow function types: () => void, (arg: string) => number
     if (this.isArrowFunction(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is arrow function`);
       return true;
     }
 
     // Function keyword types: function(arg: string): void
     if (this.isFunctionKeyword(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is function keyword`);
       return true;
     }
 
     // Generic Function type
     if (normalized === 'Function') {
+      console.log(`[TypeClassifier] "${normalized}" is generic Function`);
       return true;
     }
 
     // Named function types (event handlers, callbacks)
     if (this.isEventHandler(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is event handler`);
       return true;
     }
 
     // React-specific types
     if (this.isReactRefType(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is React ref type`);
       return true;
     }
 
     // Vue-specific types
     if (this.isVueEmitOrAction(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is Vue emit/action`);
       return true;
     }
 
     // Svelte-specific types
     if (this.isSvelteStoreOrDispatcher(normalized)) {
+      console.log(`[TypeClassifier] "${normalized}" is Svelte store/dispatcher`);
       return true;
     }
 
-    // Union types - check if any member is a function
-    if (this.isUnionType(normalized)) {
-      const types = this.extractUnionTypes(normalized);
-      return types.some(t => this.isFunction(t));
-    }
-
+    console.log(`[TypeClassifier] "${normalized}" is NOT a function`);
     return false;
   }
 

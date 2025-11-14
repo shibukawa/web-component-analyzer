@@ -20,10 +20,36 @@ export interface HooksAnalyzer {
 export class SWCHooksAnalyzer implements HooksAnalyzer {
   private typeResolver?: TypeResolver;
   private filePath?: string;
+  private sourceCode: string = '';
+  private lineStarts: number[] = [];
 
   constructor(typeResolver?: TypeResolver, filePath?: string) {
     this.typeResolver = typeResolver;
     this.filePath = filePath;
+  }
+
+  /**
+   * Set source code for line number calculation
+   * @param sourceCode - The source code string
+   */
+  setSourceCode(sourceCode: string): void {
+    this.sourceCode = sourceCode;
+    this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Calculate line start positions in source code
+   * @param sourceCode - The source code string
+   * @returns Array of byte positions where each line starts
+   */
+  private calculateLineStarts(sourceCode: string): number[] {
+    const lineStarts = [0]; // First line starts at position 0
+    for (let i = 0; i < sourceCode.length; i++) {
+      if (sourceCode[i] === '\n') {
+        lineStarts.push(i + 1);
+      }
+    }
+    return lineStarts;
   }
 
   /**
@@ -278,10 +304,27 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     // For custom hooks (not in registry), category will be null/undefined
     // We still want to extract them for type classification
 
-    const variables = this.extractVariableNames(declaration.id);
+    // Special handling for useReducer: extract only top-level array elements
+    let variables: string[];
+    if (hookName === 'useReducer' && declaration.id.type === 'ArrayPattern') {
+      console.log('🪝 Using extractUseReducerVariables for useReducer');
+      variables = this.extractUseReducerVariables(declaration.id);
+      console.log('🪝 Extracted useReducer variables:', variables);
+    } else {
+      variables = this.extractVariableNames(declaration.id);
+    }
+    
     const dependencies = this.extractDependencies(callExpression);
     const isReadWritePair = this.isReadWritePair(variables);
     const isFunctionOnly = this.isFunctionOnly(callExpression, variables);
+
+    // Extract position information
+    const position = declaration.span ? {
+      line: this.getLineFromSpan(declaration.span.start),
+      column: this.getColumnFromSpan(declaration.span.start)
+    } : undefined;
+
+    console.log(`[HooksAnalyzer] Extracted hook: ${hookName}, line: ${position?.line}, column: ${position?.column}`);
 
     return {
       hookName,
@@ -290,7 +333,60 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       dependencies,
       isReadWritePair,
       isFunctionOnly,
+      line: position?.line,
+      column: position?.column,
     };
+  }
+  
+  /**
+   * Extract variables from useReducer pattern
+   * For useReducer, we only want the top-level array elements (state, dispatch)
+   * not the destructured properties from state
+   */
+  private extractUseReducerVariables(pattern: swc.ArrayPattern): string[] {
+    console.log('🪝 extractUseReducerVariables: pattern.elements.length =', pattern.elements.length);
+    const variables: string[] = [];
+    
+    for (let i = 0; i < pattern.elements.length; i++) {
+      const element = pattern.elements[i];
+      console.log(`🪝   Element ${i}:`, element ? element.type : 'null');
+      
+      if (!element || element.type === 'RestElement') {
+        continue;
+      }
+      
+      // For each array element, get a representative name
+      if (element.type === 'Identifier') {
+        console.log(`🪝     -> Identifier: ${element.value}`);
+        variables.push(element.value);
+      } else if (element.type === 'ObjectPattern') {
+        // For object destructuring like { count, step, history }
+        // Extract the property names for stateProperties
+        const properties: string[] = [];
+        console.log(`🪝     -> ObjectPattern with ${element.properties.length} properties`);
+        for (const prop of element.properties) {
+          if (prop.type === 'KeyValuePatternProperty' && prop.key.type === 'Identifier') {
+            properties.push(prop.key.value);
+            console.log(`🪝       Property: ${prop.key.value}`);
+          } else if (prop.type === 'AssignmentPatternProperty' && prop.key.type === 'Identifier') {
+            properties.push(prop.key.value);
+            console.log(`🪝       Property: ${prop.key.value}`);
+          }
+        }
+        // Use a synthetic variable name that won't conflict
+        console.log(`🪝     -> Using __reducer_state__ for ObjectPattern`);
+        variables.push('__reducer_state__');
+        // Store properties for later use
+        (element as any).__stateProperties = properties;
+      } else if (element.type === 'ArrayPattern') {
+        // Nested array destructuring (rare)
+        console.log(`🪝     -> ArrayPattern (nested)`);
+        variables.push('__reducer_state__');
+      }
+    }
+    
+    console.log('🪝 extractUseReducerVariables: returning', variables);
+    return variables;
   }
 
   /**
@@ -309,6 +405,12 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
 
     const dependencies = this.extractDependencies(callExpression);
 
+    // Extract position information
+    const position = callExpression.span ? {
+      line: this.getLineFromSpan(callExpression.span.start),
+      column: this.getColumnFromSpan(callExpression.span.start)
+    } : undefined;
+
     return {
       hookName,
       category: category as any, // Allow undefined for custom hooks
@@ -316,6 +418,8 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       dependencies,
       isReadWritePair: false,
       isFunctionOnly: false,
+      line: position?.line,
+      column: position?.column,
     };
   }
 
@@ -529,6 +633,40 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     }
 
     const [stateVar, dispatchVar] = hookInfo.variables;
+    
+    // Extract reducer function name from the useReducer call
+    let reducerName: string | undefined;
+    if (declaration.init && declaration.init.type === 'CallExpression') {
+      const callExpr = declaration.init as swc.CallExpression;
+      if (callExpr.arguments.length > 0 && !callExpr.arguments[0].spread) {
+        const firstArg = callExpr.arguments[0].expression;
+        if (firstArg.type === 'Identifier') {
+          reducerName = firstArg.value;
+          console.log(`🪝 Extracted reducer name: ${reducerName}`);
+        }
+      }
+    }
+    
+    // Extract state properties from destructuring pattern
+    let stateProperties: string[] = [];
+    console.log('🪝 Checking for state properties, declaration.id.type:', declaration.id.type);
+    if (declaration.id.type === 'ArrayPattern' && declaration.id.elements.length > 0) {
+      const firstElement = declaration.id.elements[0];
+      console.log('🪝 First element type:', firstElement ? firstElement.type : 'null');
+      if (firstElement && firstElement.type === 'ObjectPattern') {
+        console.log('🪝 ObjectPattern found, extracting properties...');
+        for (const prop of firstElement.properties) {
+          if (prop.type === 'KeyValuePatternProperty' && prop.key.type === 'Identifier') {
+            stateProperties.push(prop.key.value);
+            console.log(`🪝   -> Property: ${prop.key.value}`);
+          } else if (prop.type === 'AssignmentPatternProperty' && prop.key.type === 'Identifier') {
+            stateProperties.push(prop.key.value);
+            console.log(`🪝   -> Property: ${prop.key.value}`);
+          }
+        }
+        console.log(`🪝 Extracted state properties from destructuring:`, stateProperties);
+      }
+    }
 
     try {
       console.log(`🪝 Classifying useReducer state properties for: ${stateVar}`);
@@ -538,13 +676,25 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       const position = useTypeResolver ? this.getDeclarationPosition(declaration) : null;
       
       if (!useTypeResolver) {
-        console.log(`🪝 No TypeResolver or filePath, cannot extract state properties`);
-        return hookInfo;
+        console.log(`🪝 No TypeResolver or filePath, using destructuring properties:`, stateProperties);
+        return {
+          ...hookInfo,
+          stateProperties: stateProperties.length > 0 ? stateProperties : undefined,
+          stateVariable: stateVar,
+          dispatchVariable: dispatchVar,
+          reducerName
+        };
       }
       
       if (!position) {
-        console.log(`🪝 Could not determine position, cannot extract state properties`);
-        return hookInfo;
+        console.log(`🪝 Could not determine position, using destructuring properties:`, stateProperties);
+        return {
+          ...hookInfo,
+          stateProperties: stateProperties.length > 0 ? stateProperties : undefined,
+          stateVariable: stateVar,
+          dispatchVariable: dispatchVar,
+          reducerName
+        };
       }
 
       // Query the type of the state variable
@@ -559,32 +709,53 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       });
 
       if (typeResult.error || !typeResult.typeString) {
-        console.log(`🪝 Failed to get type for ${stateVar}:`, typeResult.error);
-        return hookInfo;
+        console.log(`🪝 Failed to get type for ${stateVar}:`, typeResult.error, ', using destructuring properties:', stateProperties);
+        return {
+          ...hookInfo,
+          stateProperties: stateProperties.length > 0 ? stateProperties : undefined,
+          stateVariable: stateVar,
+          dispatchVariable: dispatchVar,
+          reducerName
+        };
       }
 
       console.log(`🪝 State type for ${stateVar}:`, typeResult.typeString);
 
       // Extract property names from the state type
-      const stateProperties = this.extractPropertiesFromType(typeResult.typeString);
+      const statePropertiesFromType = this.extractPropertiesFromType(typeResult.typeString);
       
-      if (stateProperties.length === 0) {
-        console.log(`🪝 No properties found in state type`);
-        return hookInfo;
+      if (statePropertiesFromType.length === 0) {
+        console.log(`🪝 No properties found in state type, using destructuring properties:`, stateProperties);
+        // Fall back to properties extracted from destructuring
+        return {
+          ...hookInfo,
+          stateProperties: stateProperties.length > 0 ? stateProperties : undefined,
+          stateVariable: stateVar,
+          dispatchVariable: dispatchVar,
+          reducerName
+        };
       }
 
-      console.log(`🪝 State properties:`, stateProperties);
+      console.log(`🪝 State properties from TypeResolver:`, statePropertiesFromType);
 
       // Return updated hook info with state properties
       return {
         ...hookInfo,
-        stateProperties, // Array of property names
+        stateProperties: statePropertiesFromType, // Array of property names
         stateVariable: stateVar,
-        dispatchVariable: dispatchVar
+        dispatchVariable: dispatchVar,
+        reducerName
       };
     } catch (error) {
       console.error('Failed to classify useReducer state properties:', error);
-      return hookInfo;
+      // Return with state properties from destructuring even if type resolution fails
+      return {
+        ...hookInfo,
+        stateProperties: stateProperties.length > 0 ? stateProperties : undefined,
+        stateVariable: stateVar,
+        dispatchVariable: dispatchVar,
+        reducerName
+      };
     }
   }
 
@@ -674,14 +845,46 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
   private getDeclarationPosition(declaration: swc.VariableDeclarator): { line: number; character: number } | null {
     // SWC provides span information
     if (declaration.span) {
-      // Convert byte offset to line/character (approximate)
-      // For now, we'll use a simple approach
-      return {
-        line: 0, // Will need to calculate from span
-        character: declaration.span.start
-      };
+      const line = this.getLineFromSpan(declaration.span.start);
+      const character = this.getColumnFromSpan(declaration.span.start);
+      return { line, character };
     }
     return null;
+  }
+
+  /**
+   * Get line number from span position
+   * @param spanStart - Span start position (byte offset)
+   * @returns Line number (1-based)
+   */
+  private getLineFromSpan(spanStart: number): number {
+    if (this.lineStarts.length === 0) {
+      return 1; // Default to line 1 if no source code
+    }
+
+    // Find the line number: lineStarts[i] is the start of line (i+1)
+    for (let i = this.lineStarts.length - 1; i >= 0; i--) {
+      if (spanStart >= this.lineStarts[i]) {
+        return i + 1;
+      }
+    }
+    
+    return 1;
+  }
+
+  /**
+   * Get column number from span position
+   * @param spanStart - Span start position (byte offset)
+   * @returns Column number (0-based)
+   */
+  private getColumnFromSpan(spanStart: number): number {
+    if (this.lineStarts.length === 0) {
+      return 0; // Default to column 0 if no source code
+    }
+
+    const line = this.getLineFromSpan(spanStart);
+    const lineStartPos = this.lineStarts[line - 1];
+    return spanStart - lineStartPos;
   }
 
   /**

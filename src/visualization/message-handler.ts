@@ -9,7 +9,8 @@ export type WebviewMessageType =
   | 'nodeSelected'
   | 'layoutComplete'
   | 'navigateToCode'
-  | 'retry';
+  | 'retry'
+  | 'showMessage';
 
 /**
  * Base message structure
@@ -73,6 +74,17 @@ export interface RetryMessage extends WebviewMessage {
 }
 
 /**
+ * Show message - display a message to the user
+ */
+export interface ShowMessageMessage extends WebviewMessage {
+  type: 'showMessage';
+  data: {
+    message: string;
+    level: 'info' | 'warning' | 'error';
+  };
+}
+
+/**
  * Union type of all specific message types
  */
 export type TypedWebviewMessage = 
@@ -81,7 +93,8 @@ export type TypedWebviewMessage =
   | NodeSelectedMessage
   | LayoutCompleteMessage
   | NavigateToCodeMessage
-  | RetryMessage;
+  | RetryMessage
+  | ShowMessageMessage;
 
 /**
  * Message handler for webview communication
@@ -98,6 +111,7 @@ export class MessageHandler {
   private layoutCompleteHandlers: Array<() => void> = [];
   private navigateToCodeHandlers: Array<(message: NavigateToCodeMessage) => void> = [];
   private retryHandlers: Array<() => void> = [];
+  private showMessageHandlers: Array<(message: ShowMessageMessage) => void> = [];
 
   /**
    * Validate that a message has the required structure
@@ -120,7 +134,8 @@ export class MessageHandler {
       'nodeSelected',
       'layoutComplete',
       'navigateToCode',
-      'retry'
+      'retry',
+      'showMessage'
     ];
 
     return validTypes.includes(message.type);
@@ -162,6 +177,10 @@ export class MessageHandler {
 
       case 'retry':
         this.handleRetry();
+        break;
+
+      case 'showMessage':
+        this.handleShowMessage(message as ShowMessageMessage);
         break;
 
       default:
@@ -224,6 +243,15 @@ export class MessageHandler {
   }
 
   /**
+   * Register handler for show message messages
+   * 
+   * @param handler - Function to call when message should be shown
+   */
+  onShowMessage(handler: (message: ShowMessageMessage) => void): void {
+    this.showMessageHandlers.push(handler);
+  }
+
+  /**
    * Handle ready message
    */
   private handleReady(): void {
@@ -264,6 +292,13 @@ export class MessageHandler {
    */
   private handleRetry(): void {
     this.retryHandlers.forEach(handler => handler());
+  }
+
+  /**
+   * Handle show message
+   */
+  private handleShowMessage(message: ShowMessageMessage): void {
+    this.showMessageHandlers.forEach(handler => handler(message));
   }
 
   /**

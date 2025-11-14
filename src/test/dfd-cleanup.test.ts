@@ -84,7 +84,7 @@ suite('DFD Cleanup Function Test Suite', () => {
       props: [],
       hooks: [],
       processes,
-      jsxOutput: { simplified: '', placeholders: [] }
+      jsxOutput: { simplified: '', placeholders: [], elements: [] }
     };
 
     const dfd = dfdBuilder.build(analysis);
@@ -142,7 +142,7 @@ suite('DFD Cleanup Function Test Suite', () => {
       props: [],
       hooks: [],
       processes,
-      jsxOutput: { simplified: '', placeholders: [] }
+      jsxOutput: { simplified: '', placeholders: [], elements: [] }
     };
 
     const dfd = dfdBuilder.build(analysis);
@@ -209,7 +209,7 @@ suite('DFD Cleanup Function Test Suite', () => {
       props: [],
       hooks: [],
       processes,
-      jsxOutput: { simplified: '', placeholders: [] }
+      jsxOutput: { simplified: '', placeholders: [], elements: [] }
     };
 
     const dfd = dfdBuilder.build(analysis);
