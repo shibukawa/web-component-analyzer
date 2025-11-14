@@ -26,13 +26,10 @@ jobs:
           cache: 'pnpm'
       
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       
-      - name: Build analyzer
-        run: pnpm --filter @web-component-analyzer/analyzer run build
-      
-      - name: Build web
-        run: pnpm --filter @web-component-analyzer/web run build
+      - name: Build all packages
+        run: pnpm run build
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
