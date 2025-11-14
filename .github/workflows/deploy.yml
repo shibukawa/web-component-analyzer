@@ -28,14 +28,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
-      - name: Build analyzer package first
-        run: |
-          cd packages/analyzer
-          pnpm run build
-          cd ../..
+      - name: Build analyzer package
+        run: pnpm --filter @web-component-analyzer/analyzer run build
       
       - name: Verify analyzer build
-        run: ls -la packages/analyzer/dist/
+        run: |
+          if [ -d "packages/analyzer/dist" ]; then
+            echo "✓ Analyzer built successfully"
+            ls -la packages/analyzer/dist/
+          else
+            echo "✗ Build failed - dist folder not found"
+            exit 1
+          fi
       
       - name: Build web package
         run: pnpm --filter @web-component-analyzer/web run build

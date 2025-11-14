@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc",
+    "build:clean": "tsc --build --clean && tsc --build",
     "dev": "tsc --watch",
     "lint": "eslint src"
   },
