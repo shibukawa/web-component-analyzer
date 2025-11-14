@@ -1,0 +1,39 @@
+// See https://go.microsoft.com/fwlink/?LinkId=733558
+// for the documentation about the tasks.json format
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "watch analyzer",
+			"type": "shell",
+			"command": "pnpm",
+			"args": ["--filter", "@web-component-analyzer/analyzer", "run", "dev"],
+			"isBackground": true,
+			"problemMatcher": "$tsc-watch",
+			"presentation": {
+				"reveal": "never",
+				"group": "watchers"
+			}
+		},
+		{
+			"label": "watch extension",
+			"type": "npm",
+			"script": "watch",
+			"problemMatcher": "$tsc-watch",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "never",
+				"group": "watchers"
+			}
+		},
+		{
+			"label": "watch",
+			"dependsOn": ["watch analyzer", "watch extension"],
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

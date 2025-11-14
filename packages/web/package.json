@@ -1,0 +1,27 @@
+{
+  "name": "@web-component-analyzer/web",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@web-component-analyzer/analyzer": "workspace:*",
+    "mermaid": "^11.12.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.36.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.0.11"
+  }
+}
