@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+
+# Auto-generated type definitions
+src/config/type-definitions.ts

@@ -115,6 +115,8 @@ pnpm run dev
 
 The app will be available at `http://localhost:5173`
 
+**Note:** The `dev` script automatically extracts TypeScript type definitions from npm packages before starting Vite. The generated file `src/config/type-definitions.ts` is auto-generated and should not be edited manually.
+
 ### Build
 
 ```bash
@@ -123,6 +125,90 @@ pnpm run build
 ```
 
 Output will be in `dist/` directory, ready for deployment to GitHub Pages.
+
+**Note:** The `prebuild` script automatically runs before building to ensure type definitions are up-to-date.
+
+### Type Definitions
+
+The Monaco Editor provides accurate TypeScript IntelliSense and type checking for popular frontend libraries through an extensible type definition system. Type definitions are extracted from npm packages at build time and bundled into the application, eliminating the need for runtime CDN fetches.
+
+#### How It Works
+
+1. **Configuration** (`src/config/type-config.json`): Declares which libraries to support
+2. **Build-Time Extraction** (`scripts/extract-types.ts`): Extracts `.d.ts` files from `node_modules`
+3. **Bundled Output** (`src/config/type-definitions.ts`): Auto-generated file with all type definitions
+4. **Runtime Registration** (`src/utils/type-registry.ts`): Registers types with Monaco on initialization
+
+#### Currently Supported Libraries
+
+- **React** - Full React 18+ type definitions including hooks, JSX, and runtime
+- **SWR** - Data fetching library with React hooks
+
+#### Adding New Library Support
+
+To add type definitions for a new library:
+
+1. **Install the type package:**
+   ```bash
+   pnpm add -D @types/library-name
+   # or if the package includes types:
+   pnpm add library-name
+   ```
+
+2. **Add configuration** to `src/config/type-config.json`:
+   ```json
+   {
+     "name": "library-name",
+     "packageName": "@types/library-name",
+     "entryPoint": "index.d.ts",
+     "virtualPath": "file:///node_modules/@types/library-name/index.d.ts",
+     "enabled": true,
+     "dependencies": []
+   }
+   ```
+
+3. **Extract and test:**
+   ```bash
+   pnpm run extract-types
+   pnpm run dev
+   ```
+
+4. **Verify** in the editor that imports work without type errors
+
+For detailed instructions, see [scripts/README.md](./scripts/README.md).
+
+#### Manual Type Extraction
+
+To manually regenerate type definitions:
+
+```bash
+pnpm run extract-types
+
+# With verbose logging:
+pnpm run extract-types -- --verbose
+
+# Custom paths:
+pnpm run extract-types -- --config path/to/config.json --output path/to/output.ts
+```
+
+#### Configuration Schema
+
+Each library in `type-config.json` requires:
+
+- `name`: Unique identifier (e.g., "react")
+- `packageName`: npm package name (e.g., "@types/react")
+- `entryPoint`: Main `.d.ts` file (e.g., "index.d.ts")
+- `virtualPath`: Monaco virtual path (e.g., "file:///node_modules/@types/react/index.d.ts")
+- `enabled`: Whether to include in bundle
+- `additionalFiles`: (Optional) Extra `.d.ts` files to include
+- `dependencies`: (Optional) Libraries that must load first
+
+#### Performance Notes
+
+- Type definitions are bundled at build time (no runtime fetching)
+- Registration happens during Monaco initialization (~50-200ms for 2-3 libraries)
+- Bundle size impact: ~500KB for React, ~100KB for SWR
+- Only enabled libraries are included in the bundle
 
 ### Linting
 

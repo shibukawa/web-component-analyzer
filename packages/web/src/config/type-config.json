@@ -1,0 +1,25 @@
+{
+  "libraries": [
+    {
+      "name": "react",
+      "packageName": "@types/react",
+      "entryPoint": "index.d.ts",
+      "virtualPath": "file:///node_modules/@types/react/index.d.ts",
+      "enabled": true,
+      "additionalFiles": [
+        "global.d.ts",
+        "jsx-runtime.d.ts",
+        "jsx-dev-runtime.d.ts"
+      ],
+      "dependencies": []
+    },
+    {
+      "name": "swr",
+      "packageName": "swr",
+      "entryPoint": "dist/index/index.d.ts",
+      "virtualPath": "file:///node_modules/swr/dist/index/index.d.ts",
+      "enabled": true,
+      "dependencies": ["react"]
+    }
+  ]
+}

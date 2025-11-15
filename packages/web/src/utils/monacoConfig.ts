@@ -17,7 +17,7 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
     if (label === 'html' || label === 'handlebars' || label === 'razor') {
       return new htmlWorker();
     }
-    if (label === 'typescript' || label === 'javascript') {
+    if (label === 'typescript' || label === 'javascript' || label === 'typescriptreact' || label === 'javascriptreact') {
       return new tsWorker();
     }
     return new editorWorker();
@@ -26,25 +26,8 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 // Configure Monaco Editor languages
 export function configureMonacoLanguages() {
-  // TypeScript/JSX is already configured by default in Monaco
-  // We just need to set up JSX/TSX support
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    jsx: monaco.languages.typescript.JsxEmit.React,
-    target: monaco.languages.typescript.ScriptTarget.ES2020,
-    allowNonTsExtensions: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
-    noEmit: true,
-    esModuleInterop: true,
-    allowJs: true,
-    typeRoots: ['node_modules/@types'],
-  });
-
-  // Disable diagnostics for faster editing experience
-  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-    noSemanticValidation: false,
-    noSyntaxValidation: false,
-  });
+  // TypeScript/JSX configuration is handled in monaco-types.ts
+  // This function only sets up Vue and Svelte language support
 
   // Register Vue language if not already registered
   if (!monaco.languages.getLanguages().some(lang => lang.id === 'vue')) {

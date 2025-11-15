@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
+import { addMonacoTypes } from '../utils/monaco-types';
 
 interface MonacoEditorProps {
   value: string;
@@ -15,12 +16,37 @@ export function MonacoEditor({ value, onChange, language, theme }: MonacoEditorP
 
   // Initialize editor
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {return;}
+
+    // Initialize type definitions before creating the editor
+    addMonacoTypes();
+
+    // Determine file URI based on language
+    const getFileUri = (lang: string) => {
+      switch (lang) {
+        case 'typescript':
+          return monaco.Uri.parse('file:///component.tsx');
+        case 'vue':
+          return monaco.Uri.parse('file:///component.vue');
+        case 'svelte':
+          return monaco.Uri.parse('file:///component.svelte');
+        default:
+          return monaco.Uri.parse('file:///component.tsx');
+      }
+    };
+
+    // Create model with proper file URI and language
+    // For TypeScript, use 'typescript' language mode with .tsx file extension
+    // Monaco will automatically recognize JSX based on the file extension
+    const model = monaco.editor.createModel(
+      value,
+      language === 'typescript' ? 'typescript' : language,
+      getFileUri(language)
+    );
 
     // Create editor instance
     editorRef.current = monaco.editor.create(containerRef.current, {
-      value,
-      language: language === 'typescript' ? 'typescript' : language,
+      model,
       theme,
       automaticLayout: true,
       minimap: { enabled: false },
@@ -45,7 +71,9 @@ export function MonacoEditor({ value, onChange, language, theme }: MonacoEditorP
     // Cleanup
     return () => {
       disposable.dispose();
+      const model = editorRef.current?.getModel();
       editorRef.current?.dispose();
+      model?.dispose();
       editorRef.current = null;
     };
   }, []); // Only run once on mount
