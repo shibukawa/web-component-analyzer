@@ -302,7 +302,7 @@ export class ConditionalStructureExtractor {
   /**
    * Extract condition expression with variables
    */
-  private extractConditionExpression(expr: swc.Expression): ConditionExpression {
+  extractConditionExpression(expr: swc.Expression): ConditionExpression {
     const variables = this.extractConditionVariables(expr);
     const expression = this.expressionToString(expr);
 
@@ -659,7 +659,7 @@ export class ConditionalStructureExtractor {
   /**
    * Get line number from span position
    */
-  private getLineFromSpan(spanStart: number): number {
+  getLineFromSpan(spanStart: number): number {
     if (this.lineStarts.length === 0) {
       return 1;
     }
@@ -677,7 +677,7 @@ export class ConditionalStructureExtractor {
   /**
    * Get column number from span position
    */
-  private getColumnFromSpan(spanStart: number): number {
+  getColumnFromSpan(spanStart: number): number {
     if (this.lineStarts.length === 0) {
       console.log(`⚠️ getColumnFromSpan: lineStarts is empty, returning 0`);
       return 0;

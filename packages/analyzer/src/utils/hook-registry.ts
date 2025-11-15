@@ -3,6 +3,8 @@
  * Used by the Hooks Analyzer to classify hook calls in components
  */
 
+import { LibraryAdapter, HookAdapter } from './library-adapter-types.js';
+
 export type HookCategory =
   | 'state'
   | 'effect'
@@ -16,15 +18,57 @@ export type HookCategory =
 export interface HookRegistry {
   getHookCategory(hookName: string): HookCategory | null;
   registerHook(hookName: string, category: HookCategory): void;
+  
+  // Library adapter methods
+  registerLibraryAdapter(adapter: LibraryAdapter): void;
+  getLibraryAdapter(libraryName: string, hookName: string): HookAdapter | null;
+  activateLibrary(libraryName: string): void;
+  deactivateLibrary(libraryName: string): void;
+  getActiveLibraries(): string[];
 }
 
 class HookRegistryImpl implements HookRegistry {
   private registry: Map<string, HookCategory>;
+  private libraryAdapters: Map<string, LibraryAdapter>;
+  private hookAdapterLookup: Map<string, Map<string, HookAdapter>>;
+  private activeLibraries: Set<string>;
+  private adaptersLoaded: boolean = false;
 
   constructor() {
     this.registry = new Map();
+    this.libraryAdapters = new Map();
+    this.hookAdapterLookup = new Map();
+    this.activeLibraries = new Set();
     this.initializeBuiltInHooks();
     this.initializeThirdPartyHooks();
+  }
+
+  /**
+   * Ensure library adapters are loaded (lazy initialization)
+   */
+  private ensureAdaptersLoaded(): void {
+    if (this.adaptersLoaded) {
+      return;
+    }
+
+    try {
+      console.log('📚 HookRegistry: Loading default library adapters (lazy init)...');
+      // Use dynamic import to avoid circular dependency
+      const { loadDefaultLibraryAdapters } = require('./library-adapters');
+      const config = loadDefaultLibraryAdapters();
+      console.log(`📚 HookRegistry: Loaded ${config.libraries.length} library adapters`);
+      
+      for (const adapter of config.libraries) {
+        console.log(`📚 HookRegistry: Registering adapter for ${adapter.libraryName}`);
+        this.registerLibraryAdapter(adapter);
+      }
+      
+      this.adaptersLoaded = true;
+      console.log('📚 HookRegistry: ✅ All adapters registered successfully');
+    } catch (error) {
+      console.error('📚 HookRegistry: ❌ Failed to load default adapters:', error);
+      this.adaptersLoaded = true; // Mark as loaded to avoid repeated attempts
+    }
   }
 
   /**
@@ -156,11 +200,75 @@ class HookRegistryImpl implements HookRegistry {
 
   /**
    * Get the category of a hook by its name
+   * 
+   * This method prioritizes adapter-based classification over category-based classification.
+   * If the hook is found in any active library adapter, it returns the appropriate category
+   * based on the adapter's DFD element types. Otherwise, it falls back to the category registry.
+   * 
    * @param hookName The name of the hook (e.g., 'useState', 'useSWR')
    * @returns The hook category or null if not registered
    */
   getHookCategory(hookName: string): HookCategory | null {
+    // First, check if this hook exists in any active library adapter
+    for (const libraryName of this.activeLibraries) {
+      const adapter = this.getLibraryAdapter(libraryName, hookName);
+      if (adapter) {
+        // Hook found in an active library adapter
+        // Derive category from the adapter's return pattern
+        return this.deriveCategoryFromAdapter(adapter);
+      }
+    }
+
+    // Fall back to category-based classification
     return this.registry.get(hookName) ?? null;
+  }
+
+  /**
+   * Derive a hook category from a library adapter
+   * 
+   * This method analyzes the adapter's return pattern to determine the most appropriate
+   * category. It prioritizes based on the DFD element types in the mappings.
+   * 
+   * @param adapter The hook adapter
+   * @returns The derived hook category
+   */
+  private deriveCategoryFromAdapter(adapter: HookAdapter): HookCategory {
+    const mappings = adapter.returnPattern.mappings;
+
+    // Check for data fetching patterns (external-entity-input with loading/error states)
+    const hasExternalInput = mappings.some(m => m.dfdElementType === 'external-entity-input');
+    const hasLoadingState = mappings.some(m => m.metadata?.isLoading);
+    const hasErrorState = mappings.some(m => m.metadata?.isError);
+    
+    if (hasExternalInput && (hasLoadingState || hasErrorState)) {
+      return 'data-fetching';
+    }
+
+    // Check for mutation patterns (process with mutation metadata)
+    const hasMutation = mappings.some(m => m.metadata?.isMutation);
+    if (hasMutation) {
+      return 'data-fetching';
+    }
+
+    // Check for state management patterns (data-store elements)
+    const hasDataStore = mappings.some(m => m.dfdElementType === 'data-store');
+    if (hasDataStore) {
+      return 'state-management';
+    }
+
+    // Check for process-heavy patterns
+    const hasProcess = mappings.some(m => m.dfdElementType === 'process');
+    if (hasProcess) {
+      return 'effect';
+    }
+
+    // Default to state-management for external inputs
+    if (hasExternalInput) {
+      return 'state-management';
+    }
+
+    // Default fallback
+    return 'state';
   }
 
   /**
@@ -170,6 +278,86 @@ class HookRegistryImpl implements HookRegistry {
    */
   registerHook(hookName: string, category: HookCategory): void {
     this.registry.set(hookName, category);
+  }
+
+  /**
+   * Register a library adapter
+   * @param adapter The library adapter to register
+   */
+  registerLibraryAdapter(adapter: LibraryAdapter): void {
+    // Store the adapter by library name
+    this.libraryAdapters.set(adapter.libraryName, adapter);
+
+    // Build hook lookup map for fast access
+    const hookMap = new Map<string, HookAdapter>();
+    adapter.hooks.forEach(hook => {
+      hookMap.set(hook.hookName, hook);
+    });
+    
+    // Register under the main library name
+    this.hookAdapterLookup.set(adapter.libraryName, hookMap);
+    
+    // Also register under each package pattern
+    // This allows imports like 'swr/mutation' to find adapters registered under 'swr'
+    if (adapter.packagePatterns && adapter.packagePatterns.length > 0) {
+      adapter.packagePatterns.forEach(pattern => {
+        if (pattern !== adapter.libraryName) {
+          console.log(`📚 HookRegistry: Also registering ${adapter.libraryName} hooks under pattern: ${pattern}`);
+          this.hookAdapterLookup.set(pattern, hookMap);
+        }
+      });
+    }
+  }
+
+  /**
+   * Get a library adapter for a specific hook
+   * @param libraryName The name of the library
+   * @param hookName The name of the hook
+   * @returns The hook adapter or null if not found
+   */
+  getLibraryAdapter(libraryName: string, hookName: string): HookAdapter | null {
+    // Ensure adapters are loaded before lookup
+    this.ensureAdaptersLoaded();
+    
+    console.log(`📚 HookRegistry.getLibraryAdapter: ${libraryName} / ${hookName}`);
+    const hookMap = this.hookAdapterLookup.get(libraryName);
+    if (!hookMap) {
+      console.log(`📚   ⚠️ No hook map found for library: ${libraryName}`);
+      console.log(`📚   Available libraries:`, Array.from(this.hookAdapterLookup.keys()));
+      return null;
+    }
+    const adapter = hookMap.get(hookName) || null;
+    if (adapter) {
+      console.log(`📚   ✅ Found adapter for ${hookName}`);
+    } else {
+      console.log(`📚   ⚠️ No adapter found for ${hookName}`);
+      console.log(`📚   Available hooks in ${libraryName}:`, Array.from(hookMap.keys()));
+    }
+    return adapter;
+  }
+
+  /**
+   * Activate a library for the current analysis
+   * @param libraryName The name of the library to activate
+   */
+  activateLibrary(libraryName: string): void {
+    this.activeLibraries.add(libraryName);
+  }
+
+  /**
+   * Deactivate a library
+   * @param libraryName The name of the library to deactivate
+   */
+  deactivateLibrary(libraryName: string): void {
+    this.activeLibraries.delete(libraryName);
+  }
+
+  /**
+   * Get the list of currently active libraries
+   * @returns Array of active library names
+   */
+  getActiveLibraries(): string[] {
+    return Array.from(this.activeLibraries);
   }
 }
 

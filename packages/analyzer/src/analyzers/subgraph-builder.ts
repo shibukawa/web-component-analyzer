@@ -168,6 +168,11 @@ export class SubgraphBuilder {
       return this.buildLoopSubgraph(branch, parentId);
     }
 
+    // Handle early-return pattern (same as logical-and, but with different semantics)
+    if (branch.type === 'early-return') {
+      return this.buildEarlyReturnSubgraph(branch, parentId);
+    }
+
     const results: DFDSubgraph[] = [];
 
     // Handle true branch
@@ -304,6 +309,55 @@ export class SubgraphBuilder {
       }
     }
 
+    return subgraph.elements.length > 0 ? subgraph : null;
+  }
+
+  /**
+   * Build early return subgraph
+   * Early returns are similar to logical-and but represent if (condition) { return <JSX>; }
+   */
+  private buildEarlyReturnSubgraph(
+    branch: ConditionalBranch,
+    parentId: string
+  ): DFDSubgraph | null {
+    if (!branch.trueBranch) {
+      return null;
+    }
+
+    const label = this.generateConditionLabel(branch.condition, true, 'logical-and');
+    console.log(`🏗️   Creating early-return subgraph with label: ${label}`);
+    
+    const subgraph: DFDSubgraph = {
+      id: this.generateSubgraphId(),
+      label,
+      type: 'conditional',
+      condition: branch.condition,
+      elements: [],
+    };
+
+    // Process the JSX content of the early return
+    const processed = this.buildSubgraph(branch.trueBranch, subgraph.id, true);
+    console.log(`🏗️   Processed early-return branch, result:`, processed ? (Array.isArray(processed) ? `array(${processed.length})` : 'single') : 'null');
+    
+    if (processed) {
+      if (Array.isArray(processed)) {
+        subgraph.elements.push(...processed);
+      } else {
+        subgraph.elements.push(processed);
+      }
+    }
+
+    console.log(`🏗️   Early-return subgraph ${subgraph.id} has ${subgraph.elements.length} elements`);
+    
+    // If no elements were included, try again without dependency filtering
+    if (subgraph.elements.length === 0 && branch.trueBranch.type === 'element') {
+      console.log(`🏗️   ⚠️ Early-return subgraph is empty, including element without dependency check`);
+      const elementNode = this.buildElementNode(branch.trueBranch as JSXElementStructure, subgraph.id);
+      if (elementNode) {
+        subgraph.elements.push(elementNode);
+      }
+    }
+    
     return subgraph.elements.length > 0 ? subgraph : null;
   }
 

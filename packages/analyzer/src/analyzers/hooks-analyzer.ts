@@ -6,12 +6,27 @@ import * as swc from '@swc/core';
 import { HookInfo, HookCategory } from '../parser/types';
 import { hookRegistry } from '../utils/hook-registry';
 import { TypeResolver, TypeQueryRequest } from '../services/type-resolver';
+import { HookAdapter, ReturnValuePattern, ReturnValueMapping, DFDElementType } from '../utils/library-adapter-types';
 
 /**
  * Hooks Analyzer interface
  */
 export interface HooksAnalyzer {
   analyzeHooks(body: swc.ModuleItem[] | swc.Statement[]): Promise<HookInfo[]>;
+}
+
+/**
+ * Enriched Hook Information with library adapter metadata
+ * Extends HookInfo with library-specific information
+ */
+export interface EnrichedHookInfo extends HookInfo {
+  /** Name of the library this hook belongs to (e.g., 'swr', '@tanstack/react-query') */
+  libraryName?: string;
+  /** Mappings from return value variables to DFD element types and metadata */
+  returnValueMappings?: Map<string, {
+    dfdElementType: 'external-entity-input' | 'data-store' | 'process';
+    metadata?: Record<string, any>;
+  }>;
 }
 
 /**
@@ -22,6 +37,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
   private filePath?: string;
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private activeLibraries: string[] = [];
 
   constructor(typeResolver?: TypeResolver, filePath?: string) {
     this.typeResolver = typeResolver;
@@ -35,6 +51,15 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
   setSourceCode(sourceCode: string): void {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Set active libraries for the current analysis
+   * @param libraries - Array of library names that are imported in the current file
+   */
+  setActiveLibraries(libraries: string[]): void {
+    this.activeLibraries = libraries;
+    console.log('🪝 Active libraries set:', libraries);
   }
 
   /**
@@ -60,6 +85,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
   async analyzeHooks(body: swc.ModuleItem[] | swc.Statement[]): Promise<HookInfo[]> {
     console.log('🪝 Hooks Analyzer: Starting analysis');
     console.log('🪝 Body items count:', body.length);
+    console.log('🪝 Active libraries:', this.activeLibraries);
     
     // Log each item type individually for better visibility
     const itemTypes = body.map(item => item.type);
@@ -78,10 +104,37 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
 
     console.log('🪝 Hooks found:', hooksWithDeclarations.length);
     
-    // Classify hooks if TypeResolver is available
+    // Classify hooks with library adapters or TypeResolver
     const hooks: HookInfo[] = [];
+    console.log(`🪝 ========================================`);
+    console.log(`🪝 Classifying ${hooksWithDeclarations.length} hooks`);
+    console.log(`🪝 Active libraries:`, this.activeLibraries);
+    
     for (const { hook, declaration } of hooksWithDeclarations) {
+      console.log(`🪝 Processing hook: ${hook.hookName}`);
+      console.log(`🪝   Variables:`, hook.variables);
+      console.log(`🪝   Arguments:`, hook.arguments);
+      console.log(`🪝   Dependencies:`, hook.dependencies);
+      
       if (declaration) {
+        // First, try to apply library adapter if active libraries are present
+        if (this.activeLibraries.length > 0) {
+          console.log(`🪝   Attempting to apply library adapter...`);
+          const enrichedHook = this.applyLibraryAdapter(hook, declaration);
+          if (enrichedHook) {
+            console.log(`🪝   ✅ Applied library adapter for ${hook.hookName}`);
+            console.log(`🪝      Library: ${enrichedHook.libraryName}`);
+            console.log(`🪝      Mappings:`, enrichedHook.returnValueMappings);
+            hooks.push(enrichedHook);
+            continue;
+          } else {
+            console.log(`🪝   ⚠️ No library adapter found for ${hook.hookName}`);
+          }
+        } else {
+          console.log(`🪝   ⚠️ No active libraries, skipping adapter application`);
+        }
+        
+        // Fall back to existing classification logic
         // Check if this is useContext - classify with TypeResolver
         if (hook.hookName === 'useContext') {
           const classifiedHook = await this.classifyUseContextReturnValues(hook, declaration);
@@ -107,6 +160,9 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     if (hooks.length > 0) {
       hooks.forEach(h => {
         console.log(`🪝   ✅ ${h.hookName}:`, h.variables);
+        if ((h as EnrichedHookInfo).libraryName) {
+          console.log(`🪝      Library: ${(h as EnrichedHookInfo).libraryName}`);
+        }
       });
     }
 
@@ -333,6 +389,15 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
         }
       }
     }
+    
+    // Extract hook arguments (for API endpoints, query keys, etc.)
+    const hookArguments = this.extractHookArguments(callExpression);
+
+    // Extract argument identifiers (variable names)
+    const argumentIdentifiers = this.extractArgumentIdentifiers(callExpression);
+
+    // Extract type parameter (e.g., "User" from useSWR<User>)
+    const typeParameter = this.extractTypeParameter(callExpression);
 
     // Extract position information
     const position = declaration.span ? {
@@ -340,7 +405,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       column: this.getColumnFromSpan(declaration.span.start)
     } : undefined;
 
-    console.log(`[HooksAnalyzer] Extracted hook: ${hookName}, line: ${position?.line}, column: ${position?.column}`);
+    console.log(`[HooksAnalyzer] Extracted hook: ${hookName}, line: ${position?.line}, column: ${position?.column}, typeParam: ${typeParameter || 'none'}, argIds: ${argumentIdentifiers.join(', ')}`);
 
     return {
       hookName,
@@ -350,6 +415,9 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       isReadWritePair,
       isFunctionOnly,
       initialValue,
+      arguments: hookArguments,
+      argumentIdentifiers,
+      typeParameter,
       line: position?.line,
       column: position?.column,
     };
@@ -485,6 +553,185 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       console.error('Failed to classify custom hook return values:', error);
       return hookInfo;
     }
+  }
+
+  /**
+   * Apply library adapter to a hook call
+   * @param hookInfo - Hook information to enrich
+   * @param declaration - Variable declaration containing the hook call
+   * @returns EnrichedHookInfo with library metadata or null if no adapter found
+   */
+  private applyLibraryAdapter(
+    hookInfo: HookInfo,
+    declaration: swc.VariableDeclarator
+  ): EnrichedHookInfo | null {
+    console.log(`🪝 applyLibraryAdapter: Checking ${this.activeLibraries.length} active libraries for ${hookInfo.hookName}`);
+    
+    // Check each active library for an adapter for this hook
+    for (const libraryName of this.activeLibraries) {
+      console.log(`🪝   Checking library: ${libraryName}`);
+      const adapter = hookRegistry.getLibraryAdapter(libraryName, hookInfo.hookName);
+      
+      if (adapter) {
+        console.log(`🪝   ✅ Found library adapter for ${hookInfo.hookName} from ${libraryName}`);
+        console.log(`🪝      Adapter return pattern type: ${adapter.returnPattern.type}`);
+        console.log(`🪝      Adapter mappings count: ${adapter.returnPattern.mappings.length}`);
+        
+        // Extract return value mappings from the destructuring pattern
+        const returnValueMappings = this.extractReturnValueMappings(declaration.id, adapter);
+        
+        if (returnValueMappings.size === 0) {
+          console.log(`🪝   ⚠️ No return value mappings extracted, skipping adapter`);
+          continue;
+        }
+        
+        console.log(`🪝   ✅ Extracted ${returnValueMappings.size} return value mappings`);
+        returnValueMappings.forEach((value, key) => {
+          console.log(`🪝      ${key} -> ${value.dfdElementType}`);
+        });
+        
+        // Create enriched hook info
+        const enrichedHookInfo: EnrichedHookInfo = {
+          ...hookInfo,
+          libraryName,
+          returnValueMappings
+        };
+        
+        return enrichedHookInfo;
+      } else {
+        console.log(`🪝   ⚠️ No adapter found for ${hookInfo.hookName} in ${libraryName}`);
+      }
+    }
+    
+    console.log(`🪝 ⚠️ No library adapter found for ${hookInfo.hookName} in any active library`);
+    return null;
+  }
+
+  /**
+   * Extract return value mappings from a destructuring pattern using a library adapter
+   * @param pattern - The destructuring pattern (identifier, array, or object)
+   * @param adapter - The hook adapter with return value pattern
+   * @returns Map of variable names to DFD element types and metadata
+   */
+  private extractReturnValueMappings(
+    pattern: swc.Pattern,
+    adapter: HookAdapter
+  ): Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }> {
+    const mappings = new Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }>();
+    const returnPattern = adapter.returnPattern;
+    
+    console.log(`🪝 Extracting return value mappings, pattern type: ${pattern.type}, adapter pattern type: ${returnPattern.type}`);
+    
+    // Handle single identifier (e.g., const data = useSWR(...))
+    if (pattern.type === 'Identifier') {
+      if (returnPattern.type === 'single' && returnPattern.mappings.length > 0) {
+        const mapping = returnPattern.mappings[0];
+        mappings.set(pattern.value, {
+          dfdElementType: mapping.dfdElementType,
+          metadata: mapping.metadata
+        });
+        console.log(`🪝   Single: ${pattern.value} -> ${mapping.dfdElementType}`);
+      }
+    }
+    // Handle array destructuring (e.g., const [data, error] = useSWR(...))
+    else if (pattern.type === 'ArrayPattern') {
+      if (returnPattern.type === 'array') {
+        for (let i = 0; i < pattern.elements.length && i < returnPattern.mappings.length; i++) {
+          const element = pattern.elements[i];
+          if (!element || element.type === 'RestElement') {
+            continue;
+          }
+          
+          const mapping = returnPattern.mappings[i];
+          
+          // Extract variable name from the element
+          if (element.type === 'Identifier') {
+            mappings.set(element.value, {
+              dfdElementType: mapping.dfdElementType,
+              metadata: mapping.metadata
+            });
+            console.log(`🪝   Array[${i}]: ${element.value} -> ${mapping.dfdElementType}`);
+          } else if (element.type === 'ObjectPattern') {
+            // Nested object destructuring in array (rare but possible)
+            const nestedMappings = this.extractObjectPatternMappings(element, returnPattern.mappings);
+            nestedMappings.forEach((value, key) => mappings.set(key, value));
+          }
+        }
+      }
+    }
+    // Handle object destructuring (e.g., const { data, error, isLoading } = useSWR(...))
+    else if (pattern.type === 'ObjectPattern') {
+      if (returnPattern.type === 'object') {
+        const objectMappings = this.extractObjectPatternMappings(pattern, returnPattern.mappings);
+        objectMappings.forEach((value, key) => mappings.set(key, value));
+      }
+    }
+    
+    return mappings;
+  }
+
+  /**
+   * Extract mappings from an object destructuring pattern
+   * @param pattern - The object pattern
+   * @param adapterMappings - The adapter's return value mappings
+   * @returns Map of variable names to DFD element types and metadata
+   */
+  private extractObjectPatternMappings(
+    pattern: swc.ObjectPattern,
+    adapterMappings: ReturnValueMapping[]
+  ): Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }> {
+    const mappings = new Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }>();
+    
+    for (const property of pattern.properties) {
+      if (property.type === 'KeyValuePatternProperty') {
+        const key = property.key;
+        const value = property.value;
+        
+        if (key.type === 'Identifier') {
+          const propertyName = key.value;
+          
+          // Find the corresponding adapter mapping
+          const adapterMapping = adapterMappings.find(m => m.propertyName === propertyName);
+          
+          if (adapterMapping) {
+            // Extract the variable name from the value pattern
+            if (value.type === 'Identifier') {
+              mappings.set(value.value, {
+                dfdElementType: adapterMapping.dfdElementType,
+                metadata: adapterMapping.metadata
+              });
+              console.log(`🪝   Object: ${value.value} (from ${propertyName}) -> ${adapterMapping.dfdElementType}`);
+            } else if (value.type === 'AssignmentPattern' && value.left.type === 'Identifier') {
+              // Handle default values: { data = null }
+              mappings.set(value.left.value, {
+                dfdElementType: adapterMapping.dfdElementType,
+                metadata: adapterMapping.metadata
+              });
+              console.log(`🪝   Object: ${value.left.value} (from ${propertyName}, with default) -> ${adapterMapping.dfdElementType}`);
+            }
+          }
+        }
+      } else if (property.type === 'AssignmentPatternProperty') {
+        const key = property.key;
+        
+        if (key.type === 'Identifier') {
+          const propertyName = key.value;
+          
+          // Find the corresponding adapter mapping
+          const adapterMapping = adapterMappings.find(m => m.propertyName === propertyName);
+          
+          if (adapterMapping) {
+            mappings.set(propertyName, {
+              dfdElementType: adapterMapping.dfdElementType,
+              metadata: adapterMapping.metadata
+            });
+            console.log(`🪝   Object: ${propertyName} -> ${adapterMapping.dfdElementType}`);
+          }
+        }
+      }
+    }
+    
+    return mappings;
   }
 
   /**
@@ -955,6 +1202,94 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     }
 
     return variables;
+  }
+
+  /**
+   * Extract hook arguments for API endpoint detection
+   * Extracts literal values (strings, numbers, booleans) from hook call arguments
+   */
+  private extractHookArguments(callExpression: swc.CallExpression): Array<{ type: string; value?: string | number | boolean }> {
+    const args: Array<{ type: string; value?: string | number | boolean }> = [];
+    
+    for (const arg of callExpression.arguments) {
+      if (arg.spread) {
+        continue;
+      }
+      
+      const expr = arg.expression;
+      
+      // Extract string literals
+      if (expr.type === 'StringLiteral') {
+        args.push({ type: 'string', value: expr.value });
+      }
+      // Extract numeric literals
+      else if (expr.type === 'NumericLiteral') {
+        args.push({ type: 'number', value: expr.value });
+      }
+      // Extract boolean literals
+      else if (expr.type === 'BooleanLiteral') {
+        args.push({ type: 'boolean', value: expr.value });
+      }
+      // Extract template literals (simple ones without expressions)
+      else if (expr.type === 'TemplateLiteral' && expr.expressions.length === 0 && expr.quasis.length === 1) {
+        const quasi = expr.quasis[0];
+        if (quasi.type === 'TemplateElement') {
+          args.push({ type: 'string', value: quasi.cooked || quasi.raw });
+        }
+      }
+      // For other types (identifiers, function calls, etc.), just record the type
+      else {
+        args.push({ type: expr.type });
+      }
+    }
+    
+    return args;
+  }
+
+  /**
+   * Extract argument identifiers (variable names) from hook call
+   */
+  private extractArgumentIdentifiers(callExpression: swc.CallExpression): string[] {
+    const identifiers: string[] = [];
+    
+    for (const arg of callExpression.arguments) {
+      if (arg.spread) {
+        continue;
+      }
+      
+      const expr = arg.expression;
+      
+      // Extract identifiers (variable names)
+      if (expr.type === 'Identifier') {
+        identifiers.push(expr.value);
+      }
+    }
+    
+    return identifiers;
+  }
+
+  /**
+   * Extract type parameter from hook call (e.g., "User" from useSWR<User>)
+   */
+  private extractTypeParameter(callExpression: swc.CallExpression): string | undefined {
+    // Check if the callee has type arguments
+    const callee = callExpression.callee;
+    
+    // Type arguments are on the CallExpression itself in SWC
+    if ('typeArguments' in callExpression && callExpression.typeArguments) {
+      const typeArgs = callExpression.typeArguments as any;
+      if (typeArgs.params && typeArgs.params.length > 0) {
+        const firstTypeParam = typeArgs.params[0];
+        // Try to extract a simple type name
+        if (firstTypeParam.type === 'TsTypeReference' && firstTypeParam.typeName) {
+          if (firstTypeParam.typeName.type === 'Identifier') {
+            return firstTypeParam.typeName.value;
+          }
+        }
+      }
+    }
+    
+    return undefined;
   }
 
   /**

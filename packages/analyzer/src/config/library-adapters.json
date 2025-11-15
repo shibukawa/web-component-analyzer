@@ -1,0 +1,157 @@
+{
+  "libraries": [
+    {
+      "libraryName": "swr",
+      "packagePatterns": ["swr", "swr/mutation"],
+      "hooks": [
+        {
+          "hookName": "useSWR",
+          "returnPattern": {
+            "type": "object",
+            "mappings": [
+              {
+                "propertyName": "data",
+                "dfdElementType": "external-entity-input"
+              },
+              {
+                "propertyName": "error",
+                "dfdElementType": "data-store",
+                "metadata": {
+                  "isError": true
+                }
+              },
+              {
+                "propertyName": "isLoading",
+                "dfdElementType": "data-store",
+                "metadata": {
+                  "isLoading": true
+                }
+              },
+              {
+                "propertyName": "isValidating",
+                "dfdElementType": "data-store"
+              },
+              {
+                "propertyName": "mutate",
+                "dfdElementType": "process",
+                "metadata": {
+                  "isMutation": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hookName": "useSWRMutation",
+          "returnPattern": {
+            "type": "object",
+            "mappings": [
+              {
+                "propertyName": "data",
+                "dfdElementType": "external-entity-input"
+              },
+              {
+                "propertyName": "error",
+                "dfdElementType": "data-store",
+                "metadata": {
+                  "isError": true
+                }
+              },
+              {
+                "propertyName": "trigger",
+                "dfdElementType": "process",
+                "metadata": {
+                  "isMutation": true
+                }
+              },
+              {
+                "propertyName": "isMutating",
+                "dfdElementType": "data-store",
+                "metadata": {
+                  "isLoading": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hookName": "useSWRConfig",
+          "returnPattern": {
+            "type": "object",
+            "mappings": [
+              {
+                "propertyName": "mutate",
+                "dfdElementType": "process",
+                "metadata": {
+                  "isMutation": true,
+                  "isGlobal": true
+                }
+              },
+              {
+                "propertyName": "cache",
+                "dfdElementType": "data-store",
+                "metadata": {
+                  "isCache": true
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "libraryName": "next/navigation",
+      "packagePatterns": ["next/navigation"],
+      "hooks": [
+        {
+          "hookName": "useRouter",
+          "consolidateToHookNode": true,
+          "labelSuffix": "\n<Next.js>",
+          "externalEntity": {
+            "name": "URL: Output",
+            "type": "output"
+          },
+          "returnPattern": {
+            "type": "absorb"
+          }
+        },
+        {
+          "hookName": "usePathname",
+          "consolidateToHookNode": true,
+          "labelSuffix": "\n<Next.js>",
+          "externalEntity": {
+            "name": "URL: Input",
+            "type": "input"
+          },
+          "returnPattern": {
+            "type": "absorb"
+          }
+        },
+        {
+          "hookName": "useSearchParams",
+          "consolidateToHookNode": true,
+          "labelSuffix": "\n<Next.js>",
+          "externalEntity": {
+            "name": "URL: Input",
+            "type": "input"
+          },
+          "returnPattern": {
+            "type": "absorb"
+          }
+        },
+        {
+          "hookName": "useParams",
+          "consolidateToHookNode": true,
+          "labelSuffix": "\n<Next.js>",
+          "externalEntity": {
+            "name": "URL: Input",
+            "type": "input"
+          },
+          "returnPattern": {
+            "type": "absorb"
+          }
+        }
+      ]
+    }
+  ]
+}

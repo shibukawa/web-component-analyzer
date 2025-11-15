@@ -12,8 +12,9 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "build:clean": "tsc --build --clean && tsc --build",
+    "build": "tsc && npm run copy:config",
+    "build:clean": "tsc --build --clean && tsc --build && npm run copy:config",
+    "copy:config": "mkdir -p dist/config && cp src/config/library-adapters.json dist/config/",
     "dev": "tsc --watch",
     "lint": "eslint src"
   },

@@ -3,12 +3,14 @@
  */
 
 import type * as swc from '@swc/core';
-import { ComponentAnalysis, JSXInfo, ProcessInfo } from './types';
+import { ComponentAnalysis, JSXInfo, ProcessInfo, JSXStructure, ConditionalBranch } from './types';
 import { SWCPropsAnalyzer } from '../analyzers/props-analyzer';
 import { SWCHooksAnalyzer } from '../analyzers/hooks-analyzer';
 import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
 import { ConditionalStructureExtractor } from '../analyzers/conditional-extractor';
 import { TypeResolver } from '../services/type-resolver';
+import { createImportDetector } from '../analyzers/import-detector';
+import { hookRegistry } from '../utils/hook-registry';
 
 /**
  * AST Analyzer interface for analyzing React components
@@ -47,6 +49,31 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
       this.propsAnalyzer.setSourceCode(sourceCode);
     }
 
+    // Detect imports and activate library adapters
+    console.log('🔍 ========================================');
+    console.log('🔍 AST Analyzer: Detecting imports...');
+    const importDetector = createImportDetector();
+    const imports = importDetector.detectImports(module);
+    console.log('🔍 AST Analyzer: Imports detected:', imports.length);
+    imports.forEach(imp => {
+      console.log(`🔍   - ${imp.source}:`, imp.imports.map(i => i.name).join(', '));
+    });
+    
+    // Get registered libraries from hook registry
+    const registeredLibraries = new Set<string>();
+    // We need to get all registered library names from the hook registry
+    // For now, we'll check against a known list of libraries that have adapters
+    // This will be populated when library adapters are loaded
+    const knownLibraries = ['swr', 'swr/mutation', '@tanstack/react-query', 'react-router-dom', 'next/navigation', 
+                            'react-hook-form', 'zustand', 'jotai', 'mobx-react-lite', 
+                            '@apollo/client', '@reduxjs/toolkit/query', '@trpc/react-query'];
+    knownLibraries.forEach(lib => registeredLibraries.add(lib));
+    console.log('🔍 AST Analyzer: Registered libraries:', Array.from(registeredLibraries));
+    
+    const activeLibraries = importDetector.getActiveLibraries(imports, registeredLibraries);
+    console.log('🔍 AST Analyzer: Active libraries:', activeLibraries);
+    console.log('🔍 ========================================');
+
     // Find React component in the module
     const componentInfo = this.findReactComponent(module);
     
@@ -63,13 +90,24 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     const props = await this.propsAnalyzer.analyzeProps(module, filePath, name);
 
     // Extract hooks using Hooks Analyzer (with type resolution if available)
+    console.log('🔍 ========================================');
     console.log('🔍 AST Analyzer: Calling hooks analyzer...');
     const hooksAnalyzer = new SWCHooksAnalyzer(this.typeResolver, filePath);
     if (sourceCode) {
       hooksAnalyzer.setSourceCode(sourceCode);
     }
+    // Pass active libraries to hooks analyzer
+    console.log('🔍 AST Analyzer: Setting active libraries:', activeLibraries);
+    hooksAnalyzer.setActiveLibraries(activeLibraries);
     const hooks = await hooksAnalyzer.analyzeHooks(body);
     console.log('🔍 AST Analyzer: Hooks returned:', hooks.length);
+    hooks.forEach(hook => {
+      console.log(`🔍   - ${hook.hookName}:`, hook.variables);
+      if ((hook as any).libraryName) {
+        console.log(`🔍     Library: ${(hook as any).libraryName}`);
+      }
+    });
+    console.log('🔍 ========================================');
 
     // Extract processes using Process Analyzer
     if (sourceCode) {
@@ -550,8 +588,24 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
    * Find JSX in block statement
    */
   private findJSXInBlockStatement(body: swc.BlockStatement): JSXInfo | null {
+    const earlyReturns: Array<{ condition: swc.Expression; jsx: swc.JSXElement | swc.JSXFragment }> = [];
+    let finalReturn: swc.JSXElement | swc.JSXFragment | null = null;
+
     for (const statement of body.stmts) {
-      if (statement.type === 'ReturnStatement' && statement.argument) {
+      // Check for early return pattern: if (condition) { return <JSX>; }
+      if (statement.type === 'IfStatement') {
+        const ifStmt = statement as swc.IfStatement;
+        const earlyReturnJSX = this.extractEarlyReturnJSX(ifStmt);
+        
+        if (earlyReturnJSX) {
+          earlyReturns.push({
+            condition: ifStmt.test,
+            jsx: earlyReturnJSX
+          });
+        }
+      }
+      // Check for final return statement
+      else if (statement.type === 'ReturnStatement' && statement.argument) {
         let arg = statement.argument;
         
         // Unwrap ParenthesisExpression
@@ -560,17 +614,107 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
         }
         
         if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
-          const structure = this.conditionalExtractor.extractStructure(arg);
-          return {
-            simplified: '',
-            placeholders: [],
-            elements: [],
-            structure
-          };
+          finalReturn = arg;
         }
       }
     }
+
+    // If we have early returns, create a combined structure
+    if (earlyReturns.length > 0 || finalReturn) {
+      const structure = this.createCombinedJSXStructure(earlyReturns, finalReturn);
+      return {
+        simplified: '',
+        placeholders: [],
+        elements: [],
+        structure
+      };
+    }
+
     return null;
+  }
+
+  /**
+   * Extract JSX from early return pattern: if (condition) { return <JSX>; }
+   */
+  private extractEarlyReturnJSX(ifStmt: swc.IfStatement): swc.JSXElement | swc.JSXFragment | null {
+    // Check if consequent is a block statement
+    if (ifStmt.consequent.type !== 'BlockStatement') {
+      return null;
+    }
+
+    const block = ifStmt.consequent as swc.BlockStatement;
+    
+    // Check if block contains only a return statement
+    if (block.stmts.length !== 1) {
+      return null;
+    }
+
+    const stmt = block.stmts[0];
+    if (stmt.type !== 'ReturnStatement' || !stmt.argument) {
+      return null;
+    }
+
+    let arg = stmt.argument;
+    
+    // Unwrap ParenthesisExpression
+    while (arg.type === 'ParenthesisExpression') {
+      arg = (arg as swc.ParenthesisExpression).expression;
+    }
+
+    // Check if it's JSX
+    if (arg.type === 'JSXElement' || arg.type === 'JSXFragment') {
+      return arg;
+    }
+
+    return null;
+  }
+
+  /**
+   * Create a combined JSX structure from early returns and final return
+   */
+  private createCombinedJSXStructure(
+    earlyReturns: Array<{ condition: swc.Expression; jsx: swc.JSXElement | swc.JSXFragment }>,
+    finalReturn: swc.JSXElement | swc.JSXFragment | null
+  ): JSXStructure {
+    // If we only have a final return with no early returns, just extract it normally
+    if (earlyReturns.length === 0 && finalReturn) {
+      return this.conditionalExtractor.extractStructure(finalReturn);
+    }
+
+    // Create a fragment structure to hold all conditional branches
+    const children: JSXStructure[] = [];
+
+    // Add each early return as a conditional branch
+    for (const earlyReturn of earlyReturns) {
+      const condition = this.conditionalExtractor.extractConditionExpression(earlyReturn.condition);
+      const jsxStructure = this.conditionalExtractor.extractStructure(earlyReturn.jsx);
+
+      // Create a conditional branch for the early return
+      const conditionalBranch: ConditionalBranch = {
+        type: 'early-return',
+        condition,
+        trueBranch: jsxStructure,
+        line: earlyReturn.jsx.span ? this.conditionalExtractor.getLineFromSpan(earlyReturn.jsx.span.start) : undefined,
+        column: earlyReturn.jsx.span ? this.conditionalExtractor.getColumnFromSpan(earlyReturn.jsx.span.start) : undefined,
+      };
+
+      children.push(conditionalBranch);
+    }
+
+    // Add the final return if it exists
+    if (finalReturn) {
+      const finalStructure = this.conditionalExtractor.extractStructure(finalReturn);
+      children.push(finalStructure);
+    }
+
+    // Return a fragment structure containing all branches
+    return {
+      type: 'element',
+      tagName: 'Fragment',
+      displayDependencies: [],
+      attributeReferences: [],
+      children,
+    };
   }
 
   /**

@@ -24,6 +24,7 @@ import {
 } from './types';
 import { SubgraphBuilder } from '../analyzers/subgraph-builder';
 import { TypeClassifier } from '../services/type-classifier';
+import { getLibraryHandlerRegistry, resetLibraryHandlerRegistry } from '../third-party/index.js';
 
 /**
  * DFD Builder interface
@@ -48,6 +49,9 @@ export class DefaultDFDBuilder implements DFDBuilder {
     console.log('🚚 DFD Builder: Starting build');
     console.log('🚚 DFD Builder: Hooks to process:', analysis.hooks.length);
     console.log('🚚 DFD Builder: Hooks:', analysis.hooks.map(h => ({ name: h.hookName, category: h.category, vars: h.variables })));
+    
+    // Reset library handlers for new component analysis
+    resetLibraryHandlerRegistry();
     
     // Reset state
     this.nodes = [];
@@ -132,6 +136,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
       // Build edges from processes to data stores (writes)
       this.buildProcessToDataStoreWriteEdges(analysis);
       console.log('🚚 DFD Builder: Created process to data store write edges');
+      
+      // Build edges from mutation library hooks to Server (writes)
+      this.buildMutationToServerEdges();
+      console.log('🚚 DFD Builder: Created mutation to server edges');
       
       // Build edges from external entity inputs to processes (reads)
       this.buildProcessToExternalEntityEdges(analysis);
@@ -326,15 +334,31 @@ export class DefaultDFDBuilder implements DFDBuilder {
             console.log(`🔍 ❌ No matching properties found`);
           }
         }
+        // For library hooks (useSWR, useSWRMutation), check if any DATA property is referenced
+        // Process properties (functions) are handled by buildProcessToDataStoreWriteEdges
+        else if (dataStoreNode.metadata?.isLibraryHook && dataStoreNode.metadata?.dataProperties) {
+          const dataProps = dataStoreNode.metadata.dataProperties as string[];
+          console.log(`🔍 Checking library hook ${dataStoreNode.label} data properties:`, dataProps);
+          console.log(`🔍 Process ${process.name} references:`, process.references);
+          const matchedProps = dataProps.filter(prop => process.references.includes(prop));
+          if (matchedProps.length > 0) {
+            console.log(`🔍 ✅ Found matching data properties:`, matchedProps);
+            isReferenced = true;
+            // Store matched properties for edge label
+            (dataStoreNode as any).__matchedProps = matchedProps;
+          } else {
+            console.log(`🔍 ❌ No matching data properties found`);
+          }
+        }
         // For simple nodes, check the label directly
         else if (process.references.includes(dataStoreNode.label)) {
           isReferenced = true;
         }
         
         if (isReferenced) {
-          // For useReducer, include matched properties in label
+          // For useReducer and library hooks, include matched properties in label
           let edgeLabel = 'reads';
-          if (dataStoreNode.metadata?.isReducer && (dataStoreNode as any).__matchedProps) {
+          if ((dataStoreNode.metadata?.isReducer || dataStoreNode.metadata?.isLibraryHook) && (dataStoreNode as any).__matchedProps) {
             const matchedProps = (dataStoreNode as any).__matchedProps as string[];
             edgeLabel = `reads: ${matchedProps.join(', ')}`;
             // Clean up temporary property
@@ -372,14 +396,22 @@ export class DefaultDFDBuilder implements DFDBuilder {
                 // Store matched properties for edge label
                 (dataStoreNode as any).__matchedPropsCleanup = matchedProps;
               }
+            } else if (dataStoreNode.metadata?.isLibraryHook && dataStoreNode.metadata?.dataProperties) {
+              const dataProps = dataStoreNode.metadata.dataProperties as string[];
+              const matchedProps = dataProps.filter(prop => process.cleanupProcess!.references.includes(prop));
+              if (matchedProps.length > 0) {
+                isReferenced = true;
+                // Store matched properties for edge label
+                (dataStoreNode as any).__matchedPropsCleanup = matchedProps;
+              }
             } else if (process.cleanupProcess.references.includes(dataStoreNode.label)) {
               isReferenced = true;
             }
             
             if (isReferenced) {
-              // For useReducer, include matched properties in label
+              // For useReducer and library hooks, include matched properties in label
               let edgeLabel = 'reads';
-              if (dataStoreNode.metadata?.isReducer && (dataStoreNode as any).__matchedPropsCleanup) {
+              if ((dataStoreNode.metadata?.isReducer || dataStoreNode.metadata?.isLibraryHook) && (dataStoreNode as any).__matchedPropsCleanup) {
                 const matchedProps = (dataStoreNode as any).__matchedPropsCleanup as string[];
                 edgeLabel = `reads: ${matchedProps.join(', ')}`;
                 // Clean up temporary property
@@ -535,6 +567,20 @@ export class DefaultDFDBuilder implements DFDBuilder {
             });
           }
         }
+        // For library hooks, check if any process property is referenced
+        else if (dataStoreNode.metadata?.isLibraryHook && dataStoreNode.metadata?.processProperties) {
+          const processProps = dataStoreNode.metadata.processProperties as string[];
+          const matchedProps = processProps.filter(prop => process.references.includes(prop));
+          if (matchedProps.length > 0) {
+            const label = `calls: ${matchedProps.join(', ')}`;
+            console.log(`🚚 ✅ Creating ${label} edge from ${process.name} to ${dataStoreNode.label}`);
+            this.edges.push({
+              from: processNode.id,
+              to: dataStoreNode.id,
+              label
+            });
+          }
+        }
       }
       
       // Also check cleanup process if it exists
@@ -560,11 +606,86 @@ export class DefaultDFDBuilder implements DFDBuilder {
                   label
                 });
               }
+            } else if (dataStoreNode.metadata?.isLibraryHook && dataStoreNode.metadata?.processProperties) {
+              const processProps = dataStoreNode.metadata.processProperties as string[];
+              const matchedProps = processProps.filter(prop => process.cleanupProcess!.references.includes(prop));
+              if (matchedProps.length > 0) {
+                const label = `calls: ${matchedProps.join(', ')}`;
+                console.log(`🚚 ✅ Creating ${label} edge from cleanup ${process.cleanupProcess.name} to ${dataStoreNode.label}`);
+                this.edges.push({
+                  from: cleanupNode.id,
+                  to: dataStoreNode.id,
+                  label
+                });
+              }
             }
           }
         }
       }
     }
+  }
+
+  /**
+   * Build edges from mutation library hooks to Server nodes
+   * Creates edges when a mutation hook (useSWRMutation, useSWRConfig) writes to server
+   */
+  private buildMutationToServerEdges(): void {
+    console.log('🚚 buildMutationToServerEdges: Starting');
+    
+    // Find all library hook nodes with process properties (mutations)
+    const mutationHookNodes = this.nodes.filter(
+      node => node.metadata?.isLibraryHook && 
+              node.metadata?.processProperties &&
+              (node.metadata.processProperties as string[]).length > 0
+    );
+    
+    console.log(`🚚 Found ${mutationHookNodes.length} mutation hook nodes`);
+    
+    for (const hookNode of mutationHookNodes) {
+      const hookName = hookNode.metadata?.hookName as string;
+      const serverNodeId = hookNode.metadata?.serverNodeId as string | undefined;
+      
+      console.log(`🚚 Processing mutation hook: ${hookName}, has server: ${!!serverNodeId}`);
+      
+      // For useSWRMutation, create edge from hook to server (mutation writes to server)
+      if (hookName === 'useSWRMutation' && serverNodeId) {
+        const serverNode = this.nodes.find(n => n.id === serverNodeId);
+        if (serverNode) {
+          this.edges.push({
+            from: hookNode.id,
+            to: serverNodeId,
+            label: 'mutates'
+          });
+          console.log(`🚚 ✅ Created mutates edge from ${hookNode.label} to ${serverNode.label}`);
+        }
+      }
+      
+      // For useSWRConfig, create a generic Server node if it doesn't exist
+      if (hookName === 'useSWRConfig') {
+        // Check if a generic Server node already exists
+        let genericServerNode = this.nodes.find(
+          n => n.metadata?.category === 'server' && !n.metadata?.endpoint
+        );
+        
+        if (!genericServerNode) {
+          // Create a generic Server node
+          const genericServerNodeId = this.createServerNode(undefined, hookNode.line, hookNode.column);
+          genericServerNode = this.nodes.find(n => n.id === genericServerNodeId);
+          console.log(`🚚 ✅ Created generic Server node for useSWRConfig`);
+        }
+        
+        if (genericServerNode) {
+          this.edges.push({
+            from: hookNode.id,
+            to: genericServerNode.id,
+            label: 'mutates'
+          });
+          console.log(`🚚 ✅ Created mutates edge from ${hookNode.label} to ${genericServerNode.label}`);
+        }
+      }
+    }
+    
+    console.log('🚚 buildMutationToServerEdges: Completed');
   }
 
   /**
@@ -588,6 +709,18 @@ export class DefaultDFDBuilder implements DFDBuilder {
     for (const prop of props) {
       // Skip synthetic reducer state variable
       if (prop.name === '__reducer_state__') {
+        continue;
+      }
+      
+      // Check if a prop node with this name already exists
+      const existingPropNode = this.nodes.find(
+        n => n.type === 'external-entity-input' && 
+             n.metadata?.category === 'prop' && 
+             n.label === prop.name
+      );
+      
+      if (existingPropNode) {
+        console.log(`[DFDBuilder] ⏭️ Skipping duplicate prop node: ${prop.name} (already exists as ${existingPropNode.id})`);
         continue;
       }
       
@@ -678,8 +811,19 @@ export class DefaultDFDBuilder implements DFDBuilder {
   /**
    * Create nodes for hooks based on their category
    */
+  /**
+   * Create nodes for hooks based on their category
+   */
   private createHookNodes(hooks: HookInfo[]): void {
     for (const hook of hooks) {
+      // Check if this hook has library adapter mappings
+      const enrichedHook = hook as any;
+      if (enrichedHook.libraryName && enrichedHook.returnValueMappings) {
+        console.log(`🚚 Processing library hook: ${hook.hookName} from ${enrichedHook.libraryName}`);
+        this.buildNodesFromLibraryHook(hook);
+        continue;
+      }
+
       // Check if this is a custom hook (no category in registry)
       if (!hook.category) {
         this.createCustomHookNode(hook);
@@ -711,6 +855,258 @@ export class DefaultDFDBuilder implements DFDBuilder {
         // 'effect' hooks are handled as processes, not as separate nodes
       }
     }
+  }
+
+  /**
+   * Build nodes from library hook with return value mappings
+   * Creates nodes based on the library adapter's DFD element type mappings
+   */
+  private buildNodesFromLibraryHook(hook: HookInfo): void {
+    // Check if this is an enriched hook with library mappings
+    const enrichedHook = hook as any;
+    if (!enrichedHook.libraryName || !enrichedHook.returnValueMappings) {
+      console.log(`🚚 ⚠️ Skipping hook ${hook.hookName} - no library mappings`);
+      console.log(`🚚    libraryName: ${enrichedHook.libraryName}`);
+      console.log(`🚚    returnValueMappings: ${enrichedHook.returnValueMappings}`);
+      return;
+    }
+
+    console.log(`🚚 ========================================`);
+    console.log(`🚚 Building nodes from library hook: ${hook.hookName} (${enrichedHook.libraryName})`);
+    console.log(`🚚 Return value mappings:`, enrichedHook.returnValueMappings);
+    console.log(`🚚 Hook arguments:`, hook.arguments);
+    console.log(`🚚 Hook dependencies:`, hook.dependencies);
+    console.log(`🚚 Hook variables:`, hook.variables);
+
+    // Check if this is a data fetching hook and create Server node
+    const isDataFetchingHook = this.isDataFetchingHook(hook.hookName);
+    console.log(`🚚 Is data fetching hook: ${isDataFetchingHook}`);
+    let serverNodeId: string | null = null;
+    
+    if (isDataFetchingHook) {
+      // Always create a Server node for data fetching hooks
+      let endpoint: string | undefined;
+      
+      if (hook.arguments && hook.arguments.length > 0) {
+        console.log(`🚚 Extracting API endpoint from arguments:`, hook.arguments);
+        endpoint = this.extractAPIEndpoint(hook.arguments);
+      }
+      
+      // Create Server node with endpoint if available, otherwise just "Server"
+      if (endpoint) {
+        console.log(`🚚 ✅ Creating Server node with endpoint: ${endpoint}`);
+        serverNodeId = this.createServerNode(endpoint, hook.line, hook.column);
+      } else {
+        console.log(`🚚 ✅ Creating Server node without specific endpoint (dynamic URL)`);
+        serverNodeId = this.createServerNode(undefined, hook.line, hook.column);
+      }
+    } else {
+      console.log(`🚚 ⚠️ Not a data fetching hook, no Server node needed`);
+    }
+
+    // Check if there's a specialized handler for this library hook
+    const registry = getLibraryHandlerRegistry();
+    const handler = registry.findHandler(hook.hookName, enrichedHook.libraryName);
+    
+    if (handler) {
+      console.log(`🚚 Using specialized handler for ${hook.hookName} from ${enrichedHook.libraryName}`);
+      
+      // Use the handler to create nodes and edges
+      const result = handler.createNodes(
+        hook,
+        enrichedHook,
+        serverNodeId,
+        (prefix: string) => this.generateNodeId(prefix)
+      );
+      
+      // Add the created nodes and edges
+      this.nodes.push(...result.nodes);
+      this.edges.push(...result.edges);
+      
+      // For SWR hooks, check if the first argument is a variable and create edge
+      if (enrichedHook.libraryName === 'swr' && hook.argumentIdentifiers && hook.argumentIdentifiers.length > 0) {
+        const firstArgId = hook.argumentIdentifiers[0];
+        const hookNodeId = result.nodes[0]?.id; // The main hook node
+        
+        if (hookNodeId) {
+          console.log(`🚚 ========================================`);
+          console.log(`🚚 Processing first argument: ${firstArgId}`);
+          console.log(`🚚 Looking for existing node for first argument: ${firstArgId}`);
+          
+          // Find any existing node with this variable name
+          const sourceNode = this.findNodeByVariable(firstArgId, this.nodes);
+          
+          if (sourceNode) {
+            console.log(`🚚 ✅ Found existing node: ${sourceNode.id}: ${sourceNode.label} (${sourceNode.type})`);
+            
+            // Check if edge already exists
+            const existingEdge = this.edges.find(
+              e => e.from === sourceNode.id && e.to === hookNodeId && e.label === 'provides key'
+            );
+            
+            if (!existingEdge) {
+              this.edges.push({
+                from: sourceNode.id,
+                to: hookNodeId,
+                label: 'provides key'
+              });
+              console.log(`🚚 ✅ Created edge from ${sourceNode.label} (${sourceNode.id}) to ${hook.hookName} (${hookNodeId}) - provides key`);
+            } else {
+              console.log(`🚚 ⚠️ Edge already exists, skipping duplicate`);
+            }
+          } else {
+            console.log(`🚚 ⚠️ No existing node found for: ${firstArgId}`);
+          }
+          console.log(`🚚 ========================================`);
+        }
+      }
+      
+      console.log(`🚚 ========================================`);
+      return;
+    }
+
+    // For other library hooks, create individual nodes (existing behavior)
+    for (const [variableName, mapping] of enrichedHook.returnValueMappings.entries()) {
+      const { dfdElementType, metadata } = mapping;
+      
+      console.log(`🚚   Creating ${dfdElementType} node for variable: ${variableName}`);
+      
+      // Generate appropriate node ID prefix based on element type
+      let nodeIdPrefix: string;
+      switch (dfdElementType) {
+        case 'external-entity-input':
+          nodeIdPrefix = 'library_input';
+          break;
+        case 'data-store':
+          nodeIdPrefix = 'library_store';
+          break;
+        case 'process':
+          nodeIdPrefix = 'library_process';
+          break;
+        default:
+          nodeIdPrefix = 'library_node';
+      }
+
+      // Create the node
+      const node: DFDNode = {
+        id: this.generateNodeId(nodeIdPrefix),
+        label: variableName,
+        type: dfdElementType,
+        line: hook.line,
+        column: hook.column,
+        metadata: {
+          category: 'library-hook',
+          hookName: hook.hookName,
+          libraryName: enrichedHook.libraryName,
+          variableName,
+          line: hook.line,
+          column: hook.column,
+          ...this.applyLibraryMetadata(metadata)
+        }
+      };
+
+      this.nodes.push(node);
+      console.log(`🚚   ✅ Created ${dfdElementType} node: ${variableName}`);
+    }
+  }
+
+  /**
+   * Apply library-specific metadata to node metadata
+   * Transforms library adapter metadata into node metadata format
+   */
+  private applyLibraryMetadata(adapterMetadata?: Record<string, any>): Record<string, any> {
+    if (!adapterMetadata) {
+      return {};
+    }
+
+    const nodeMetadata: Record<string, any> = {};
+
+    // Map common metadata fields
+    if (adapterMetadata.isLoading !== undefined) {
+      nodeMetadata.isLoading = adapterMetadata.isLoading;
+    }
+    if (adapterMetadata.isError !== undefined) {
+      nodeMetadata.isError = adapterMetadata.isError;
+    }
+    if (adapterMetadata.isMutation !== undefined) {
+      nodeMetadata.isMutation = adapterMetadata.isMutation;
+    }
+    if (adapterMetadata.isRefetch !== undefined) {
+      nodeMetadata.isRefetch = adapterMetadata.isRefetch;
+    }
+
+    // Copy any other metadata fields
+    for (const [key, value] of Object.entries(adapterMetadata)) {
+      if (!nodeMetadata.hasOwnProperty(key)) {
+        nodeMetadata[key] = value;
+      }
+    }
+
+    return nodeMetadata;
+  }
+
+  /**
+   * Check if a hook is a data fetching hook
+   * Data fetching hooks include useSWR, useQuery, useMutation, useSubscription, etc.
+   */
+  private isDataFetchingHook(hookName: string): boolean {
+    const dataFetchingHooks = [
+      'useSWR',
+      'useSWRMutation',
+      'useSWRInfinite',
+      'useQuery',
+      'useMutation',
+      'useInfiniteQuery',
+      'useLazyQuery',
+      'useSubscription',
+    ];
+    
+    // Also check for RTK Query generated hooks (use*Query, use*Mutation)
+    if (hookName.startsWith('use') && (hookName.endsWith('Query') || hookName.endsWith('Mutation'))) {
+      return true;
+    }
+    
+    return dataFetchingHooks.includes(hookName);
+  }
+
+  /**
+   * Extract API endpoint from hook arguments
+   * Returns the first string argument which is typically the API endpoint or query key
+   */
+  private extractAPIEndpoint(args: Array<{ type: string; value?: string | number | boolean }>): string | undefined {
+    // Find the first string argument
+    for (const arg of args) {
+      if (arg.type === 'string' && typeof arg.value === 'string') {
+        return arg.value;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Create a Server external entity input node for an API endpoint
+   * Returns the node ID
+   */
+  private createServerNode(endpoint: string | undefined, line?: number, column?: number): string {
+    const nodeId = this.generateNodeId('server');
+    const label = endpoint ? `Server: ${endpoint}` : 'Server';
+    const node: DFDNode = {
+      id: nodeId,
+      label,
+      type: 'external-entity-input',
+      line,
+      column,
+      metadata: {
+        category: 'server',
+        endpoint,
+        line,
+        column
+      }
+    };
+    
+    this.nodes.push(node);
+    console.log(`🚚 ✅ Created Server node: ${label}`);
+    return nodeId;
   }
 
   /**
@@ -1463,9 +1859,15 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // Find all inline handler processes
     const inlineHandlers = analysis.processes.filter(p => p.isInlineHandler && p.usedInJSXElement);
     
+    console.log(`🚚 ========================================`);
     console.log(`🚚 buildInlineHandlerEdges: Found ${inlineHandlers.length} inline handlers`);
+    console.log(`🚚 Inline handlers:`, inlineHandlers.map(h => `${h.name} (refs: ${h.references.join(', ')})`));
     
     for (const handler of inlineHandlers) {
+      console.log(`🚚 Processing inline handler: ${handler.name}`);
+      console.log(`🚚   References: ${handler.references.join(', ')}`);
+      console.log(`🚚   Used in element at line ${handler.usedInJSXElement?.line}, column ${handler.usedInJSXElement?.column}`);
+      
       // Find the JSX element node by position
       const elementNode = elementNodes.find(
         n => n.line === handler.usedInJSXElement?.line && 
@@ -1477,10 +1879,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue;
       }
       
+      console.log(`🚚   ✅ Found element node: ${elementNode.id}: ${elementNode.label}`);
+      
       const attributeName = handler.usedInJSXElement?.attributeName || 'onClick';
       
       // Create edges from JSX element to each referenced variable (setter, context function, etc.)
       for (const varName of handler.references) {
+        console.log(`🚚   Processing reference: ${varName}`);
         const targetNode = this.findNodeByVariable(varName, this.nodes);
         
         if (!targetNode) {
@@ -1488,22 +1893,37 @@ export class DefaultDFDBuilder implements DFDBuilder {
           continue;
         }
         
+        console.log(`🚚   ✅ Found target node: ${targetNode.id}: ${targetNode.label} (${targetNode.type})`);
+        
         // Classify the variable type
         const typeClassifier = new TypeClassifier();
         const varType = this.classifyVariable(varName, typeClassifier, targetNode);
+        console.log(`🚚   Variable ${varName} classified as: ${varType}`);
         
         if (varType === 'function') {
-          // Function variable: create edge from element to function
-          console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${targetNode.id} (${attributeName})`);
-          this.edges.push({
-            from: elementNode.id,
-            to: targetNode.id,
-            label: attributeName
-          });
+          // Check if edge already exists
+          const existingEdge = this.edges.find(
+            e => e.from === elementNode.id && e.to === targetNode.id && e.label === attributeName
+          );
+          
+          if (existingEdge) {
+            console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${targetNode.id} (${attributeName}), skipping duplicate`);
+          } else {
+            // Function variable: create edge from element to function
+            console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${targetNode.id} (${attributeName})`);
+            this.edges.push({
+              from: elementNode.id,
+              to: targetNode.id,
+              label: attributeName
+            });
+          }
+        } else {
+          console.log(`🚚   ⏭️ Skipping data variable: ${varName} (handled by display edges)`);
         }
         // For data variables, we don't create edges here (they're already handled by display edges)
       }
     }
+    console.log(`🚚 ========================================`);
   }
 
   /**
@@ -1522,13 +1942,23 @@ export class DefaultDFDBuilder implements DFDBuilder {
       return edges;
     }
 
-    console.log(`🚚 buildAttributeReferenceEdges: Processing element ${elementNode.label}, attributes:`, element.attributeReferences.map(a => `${a.attributeName}=${a.referencedVariable}`));
+    console.log(`🚚 ========================================`);
+    console.log(`🚚 buildAttributeReferenceEdges: Processing element ${elementNode.label} (${elementNode.id})`);
+    console.log(`🚚   Attributes:`, element.attributeReferences.map(a => `${a.attributeName}=${a.referencedVariable}`));
 
     for (const attrRef of element.attributeReferences) {
       const varName = attrRef.referencedVariable;
+      console.log(`🚚   Processing attribute: ${attrRef.attributeName}=${varName}`);
       
       // Skip constants or undefined variables
       if (!varName || varName.startsWith('"') || varName.startsWith("'") || varName === 'undefined') {
+        console.log(`🚚   ⏭️ Skipping constant/undefined: ${varName}`);
+        continue;
+      }
+
+      // Skip inline handlers (they're handled by buildInlineHandlerEdges)
+      if (varName.startsWith('inline_')) {
+        console.log(`🚚   ⏭️ Skipping inline handler: ${varName} (handled separately)`);
         continue;
       }
 
@@ -1540,19 +1970,30 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue;
       }
 
+      console.log(`🚚   ✅ Found source node: ${sourceNode.id}: ${sourceNode.label} (${sourceNode.type})`);
+
       // Classify the variable type
       const varType = this.classifyVariable(varName, typeClassifier, sourceNode);
-      console.log(`🚚   Variable ${varName} classified as: ${varType}, sourceNode type: ${sourceNode.type}`);
+      console.log(`🚚   Variable ${varName} classified as: ${varType}`);
       
       // Create edge based on variable type
       if (varType === 'function') {
-        // Function variable: create edge from element to function (element triggers function)
-        console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName})`);
-        edges.push({
-          from: elementNode.id,
-          to: sourceNode.id,
-          label: attrRef.attributeName
-        });
+        // Check if edge already exists
+        const existingEdge = edges.find(
+          e => e.from === elementNode.id && e.to === sourceNode.id && e.label === attrRef.attributeName
+        );
+        
+        if (existingEdge) {
+          console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName}), skipping duplicate`);
+        } else {
+          // Function variable: create edge from element to function (element triggers function)
+          console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName})`);
+          edges.push({
+            from: elementNode.id,
+            to: sourceNode.id,
+            label: attrRef.attributeName
+          });
+        }
       } else {
         // Data variable: create edge from data to element (data binds to element attribute)
         // For useReducer, add property name to label
@@ -1560,6 +2001,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
         if (sourceNode.metadata?.isReducer && sourceNode.metadata?.stateProperties) {
           const stateProps = sourceNode.metadata.stateProperties as string[];
           if (stateProps.includes(varName)) {
+            finalLabel = `binds: ${varName}`;
+          }
+        }
+        // For library hooks (useSWR, useSWRMutation), add property name to label
+        if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.properties) {
+          const properties = sourceNode.metadata.properties as string[];
+          if (properties.includes(varName)) {
             finalLabel = `binds: ${varName}`;
           }
         }
@@ -1610,6 +2058,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
                 finalLabel = `${edgeLabel}: ${varName}`;
               }
             }
+            // For library hooks (useSWR, useSWRMutation), add property name to label
+            if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.properties) {
+              const properties = sourceNode.metadata.properties as string[];
+              if (properties.includes(varName)) {
+                finalLabel = `${edgeLabel}: ${varName}`;
+              }
+            }
             
             console.log(`🚚   ✅ Creating ${finalLabel} edge from ${sourceNode.id} to ${conditionalSubgraph.id}`);
             edges.push({
@@ -1641,6 +2096,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
           if (sourceNode.metadata?.isReducer && sourceNode.metadata?.stateProperties) {
             const stateProps = sourceNode.metadata.stateProperties as string[];
             if (stateProps.includes(varName)) {
+              finalLabel = `display: ${varName}`;
+            }
+          }
+          // For library hooks (useSWR, useSWRMutation), add property name to label
+          if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.properties) {
+            const properties = sourceNode.metadata.properties as string[];
+            if (properties.includes(varName)) {
               finalLabel = `display: ${varName}`;
             }
           }
@@ -1822,6 +2284,17 @@ export class DefaultDFDBuilder implements DFDBuilder {
       return node;
     }
 
+    // For library hooks (useSWR, useSWRMutation), check if this is one of the properties
+    node = nodes.find(n => 
+      n.metadata?.isLibraryHook && 
+      n.metadata?.properties &&
+      (n.metadata.properties as string[]).includes(variableName)
+    );
+    if (node) {
+      console.log(`🔍 findNodeByVariableName: Found library hook node for property "${variableName}":`, node.label);
+      return node;
+    }
+
     // For custom hooks and useContext, check if this is one of the data values
     node = nodes.find(n => 
       n.metadata?.dataValues &&
@@ -1890,6 +2363,20 @@ export class DefaultDFDBuilder implements DFDBuilder {
     if (sourceNode.metadata?.writeMethods &&
         (sourceNode.metadata.writeMethods as string[]).includes(variableName)) {
       return 'function';
+    }
+
+    // For library hooks (useSWR, useSWRMutation), check if this is a process property
+    if (sourceNode.metadata?.isLibraryHook) {
+      const processProperties = sourceNode.metadata.processProperties as string[] | undefined;
+      if (processProperties && processProperties.includes(variableName)) {
+        console.log(`🔍 classifyVariable: ${variableName} is a process property (function)`);
+        return 'function';
+      }
+      const dataProperties = sourceNode.metadata.dataProperties as string[] | undefined;
+      if (dataProperties && dataProperties.includes(variableName)) {
+        console.log(`🔍 classifyVariable: ${variableName} is a data property (data)`);
+        return 'data';
+      }
     }
 
     // Use TypeClassifier if available

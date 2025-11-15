@@ -98,6 +98,8 @@ export interface HookInfo {
   column?: number;
   // Type classification for custom hooks
   variableTypes?: Map<string, 'function' | 'data'>; // Maps variable name to its type classification
+  // Type parameter (e.g., "User" from useSWR<User>)
+  typeParameter?: string;
   // useReducer state properties
   stateProperties?: string[]; // Property names from the reducer state object
   stateVariable?: string; // The state variable name (e.g., 'state')
@@ -105,6 +107,10 @@ export interface HookInfo {
   reducerName?: string; // The reducer function name (e.g., 'counterReducer')
   // useState initial value
   initialValue?: string; // Initial value variable name for useState (e.g., 'initialTasks')
+  // Hook call arguments (for extracting API endpoints, query keys, etc.)
+  arguments?: Array<{ type: string; value?: string | number | boolean }>; // Extracted argument values
+  // Argument identifiers (variable names used as arguments)
+  argumentIdentifiers?: string[]; // Variable names passed as arguments (e.g., ['url', 'fetcher'])
 }
 
 /**
@@ -168,7 +174,7 @@ export interface ConditionExpression {
  * Represents a conditional branch in JSX
  */
 export interface ConditionalBranch {
-  type: 'ternary' | 'logical-and' | 'logical-or' | 'loop';
+  type: 'ternary' | 'logical-and' | 'logical-or' | 'loop' | 'early-return';
   condition: ConditionExpression;
   trueBranch?: JSXStructure;
   falseBranch?: JSXStructure;
