@@ -1139,7 +1139,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
       }
 
       // Check if this is a custom hook (no category in registry)
+      // NOTE: This is a fallback for custom hooks not handled by CustomHookProcessor
+      // In practice, CustomHookProcessor should handle all custom hooks
       if (!hook.category) {
+        console.log(`⚠️ Custom hook ${hook.hookName} not handled by processor, using legacy method`);
         this.createCustomHookNode(hook);
         continue;
       }

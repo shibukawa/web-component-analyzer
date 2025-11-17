@@ -14,6 +14,7 @@ import { TanStackQueryLibraryProcessor } from './tanstack-query.js';
 import { ReactRouterLibraryProcessor } from './react-router.js';
 import { TanStackRouterLibraryProcessor } from './tanstack-router.js';
 import { ReactHookFormLibraryProcessor } from './react-hook-form.js';
+import { CustomHookProcessor } from './custom-hook.js';
 
 /**
  * Global processor registry instance
@@ -60,8 +61,9 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new TanStackRouterLibraryProcessor());
   registry.register(new ReactHookFormLibraryProcessor());
   
-  // Phase 3: Register remaining third-party library processors
-  // registry.register(new CustomHookProcessor());
+  // Register custom hook processor (lowest priority - fallback)
+  // This handles all user-defined hooks including Zustand stores
+  registry.register(new CustomHookProcessor());
 }
 
 // Re-export types, registry, and processors
@@ -73,6 +75,7 @@ export { TanStackQueryLibraryProcessor } from './tanstack-query.js';
 export { ReactRouterLibraryProcessor } from './react-router.js';
 export { TanStackRouterLibraryProcessor } from './tanstack-router.js';
 export { ReactHookFormLibraryProcessor } from './react-hook-form.js';
+export { CustomHookProcessor } from './custom-hook.js';
 export type {
   HookProcessor,
   ProcessorMetadata,
@@ -80,3 +83,4 @@ export type {
   ProcessorResult,
   ProcessorLogger,
 } from './types.js';
+export { processHookWithSubgraphs, looksLikeAction } from './helpers.js';

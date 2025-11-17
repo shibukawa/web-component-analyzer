@@ -8,5 +8,25 @@
 	},
 	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
 	"typescript.tsc.autoDetect": "off",
-	"kiroAgent.configureMCP": "Enabled"
+	"kiroAgent.configureMCP": "Enabled",
+	"workbench.colorCustomizations": {
+		"activityBar.activeBackground": "#ccebd3",
+		"activityBar.background": "#ccebd3",
+		"activityBar.foreground": "#15202b",
+		"activityBar.inactiveForeground": "#15202b99",
+		"activityBarBadge.background": "#9c8dd2",
+		"activityBarBadge.foreground": "#15202b",
+		"commandCenter.border": "#15202b99",
+		"sash.hoverBorder": "#ccebd3",
+		"statusBar.background": "#a7ddb3",
+		"statusBar.foreground": "#15202b",
+		"statusBarItem.hoverBackground": "#82cf93",
+		"statusBarItem.remoteBackground": "#a7ddb3",
+		"statusBarItem.remoteForeground": "#15202b",
+		"titleBar.activeBackground": "#a7ddb3",
+		"titleBar.activeForeground": "#15202b",
+		"titleBar.inactiveBackground": "#a7ddb399",
+		"titleBar.inactiveForeground": "#15202b99"
+	},
+	"peacock.color": "#a7ddb3"
 }

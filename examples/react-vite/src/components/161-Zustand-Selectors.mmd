@@ -1,0 +1,55 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  subgraph useUserStore_input["useUserStore - Input"]
+    direction TB
+    custom_hook_data_0[("firstName")]
+    custom_hook_data_1[("lastName")]
+    custom_hook_data_2[("email")]
+  end
+  subgraph useUserStore_output["useUserStore - Output"]
+    direction TB
+    custom_hook_function_3["setFirstName"]
+    custom_hook_function_4["setLastName"]
+    custom_hook_function_5["setEmail"]
+  end
+  jsx_element_0["input"]
+  jsx_element_1["input"]
+  jsx_element_2["input"]
+  jsx_element_3["p"]
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  custom_hook_data_0 ecustom_hook_data_0_jsx_element_3@-->|"display"| jsx_element_3
+  ecustom_hook_data_0_jsx_element_3@{ animate: true }
+  custom_hook_data_1 ecustom_hook_data_1_jsx_element_3@-->|"display"| jsx_element_3
+  ecustom_hook_data_1_jsx_element_3@{ animate: true }
+  custom_hook_data_0 ecustom_hook_data_0_jsx_element_0@-->|"binds"| jsx_element_0
+  ecustom_hook_data_0_jsx_element_0@{ animate: true }
+  jsx_element_0 ejsx_element_0_custom_hook_function_3@-->|"onChange"| custom_hook_function_3
+  ejsx_element_0_custom_hook_function_3@{ animate: true }
+  custom_hook_data_1 ecustom_hook_data_1_jsx_element_1@-->|"binds"| jsx_element_1
+  ecustom_hook_data_1_jsx_element_1@{ animate: true }
+  jsx_element_1 ejsx_element_1_custom_hook_function_4@-->|"onChange"| custom_hook_function_4
+  ejsx_element_1_custom_hook_function_4@{ animate: true }
+  custom_hook_data_2 ecustom_hook_data_2_jsx_element_2@-->|"binds"| jsx_element_2
+  ecustom_hook_data_2_jsx_element_2@{ animate: true }
+  jsx_element_2 ejsx_element_2_custom_hook_function_5@-->|"onChange"| custom_hook_function_5
+  ejsx_element_2_custom_hook_function_5@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement

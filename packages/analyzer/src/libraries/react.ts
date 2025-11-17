@@ -18,9 +18,9 @@ import {
 import {
   HookInfo,
   DFDNode,
-  DFDEdge,
-  DFDSubgraph
+  DFDEdge
 } from '../parser/types';
+import { processHookWithSubgraphs } from './helpers';
 
 /**
  * React standard hooks processor
@@ -193,9 +193,7 @@ export class ReactLibraryProcessor implements HookProcessor {
    * Creates external-entity-output nodes for functions
    */
   private processUseContext(hook: HookInfo, context: ProcessorContext): ProcessorResult {
-    const { generateNodeId, logger } = context;
-    const nodes: DFDNode[] = [];
-    const edges: DFDEdge[] = [];
+    const { logger } = context;
 
     // If no type classification is available, fall back to legacy behavior
     if (!hook.variableTypes || hook.variableTypes.size === 0) {
@@ -203,67 +201,13 @@ export class ReactLibraryProcessor implements HookProcessor {
       return this.processUseContextLegacy(hook, context);
     }
 
-    // Separate data values from function values
-    const dataValues: string[] = [];
-    const functionValues: string[] = [];
-
-    for (const [varName, varType] of hook.variableTypes.entries()) {
-      if (varType === 'function') {
-        functionValues.push(varName);
-      } else {
-        dataValues.push(varName);
-      }
-    }
-
-    logger.debug(`Data values: ${dataValues.join(', ')}`);
-    logger.debug(`Function values: ${functionValues.join(', ')}`);
-
-    // Create individual nodes for each data value (input subgraph)
-    for (const dataValue of dataValues) {
-      const node: DFDNode = {
-        id: generateNodeId('context-data'),
-        label: dataValue,
-        type: 'external-entity-input',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'context-data',
-          hookName: hook.hookName,
-          variableName: dataValue,
-          subgraph: `${hook.hookName}-input`,
-          line: hook.line,
-          column: hook.column
-        }
-      };
-
-      nodes.push(node);
-      logger.node('created', node);
-    }
-
-    // Create individual nodes for each function value (output subgraph)
-    for (const functionValue of functionValues) {
-      const node: DFDNode = {
-        id: generateNodeId('context-function'),
-        label: functionValue,
-        type: 'external-entity-output',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'context-function',
-          hookName: hook.hookName,
-          variableName: functionValue,
-          subgraph: `${hook.hookName}-output`,
-          line: hook.line,
-          column: hook.column
-        }
-      };
-
-      nodes.push(node);
-      logger.node('created', node);
-    }
-
-    logger.complete({ nodes, edges, handled: true });
-    return { nodes, edges, handled: true };
+    // Use the common helper function with useContext-specific configuration
+    return processHookWithSubgraphs(hook, context, {
+      dataCategory: 'context-data',
+      functionCategory: 'context-function',
+      dataNodeType: 'external-entity-input',
+      functionNodeType: 'external-entity-output'
+    });
   }
 
   /**
