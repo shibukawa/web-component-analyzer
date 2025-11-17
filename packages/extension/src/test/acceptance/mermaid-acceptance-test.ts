@@ -48,7 +48,7 @@ function createNodeReactParser() {
 /**
  * Run a single acceptance test
  */
-export async function runSingleTest(testCase: TestCase): Promise<TestResult> {
+export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): Promise<TestResult> {
   const startTime = Date.now();
   
   try {
@@ -95,6 +95,17 @@ export async function runSingleTest(testCase: TestCase): Promise<TestResult> {
     // Generate Mermaid output from DFD data
     const generatedMermaid = transformToMermaid(dfdData);
     
+    // If update-refs mode is enabled, write the generated output to the reference file
+    if (updateRefs) {
+      fs.writeFileSync(testCase.referencePath, generatedMermaid);
+      return {
+        testName: testCase.testName,
+        componentPath: testCase.componentPath,
+        passed: true,
+        duration: Date.now() - startTime,
+      };
+    }
+    
     // Normalize both diagrams
     const generatedNormalized = normalizeMermaid(generatedMermaid);
     const referenceNormalized = normalizeMermaid(referenceMermaid);
@@ -125,7 +136,8 @@ export async function runSingleTest(testCase: TestCase): Promise<TestResult> {
  */
 export async function runAcceptanceTests(
   baseDir: string,
-  filter?: string
+  filter?: string,
+  updateRefs?: boolean
 ): Promise<TestSuiteResult> {
   const startTime = Date.now();
   
@@ -143,7 +155,7 @@ export async function runAcceptanceTests(
   // Run tests
   const results: TestResult[] = [];
   for (const testCase of testCases) {
-    const result = await runSingleTest(testCase);
+    const result = await runSingleTest(testCase, updateRefs);
     results.push(result);
   }
   
@@ -165,7 +177,8 @@ export async function runAcceptanceTests(
  */
 export async function runAcceptanceTestsMultiFramework(
   examplesDir: string,
-  filter?: string
+  filter?: string,
+  updateRefs?: boolean
 ): Promise<TestSuiteResult> {
   const startTime = Date.now();
   
@@ -183,7 +196,7 @@ export async function runAcceptanceTestsMultiFramework(
   // Run tests
   const results: TestResult[] = [];
   for (const testCase of testCases) {
-    const result = await runSingleTest(testCase);
+    const result = await runSingleTest(testCase, updateRefs);
     results.push(result);
   }
   

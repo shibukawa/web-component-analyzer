@@ -63,7 +63,7 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     // We need to get all registered library names from the hook registry
     // For now, we'll check against a known list of libraries that have adapters
     // This will be populated when library adapters are loaded
-    const knownLibraries = ['swr', 'swr/mutation', '@tanstack/react-query', 'react-router-dom', 'next/navigation', 
+    const knownLibraries = ['swr', 'swr/mutation', '@tanstack/react-query', '@tanstack/react-router', 'react-router-dom', 'next/navigation', 
                             'react-hook-form', 'zustand', 'jotai', 'mobx-react-lite', 
                             '@apollo/client', '@reduxjs/toolkit/query', '@trpc/react-query'];
     knownLibraries.forEach(lib => registeredLibraries.add(lib));

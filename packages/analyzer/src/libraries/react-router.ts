@@ -2,12 +2,15 @@
  * React Router Library Processor
  * 
  * Handles React Router hooks:
- * - useNavigate: Navigation function
- * - useParams: Route parameters object
- * - useLocation: Current location object
- * - useSearchParams: Search parameters and setter
+ * - useNavigate: Navigation function (output)
+ * - useParams: Route parameters object (input)
+ * - useLocation: Current location object (input)
+ * - useSearchParams: Search parameters and setter (input/output)
  * 
- * This processor creates appropriate DFD nodes for routing operations.
+ * This processor implements URL node sharing logic where:
+ * - Input hooks (useParams, useLocation, useSearchParams) share a single "URL: Input" node
+ * - Output hooks (useNavigate, useSearchParams setter) share a single "URL: Output" node
+ * - URL nodes are reset when processing a new component
  */
 
 import {
@@ -45,6 +48,13 @@ export class ReactRouterLibraryProcessor implements HookProcessor {
     priority: 50, // Medium priority for third-party libraries
     description: 'React Router navigation library processor'
   };
+
+  /**
+   * Shared URL node IDs for singleton pattern
+   * These are reset when processing a new component
+   */
+  private urlInputNodeId: string | null = null;
+  private urlOutputNodeId: string | null = null;
 
   /**
    * Return value mappings for each React Router hook
@@ -132,7 +142,7 @@ export class ReactRouterLibraryProcessor implements HookProcessor {
 
   /**
    * Process useNavigate hook
-   * Creates a process node for the navigation function
+   * Creates a process node for the navigation function and URL: Output node
    */
   private processUseNavigate(hook: HookInfo, context: ProcessorContext): ProcessorResult {
     const { generateNodeId, logger } = context;
@@ -168,6 +178,33 @@ export class ReactRouterLibraryProcessor implements HookProcessor {
 
     nodes.push(node);
     logger.node('created', node);
+
+    // Create or reuse URL: Output node
+    if (!this.urlOutputNodeId) {
+      this.urlOutputNodeId = generateNodeId('url_output');
+      const urlOutputNode: DFDNode = {
+        id: this.urlOutputNodeId,
+        label: 'URL: Output',
+        type: 'external-entity-output',
+        metadata: {
+          category: 'external-entity',
+          isURLOutput: true
+        }
+      };
+      nodes.push(urlOutputNode);
+      logger.node('created', urlOutputNode);
+    } else {
+      logger.debug(`Reusing existing URL: Output node: ${this.urlOutputNodeId}`);
+    }
+
+    // Create edge from hook to URL: Output
+    const edge: DFDEdge = {
+      from: nodeId,
+      to: this.urlOutputNodeId,
+      label: 'navigates'
+    };
+    edges.push(edge);
+    logger.edge('created', edge);
 
     logger.complete({ nodes, edges, handled: true });
     return { nodes, edges, handled: true };

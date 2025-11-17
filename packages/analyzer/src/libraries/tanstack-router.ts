@@ -181,7 +181,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
 
   /**
    * Process useRouterState hook
-   * Creates a process node for router state and connects from URL: Input
+   * Creates a data store node for router state and connects from URL: Input
    */
   private processUseRouterState(hook: HookInfo, context: ProcessorContext): ProcessorResult {
     const { generateNodeId, logger } = context;
@@ -193,7 +193,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
     const node: DFDNode = {
       id: nodeId,
       label: hook.hookName,
-      type: 'process',
+      type: 'data-store',
       line: hook.line,
       column: hook.column,
       metadata: {
@@ -246,7 +246,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
 
   /**
    * Process useSearch hook
-   * Creates a process node for search parameters and connects from URL: Input
+   * Creates a data store node for search parameters and connects from URL: Input
    */
   private processUseSearch(hook: HookInfo, context: ProcessorContext): ProcessorResult {
     const { generateNodeId, logger } = context;
@@ -258,7 +258,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
     const node: DFDNode = {
       id: nodeId,
       label: hook.hookName,
-      type: 'process',
+      type: 'data-store',
       line: hook.line,
       column: hook.column,
       metadata: {
@@ -311,7 +311,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
 
   /**
    * Process useParams hook
-   * Creates a process node for route parameters and connects from URL: Input
+   * Creates a data store node for route parameters and connects from URL: Input
    */
   private processUseParams(hook: HookInfo, context: ProcessorContext): ProcessorResult {
     const { generateNodeId, logger } = context;
@@ -323,7 +323,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
     const node: DFDNode = {
       id: nodeId,
       label: hook.hookName,
-      type: 'process',
+      type: 'data-store',
       line: hook.line,
       column: hook.column,
       metadata: {
@@ -453,7 +453,7 @@ export class TanStackRouterLibraryProcessor implements HookProcessor {
     const node: DFDNode = {
       id: nodeId,
       label: hook.hookName,
-      type: 'process',
+      type: 'data-store',
       line: hook.line,
       column: hook.column,
       metadata: {

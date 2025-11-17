@@ -59,11 +59,12 @@
     "vscode:prepublish": "pnpm run compile && pnpm run compile:webview",
     "compile": "node esbuild.mjs",
     "compile:webview": "node esbuild.webview.mjs",
+    "compile:tests": "tsc",
     "watch": "node esbuild.mjs --watch",
     "watch:webview": "node esbuild.webview.mjs --watch",
-    "pretest": "pnpm run compile && pnpm run lint",
+    "pretest": "pnpm run compile && pnpm run compile:tests && pnpm run lint",
     "lint": "eslint src",
-    "test": "vscode-test",
+    "test": "node out/test/acceptance/acceptance-test-runner.js",
     "build": "pnpm run compile && pnpm run compile:webview"
   },
   "devDependencies": {

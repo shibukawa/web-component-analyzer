@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "CommonJS",
     "target": "ES2022",
     "lib": ["ES2022"],
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "out",
     "strict": true,
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "out", "src/test/**/*"],
+  "exclude": ["node_modules", "out", "src/test/fixtures/**/*"],
   "references": [
     { "path": "../analyzer" }
   ]

@@ -23,17 +23,22 @@ export async function runAcceptanceTestSuite(): Promise<number> {
     
     console.log(`Running acceptance tests from: ${examplesDir}`);
     
-    // Parse command line arguments for filtering
+    // Parse command line arguments for filtering and options
     const args = process.argv.slice(2);
     const filterArg = args.find(arg => arg.startsWith('--filter='));
     const filter = filterArg ? filterArg.substring('--filter='.length) : undefined;
+    const updateRefs = args.includes('--update-refs');
     
     if (filter) {
       console.log(`Filtering tests: ${filter}`);
     }
     
+    if (updateRefs) {
+      console.log('⚠️  Reference update mode enabled - .mmd files will be overwritten');
+    }
+    
     // Run tests
-    const result = await runAcceptanceTestsMultiFramework(examplesDir, filter);
+    const result = await runAcceptanceTestsMultiFramework(examplesDir, filter, updateRefs);
     
     // Print report
     console.log(formatTestReport(result));

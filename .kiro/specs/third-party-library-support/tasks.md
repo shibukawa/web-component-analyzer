@@ -237,8 +237,8 @@
     - Verify params and searchParams input nodes
     - _Requirements: 4, 14_
 
-- [ ] 12.5 Add TanStack Router library support
-  - [ ] 12.5.1 Create TanStack Router library processor
+- [x] 12.5 Add TanStack Router library support
+  - [x] 12.5.1 Create TanStack Router library processor
     - Create packages/analyzer/src/libraries/tanstack-router.ts
     - Implement TanStackRouterLibraryProcessor class
     - Handle useRouter hook (returns router object with methods)
@@ -249,25 +249,25 @@
     - Handle useLocation hook (returns location object)
     - _Requirements: 3_
   
-  - [ ] 12.5.2 Register TanStack Router processor in library index
+  - [x] 12.5.2 Register TanStack Router processor in library index
     - Add import for TanStackRouterLibraryProcessor in packages/analyzer/src/libraries/index.ts
     - Register processor in registerDefaultProcessors() function
     - Export processor class
     - _Requirements: 3_
   
-  - [ ] 12.5.3 Create 109-TanStackRouter-Navigation.tsx acceptance test
+  - [x] 12.5.3 Create 109-TanStackRouter-Navigation.tsx acceptance test
     - Component using useRouter, useNavigate, useLocation
     - Include embedded YAML specification
     - Verify navigate process and location input nodes are created
     - _Requirements: 3, 14_
   
-  - [ ] 12.5.4 Create 110-TanStackRouter-SearchParams.tsx acceptance test
+  - [x] 12.5.4 Create 110-TanStackRouter-SearchParams.tsx acceptance test
     - Component using useSearch and useParams
     - Include embedded YAML specification
     - Verify search and params input nodes
     - _Requirements: 3, 14_
   
-  - [ ] 12.5.5 Create 111-TanStackRouter-State.tsx acceptance test
+  - [x] 12.5.5 Create 111-TanStackRouter-State.tsx acceptance test
     - Component using useRouterState
     - Include embedded YAML specification
     - Verify router state data store node

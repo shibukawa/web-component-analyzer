@@ -186,6 +186,21 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
               }
             }
           }
+          // Check for hook call with type assertion (e.g., useSearch() as SearchParams)
+          else if (decl.init.type === 'TsAsExpression' || decl.init.type === 'TsSatisfiesExpression') {
+            console.log('🪝 Found TsAsExpression/TsSatisfiesExpression in VariableDeclaration');
+            const expr = decl.init as any;
+            if (expr.expression && expr.expression.type === 'CallExpression') {
+              console.log('🪝 Found CallExpression inside TsAsExpression, checking if it\'s a hook...');
+              if (this.isHookCall(expr.expression)) {
+                const hookInfo = this.extractHookInfo(item.declarations[0]);
+                if (hookInfo) {
+                  console.log('🪝 ✅ Hook extracted from TsAsExpression:', hookInfo.hookName, hookInfo.variables);
+                  hooksWithDeclarations.push({ hook: hookInfo, declaration: item.declarations[0] });
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -320,11 +335,24 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
    * Extract hook information from a variable declaration
    */
   private extractHookInfo(declaration: swc.VariableDeclarator): HookInfo | null {
-    if (!declaration.init || declaration.init.type !== 'CallExpression') {
+    if (!declaration.init) {
       return null;
     }
 
-    const callExpression = declaration.init;
+    // Handle type assertions (e.g., useSearch() as SearchParams)
+    let callExpression: swc.CallExpression | null = null;
+    if (declaration.init.type === 'CallExpression') {
+      callExpression = declaration.init;
+    } else if (declaration.init.type === 'TsAsExpression' || declaration.init.type === 'TsSatisfiesExpression') {
+      const expr = declaration.init as any;
+      if (expr.expression && expr.expression.type === 'CallExpression') {
+        callExpression = expr.expression;
+      }
+    }
+
+    if (!callExpression) {
+      return null;
+    }
     const hookName = this.getHookName(callExpression);
     
     if (!hookName) {

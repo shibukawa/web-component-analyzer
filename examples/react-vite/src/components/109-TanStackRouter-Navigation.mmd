@@ -1,0 +1,59 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  library_hook_0[["useRouter"]]
+  url_input_1["URL: Input"]
+  url_output_2["URL: Output"]
+  library_hook_3[["useNavigate"]]
+  library_hook_4[("useLocation")]
+  process_5[["handleNavigateToHome"]]
+  process_6[["handleRouterNavigate"]]
+  jsx_element_0["p"]
+  jsx_element_1["p"]
+  jsx_element_2["button"]
+  jsx_element_3["button"]
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  url_input_1 eurl_input_1_library_hook_0@-->|"provides"| library_hook_0
+  eurl_input_1_library_hook_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_url_output_2@-->|"navigates"| url_output_2
+  elibrary_hook_0_url_output_2@{ animate: true }
+  library_hook_3 elibrary_hook_3_url_output_2@-->|"navigates"| url_output_2
+  elibrary_hook_3_url_output_2@{ animate: true }
+  url_input_1 eurl_input_1_library_hook_4@-->|"provides"| library_hook_4
+  eurl_input_1_library_hook_4@{ animate: true }
+  library_hook_4 elibrary_hook_4_jsx_element_0@-->|"display: location"| jsx_element_0
+  elibrary_hook_4_jsx_element_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_1@-->|"display"| jsx_element_1
+  elibrary_hook_0_jsx_element_1@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_5@-->|"onClick"| process_5
+  ejsx_element_2_process_5@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_6@-->|"onClick"| process_6
+  ejsx_element_3_process_6@{ animate: true }
+  process_5 eprocess_5_library_hook_3@-->|"calls"| library_hook_3
+  eprocess_5_library_hook_3@{ animate: true }
+  process_6 eprocess_6_library_hook_0@-->|"calls"| library_hook_0
+  eprocess_6_library_hook_0@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class library_hook_0 process
+  class library_hook_3 process
+  class library_hook_4 dataStore
+  class process_5 process
+  class process_6 process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement

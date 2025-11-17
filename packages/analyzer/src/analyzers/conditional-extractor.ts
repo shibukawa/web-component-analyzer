@@ -364,11 +364,9 @@ export class ConditionalStructureExtractor {
       if (child.type === 'JSXExpressionContainer') {
         const expr = child.expression;
         if (expr.type !== 'JSXEmptyExpression') {
-          // Skip conditional expressions - they are handled as ConditionalBranch
-          if (this.isConditionalExpression(expr)) {
-            continue;
-          }
-          
+          // Extract variables from all expressions, including conditional ones
+          // Conditional expressions (ternary, &&, ||) are handled as ConditionalBranch
+          // but we still need to extract the variables they reference for display dependencies
           const vars = this.extractVariablesFromExpression(expr);
           dependencies.push(...vars);
         }

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@vscode/test-electron':
+        specifier: ^2.5.2
+        version: 2.5.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

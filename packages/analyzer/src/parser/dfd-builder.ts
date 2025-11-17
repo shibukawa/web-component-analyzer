@@ -818,7 +818,15 @@ export class DefaultDFDBuilder implements DFDBuilder {
     
     // For each process, check if it calls any library hook process properties
     for (const process of analysis.processes) {
-      console.log(`🚚 Checking process: ${process.name}`);
+      console.log(`🚚 Checking process: ${process.name}, references:`, process.references);
+      
+      const processNode = this.nodes.find(
+        node => node.type === 'process' && node.label === process.name
+      );
+      
+      if (!processNode) {
+        continue;
+      }
       
       // Check if this process calls any library hook process properties
       for (const libraryHookNode of libraryHookNodes) {
@@ -827,44 +835,17 @@ export class DefaultDFDBuilder implements DFDBuilder {
         
         // Check if any process property is referenced in this process
         for (const propName of processProperties) {
-          // Simple heuristic: if the process name contains the property name
-          // or if the process calls the property
-          if (process.name.includes(propName) || 
-              (process as any).callExpressions?.some((call: any) => call.includes(propName))) {
-            
+          // Check if the process references this property
+          if (process.references.includes(propName)) {
             // Create edge from process to library hook
             const edge: DFDEdge = {
-              from: this.findNodeByVariable(process.name, this.nodes)?.id || '',
-              to: libraryHookNode.id,
-              label: `onClick: ${propName}`
-            };
-            
-            if (edge.from) {
-              this.edges.push(edge);
-              console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (${propName})`);
-            }
-          }
-        }
-        
-        // Also check if process references the library hook itself (for Next.js hooks like useRouter)
-        // This handles cases where the process calls methods on the hook object
-        const hookVariables = libraryHookNode.metadata?.variables as string[] || [];
-        
-        for (const varName of hookVariables) {
-          if (process.name.includes(varName) || 
-              (process as any).callExpressions?.some((call: any) => call.includes(varName))) {
-            
-            // Create edge from process to library hook
-            const edge: DFDEdge = {
-              from: this.findNodeByVariable(process.name, this.nodes)?.id || '',
+              from: processNode.id,
               to: libraryHookNode.id,
               label: 'calls'
             };
             
-            if (edge.from) {
-              this.edges.push(edge);
-              console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (calls via ${varName})`);
-            }
+            this.edges.push(edge);
+            console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (${propName})`);
           }
         }
       }

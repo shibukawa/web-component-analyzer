@@ -9,6 +9,7 @@
     "test": "pnpm -r run test"
   },
   "devDependencies": {
+    "@vscode/test-electron": "^2.5.2",
     "typescript": "^5.9.3"
   },
   "license": "Apache-2.0"

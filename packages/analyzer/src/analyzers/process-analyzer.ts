@@ -809,6 +809,33 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
   ): void {
     const callee = callExpr.callee;
     
+    // Check if it's an optional chaining call (e.g., imperativeChild?.focus())
+    if (callee.type === 'OptionalChainingExpression') {
+      const optChain = callee as swc.OptionalChainingExpression;
+      if (optChain.base.type === 'MemberExpression') {
+        const memberExpr = optChain.base as swc.MemberExpression;
+        
+        // Check if this is a ref variable method call (e.g., imperativeChild?.focus())
+        const imperativeHandleInfo = this.checkImperativeHandleCall(memberExpr);
+        
+        if (imperativeHandleInfo) {
+          // This is an imperative handle call via optional chaining
+          const args = this.extractCallArguments(callExpr);
+          externalCalls.push({
+            functionName: imperativeHandleInfo.methodName,
+            arguments: args,
+            isImperativeHandleCall: true,
+            refName: imperativeHandleInfo.refName,
+            methodName: imperativeHandleInfo.methodName
+          });
+        }
+        
+        // Extract references from the base
+        this.extractReferencesFromExpression(optChain.base, references, externalCalls);
+      }
+      return;
+    }
+    
     // Check if it's an external function call (member expression like api.sendData)
     if (callee.type === 'MemberExpression') {
       const functionName = this.getMemberExpressionName(callee);

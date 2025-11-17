@@ -5,6 +5,9 @@ flowchart LR
   process_2[["handleGetValue"]]
   process_3[["handleReset"]]
   process_4[["handleValueChange"]]
+  childRef_exported_handlers_focus[["focus"]]
+  childRef_exported_handlers_getValue[["getValue"]]
+  childRef_exported_handlers_reset[["reset"]]
   jsx_element_0["ImperativeChild"]
   jsx_element_1["button"]
   jsx_element_2["button"]
@@ -18,6 +21,18 @@ flowchart LR
       jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
       jsx_element_4@{ shape: hex, label: "&lt;p&gt;" }
   end
+  subgraph childRef_exported_handlers["exported handlers"]
+    direction TB
+      childRef_exported_handlers_focus[["focus"]]
+      childRef_exported_handlers_getValue[["getValue"]]
+      childRef_exported_handlers_reset[["reset"]]
+  end
+  process_1 eprocess_1_childRef_exported_handlers_focus@-->|"calls"| childRef_exported_handlers_focus
+  eprocess_1_childRef_exported_handlers_focus@{ animate: true }
+  process_2 eprocess_2_childRef_exported_handlers_getValue@-->|"calls"| childRef_exported_handlers_getValue
+  eprocess_2_childRef_exported_handlers_getValue@{ animate: true }
+  process_3 eprocess_3_childRef_exported_handlers_reset@-->|"calls"| childRef_exported_handlers_reset
+  eprocess_3_childRef_exported_handlers_reset@{ animate: true }
   state_0 estate_0_jsx_element_4@-->|"display"| jsx_element_4
   estate_0_jsx_element_4@{ animate: true }
   jsx_element_0 ejsx_element_0_process_4@-->|"onValueChange"| process_4
@@ -34,6 +49,8 @@ flowchart LR
   eprocess_3_state_0@{ animate: true }
   process_4 eprocess_4_state_0@-->|"writes"| state_0
   eprocess_4_state_0@{ animate: true }
+  jsx_element_0 ejsx_element_0_childRef_exported_handlers@---->|"exports"| childRef_exported_handlers
+  ejsx_element_0_childRef_exported_handlers@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -49,8 +66,14 @@ flowchart LR
   class process_2 process
   class process_3 process
   class process_4 process
+  class childRef_exported_handlers_focus process
+  class childRef_exported_handlers_getValue process
+  class childRef_exported_handlers_reset process
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement
   class jsx_element_3 jsxElement
   class jsx_element_4 jsxElement
+  class childRef_exported_handlers_focus exportedHandler
+  class childRef_exported_handlers_getValue exportedHandler
+  class childRef_exported_handlers_reset exportedHandler

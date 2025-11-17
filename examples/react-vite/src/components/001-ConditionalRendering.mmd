@@ -10,17 +10,17 @@ flowchart LR
   jsx_element_1["button"]
   jsx_element_2["p"]
   subgraph_1@{ shape: hex, label: "{isLoggedIn}" }
-  subgraph_2@{ shape: hex, label: "{count > expression}" }
+  subgraph_2@{ shape: hex, label: "{count &gt; expression}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
     subgraph subgraph_1["{isLoggedIn}"]
       direction TB
-        jsx_element_0@{ shape: hex, label: "<p>" }
-        jsx_element_1@{ shape: hex, label: "<button>" }
+        jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
+        jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
     end
-    subgraph subgraph_2["{count > expression}"]
+    subgraph subgraph_2["{count &gt; expression}"]
       direction TB
-        jsx_element_2@{ shape: hex, label: "<p>" }
+        jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
     end
   end
   prop_0 eprop_0_subgraph_1@-->|"control visibility"| subgraph_1
