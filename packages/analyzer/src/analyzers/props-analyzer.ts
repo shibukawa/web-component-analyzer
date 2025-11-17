@@ -63,27 +63,40 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
   async analyzeProps(module: swc.Module, filePath?: string, componentName?: string): Promise<PropInfo[]> {
     const props: PropInfo[] = [];
     
+    console.log('[PropsAnalyzer] Starting props analysis for file:', filePath);
+    
     // Find React components in the module
     for (const item of module.body) {
       // Check for functional components (function declarations and arrow functions)
       if (item.type === 'ExportDefaultDeclaration') {
+        console.log('[PropsAnalyzer] Found ExportDefaultDeclaration');
         const declaration = item.decl;
         if (declaration) {
           props.push(...this.extractPropsFromDeclaration(declaration));
         }
       } else if (item.type === 'ExportDeclaration') {
+        console.log('[PropsAnalyzer] Found ExportDeclaration');
         const declaration = item.declaration;
         if (declaration) {
           props.push(...this.extractPropsFromDeclaration(declaration));
         }
       } else if (item.type === 'FunctionDeclaration') {
-        props.push(...this.extractPropsFromDeclaration(item));
+        const funcName = (item as any).identifier?.value || 'unknown';
+        console.log('[PropsAnalyzer] Found FunctionDeclaration:', funcName, '- SKIPPING (not exported)');
+        // Skip non-exported function declarations (utility functions)
+        continue;
       } else if (item.type === 'VariableDeclaration') {
-        props.push(...this.extractPropsFromDeclaration(item));
+        // Only process variable declarations if they're exported
+        // For now, skip all non-exported variable declarations
+        console.log('[PropsAnalyzer] Found VariableDeclaration - SKIPPING (not exported)');
+        continue;
       } else if (item.type === 'ClassDeclaration') {
+        console.log('[PropsAnalyzer] Found ClassDeclaration');
         props.push(...this.extractPropsFromDeclaration(item));
       }
     }
+    
+    console.log('[PropsAnalyzer] Found', props.length, 'props after initial scan');
     
     // If TypeResolver is available and we have file path and component name, resolve types
     if (this.typeResolver && filePath && componentName && props.length > 0) {
@@ -152,7 +165,17 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
       const props: PropInfo[] = [];
       for (const decl of declaration.declarations) {
         if (decl.init && (decl.init.type === 'ArrowFunctionExpression' || decl.init.type === 'FunctionExpression')) {
-          props.push(...this.extractPropsFromFunction(decl.init));
+          // Get the variable name to check if it's a component
+          const varName = (decl.id as any)?.value || 'unknown';
+          console.log('[PropsAnalyzer.extractPropsFromDeclaration] VariableDeclaration:', varName);
+          
+          // Only process if it looks like a React component (starts with uppercase)
+          if (varName && varName[0] === varName[0].toUpperCase()) {
+            console.log('[PropsAnalyzer.extractPropsFromDeclaration] Processing component:', varName);
+            props.push(...this.extractPropsFromFunction(decl.init));
+          } else {
+            console.log('[PropsAnalyzer.extractPropsFromDeclaration] Skipping utility function:', varName);
+          }
         }
       }
       return props;
@@ -189,10 +212,14 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
     // Check if this is likely a React component (starts with uppercase)
     if (func.type === 'FunctionDeclaration' && func.identifier) {
       const functionName = func.identifier.value;
+      console.log('[PropsAnalyzer.extractPropsFromFunction] FunctionDeclaration:', functionName);
       // Skip functions that don't start with uppercase (not React components)
       if (functionName && functionName[0] !== functionName[0].toUpperCase()) {
+        console.log('[PropsAnalyzer.extractPropsFromFunction] Skipping', functionName, '- does not start with uppercase');
         return props;
       }
+    } else if (func.type === 'ArrowFunctionExpression' || func.type === 'FunctionExpression') {
+      console.log('[PropsAnalyzer.extractPropsFromFunction] Processing', func.type);
     }
     
     // Get the first parameter (props parameter)
@@ -234,6 +261,8 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
   private extractPropsFromObjectPattern(pattern: swc.ObjectPattern): PropInfo[] {
     const props: PropInfo[] = [];
     
+    console.log('[PropsAnalyzer.extractPropsFromObjectPattern] Processing object pattern with', pattern.properties.length, 'properties');
+    
     for (const prop of pattern.properties) {
       if (prop.type === 'KeyValuePatternProperty') {
         const key = prop.key;
@@ -244,6 +273,7 @@ export class SWCPropsAnalyzer implements PropsAnalyzer {
         }
         
         if (propName) {
+          console.log('[PropsAnalyzer.extractPropsFromObjectPattern] Extracting prop:', propName);
           // Extract type information if available
           const typeAnnotation = this.extractTypeFromPattern(prop.value);
           

@@ -10,6 +10,8 @@ import { ProcessorRegistry } from './registry.js';
 import { ReactLibraryProcessor } from './react.js';
 import { SWRLibraryProcessor } from './swr.js';
 import { NextJSLibraryProcessor } from './next.js';
+import { TanStackQueryLibraryProcessor } from './tanstack-query.js';
+import { ReactRouterLibraryProcessor } from './react-router.js';
 
 /**
  * Global processor registry instance
@@ -51,6 +53,8 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   // Register third-party library processors
   registry.register(new SWRLibraryProcessor());
   registry.register(new NextJSLibraryProcessor());
+  registry.register(new TanStackQueryLibraryProcessor());
+  registry.register(new ReactRouterLibraryProcessor());
   
   // Phase 3: Register remaining third-party library processors
   // registry.register(new CustomHookProcessor());
@@ -61,6 +65,8 @@ export { ProcessorRegistry } from './registry.js';
 export { ReactLibraryProcessor } from './react.js';
 export { SWRLibraryProcessor } from './swr.js';
 export { NextJSLibraryProcessor } from './next.js';
+export { TanStackQueryLibraryProcessor } from './tanstack-query.js';
+export { ReactRouterLibraryProcessor } from './react-router.js';
 export type {
   HookProcessor,
   ProcessorMetadata,

@@ -178,40 +178,40 @@
     - Apply same pattern to other data fetching libraries
     - _Requirements: 1_
 
-- [ ] 10. Add TanStack Query library support
-  - [ ] 10.1 Define TanStack Query adapters in library-adapters.json
+- [x] 10. Add TanStack Query library support
+  - [x] 10.1 Define TanStack Query adapters in library-adapters.json
     - Add adapters for useQuery (data, error, isLoading, isFetching, refetch)
     - Add adapters for useMutation (mutate, mutateAsync, data, error, isLoading)
     - Add adapters for useInfiniteQuery
     - _Requirements: 2_
   
-  - [ ] 10.2 Create 103-TanStackQuery-BasicQuery.tsx acceptance test
+  - [x] 10.2 Create 103-TanStackQuery-BasicQuery.tsx acceptance test
     - Component using useQuery
     - Include embedded YAML specification
     - Verify data, isLoading, isError nodes are created
     - _Requirements: 2, 14_
   
-  - [ ] 10.3 Create 104-TanStackQuery-Mutation.tsx acceptance test
+  - [x] 10.3 Create 104-TanStackQuery-Mutation.tsx acceptance test
     - Component using useMutation
     - Include embedded YAML specification
     - Verify mutate process node is created
     - _Requirements: 2, 14_
 
-- [ ] 11. Add React Router library support
-  - [ ] 11.1 Define React Router adapters in library-adapters.json
+- [x] 11. Add React Router library support
+  - [x] 11.1 Define React Router adapters in library-adapters.json
     - Add adapters for useNavigate (returns navigation function)
     - Add adapters for useParams (returns route parameters object)
     - Add adapters for useLocation (returns location object)
     - Add adapters for useSearchParams (returns [searchParams, setSearchParams])
     - _Requirements: 3_
   
-  - [ ] 11.2 Create 105-ReactRouter-Navigation.tsx acceptance test
+  - [x] 11.2 Create 105-ReactRouter-Navigation.tsx acceptance test
     - Component using useNavigate, useParams, useLocation
     - Include embedded YAML specification
     - Verify navigate process and params input nodes are created
     - _Requirements: 3, 14_
   
-  - [ ] 11.3 Create 106-ReactRouter-SearchParams.tsx acceptance test
+  - [x] 11.3 Create 106-ReactRouter-SearchParams.tsx acceptance test
     - Component using useSearchParams
     - Include embedded YAML specification
     - Verify searchParams input and setSearchParams process nodes
@@ -236,6 +236,42 @@
     - Include embedded YAML specification
     - Verify params and searchParams input nodes
     - _Requirements: 4, 14_
+
+- [ ] 12.5 Add TanStack Router library support
+  - [ ] 12.5.1 Create TanStack Router library processor
+    - Create packages/analyzer/src/libraries/tanstack-router.ts
+    - Implement TanStackRouterLibraryProcessor class
+    - Handle useRouter hook (returns router object with methods)
+    - Handle useRouterState hook (returns router state object)
+    - Handle useSearch hook (returns search parameters)
+    - Handle useParams hook (returns route parameters)
+    - Handle useNavigate hook (returns navigate function)
+    - Handle useLocation hook (returns location object)
+    - _Requirements: 3_
+  
+  - [ ] 12.5.2 Register TanStack Router processor in library index
+    - Add import for TanStackRouterLibraryProcessor in packages/analyzer/src/libraries/index.ts
+    - Register processor in registerDefaultProcessors() function
+    - Export processor class
+    - _Requirements: 3_
+  
+  - [ ] 12.5.3 Create 109-TanStackRouter-Navigation.tsx acceptance test
+    - Component using useRouter, useNavigate, useLocation
+    - Include embedded YAML specification
+    - Verify navigate process and location input nodes are created
+    - _Requirements: 3, 14_
+  
+  - [ ] 12.5.4 Create 110-TanStackRouter-SearchParams.tsx acceptance test
+    - Component using useSearch and useParams
+    - Include embedded YAML specification
+    - Verify search and params input nodes
+    - _Requirements: 3, 14_
+  
+  - [ ] 12.5.5 Create 111-TanStackRouter-State.tsx acceptance test
+    - Component using useRouterState
+    - Include embedded YAML specification
+    - Verify router state data store node
+    - _Requirements: 3, 14_
 
 - [ ] 13. Add React Hook Form library support
   - [ ] 13.1 Define React Hook Form adapters in library-adapters.json

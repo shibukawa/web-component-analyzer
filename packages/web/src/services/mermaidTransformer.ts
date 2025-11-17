@@ -343,6 +343,7 @@ export function transformToMermaid(dfdData: DFDSourceData, themeMode: ThemeMode 
     lines.push('  classDef outputProp fill:#3a2a1a,stroke:#FF9800,stroke-width:2px,color:#ffffff');
     lines.push('  classDef process fill:#3a1a4a,stroke:#9C27B0,stroke-width:3px,color:#ffffff');
     lines.push('  classDef dataStore fill:#1a3a1a,stroke:#4CAF50,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef libraryHook fill:#0d2d0d,stroke:#2e7d32,stroke-width:2px,color:#ffffff');
     lines.push('  classDef jsxElement fill:#3a2a1a,stroke:#FF9800,stroke-width:2px,color:#ffffff');
     lines.push('  classDef contextData fill:#1a3a3a,stroke:#0288D1,stroke-width:2px,color:#ffffff');
     lines.push('  classDef contextFunction fill:#3a2a1a,stroke:#F57C00,stroke-width:2px,color:#ffffff');
@@ -354,6 +355,7 @@ export function transformToMermaid(dfdData: DFDSourceData, themeMode: ThemeMode 
     lines.push('  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
     lines.push('  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px');
     lines.push('  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px');
+    lines.push('  classDef libraryHook fill:#C8E6C9,stroke:#388E3C,stroke-width:2px');
     lines.push('  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
     lines.push('  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px');
     lines.push('  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px');
@@ -371,7 +373,12 @@ export function transformToMermaid(dfdData: DFDSourceData, themeMode: ThemeMode 
     if (node.type === 'process') {
       lines.push(`  class ${sanitizeId(node.id)} process`);
     } else if (node.type === 'data-store') {
-      lines.push(`  class ${sanitizeId(node.id)} dataStore`);
+      // Check if this is a library hook node
+      if (node.metadata?.isLibraryHook) {
+        lines.push(`  class ${sanitizeId(node.id)} libraryHook`);
+      } else {
+        lines.push(`  class ${sanitizeId(node.id)} dataStore`);
+      }
     }
   }
   

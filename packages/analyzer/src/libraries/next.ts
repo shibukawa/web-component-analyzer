@@ -75,14 +75,34 @@ export class NextJSLibraryProcessor implements HookProcessor {
       hook.hookName === 'useSearchParams' ||
       hook.hookName === 'useParams';
 
-    // Create the hook node itself (as a process)
+    // Create the hook node itself (as a data-store for library hooks)
     const nodeId = generateNodeId('library_hook');
-    const label = `${hook.hookName}\n<Next.js>`;
+    const label = hook.hookName;
+
+    // For Next.js hooks, we need to track which variables are data vs process properties
+    // useRouter returns an object with methods (process properties)
+    // usePathname returns a string (data)
+    // useSearchParams returns a SearchParams object (data - can be used directly in JSX)
+    // useParams returns a params object (data - can be used directly in JSX)
+    const dataProperties: string[] = [];
+    const processProperties: string[] = [];
+
+    if (isOutputHook) {
+      // useRouter returns an object with methods like push(), back(), etc.
+      // The variable itself (e.g., 'router') is what processes will reference
+      processProperties.push(...hook.variables);
+    } else if (isInputHook) {
+      // All input hooks return data that can be used directly in JSX
+      // usePathname: returns string
+      // useSearchParams: returns SearchParams object (can be used in JSX)
+      // useParams: returns params object (can be used in JSX)
+      dataProperties.push(...hook.variables);
+    }
 
     const node: DFDNode = {
       id: nodeId,
       label,
-      type: 'process',
+      type: 'data-store',
       line: hook.line,
       column: hook.column,
       metadata: {
@@ -91,6 +111,10 @@ export class NextJSLibraryProcessor implements HookProcessor {
         libraryName: 'next/navigation',
         isLibraryHook: true,
         isNextJSHook: true,
+        // Store variable names for process reference tracking
+        variables: hook.variables,
+        dataProperties,
+        processProperties,
         line: hook.line,
         column: hook.column
       }

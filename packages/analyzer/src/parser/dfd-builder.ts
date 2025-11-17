@@ -699,6 +699,38 @@ export class DefaultDFDBuilder implements DFDBuilder {
         console.log(`🚚 Skipping useSWRConfig (edge already created by processor)`);
         continue;
       }
+      
+      // For useMutation (TanStack Query), create edge from hook to Server
+      if (hookName === 'useMutation' && serverNodeId) {
+        console.log(`🚚 Creating mutate edge from ${hookName} to Server`);
+        const edge: DFDEdge = {
+          from: hookNode.id,
+          to: serverNodeId,
+          label: 'mutate'
+        };
+        // Check if edge already exists to avoid duplication
+        const edgeExists = this.edges.some(e => e.from === edge.from && e.to === edge.to && e.label === edge.label);
+        if (!edgeExists) {
+          this.edges.push(edge);
+          console.log(`🚚 ✅ Added mutate edge`);
+        } else {
+          console.log(`🚚 ⚠️ Edge already exists, skipping`);
+        }
+      }
+      
+      // For useQuery (TanStack Query), the edge is already created by the processor
+      // Skip here to avoid duplication
+      if (hookName === 'useQuery') {
+        console.log(`🚚 Skipping useQuery (edge already created by processor)`);
+        continue;
+      }
+      
+      // For useInfiniteQuery (TanStack Query), the edge is already created by the processor
+      // Skip here to avoid duplication
+      if (hookName === 'useInfiniteQuery') {
+        console.log(`🚚 Skipping useInfiniteQuery (edge already created by processor)`);
+        continue;
+      }
     }
     
     this.log('🚚 buildMutationToServerEdges: Completed');
@@ -791,6 +823,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
       // Check if this process calls any library hook process properties
       for (const libraryHookNode of libraryHookNodes) {
         const processProperties = libraryHookNode.metadata?.processProperties as string[] || [];
+        const hookName = libraryHookNode.metadata?.hookName as string;
         
         // Check if any process property is referenced in this process
         for (const propName of processProperties) {
@@ -809,6 +842,28 @@ export class DefaultDFDBuilder implements DFDBuilder {
             if (edge.from) {
               this.edges.push(edge);
               console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (${propName})`);
+            }
+          }
+        }
+        
+        // Also check if process references the library hook itself (for Next.js hooks like useRouter)
+        // This handles cases where the process calls methods on the hook object
+        const hookVariables = libraryHookNode.metadata?.variables as string[] || [];
+        
+        for (const varName of hookVariables) {
+          if (process.name.includes(varName) || 
+              (process as any).callExpressions?.some((call: any) => call.includes(varName))) {
+            
+            // Create edge from process to library hook
+            const edge: DFDEdge = {
+              from: this.findNodeByVariable(process.name, this.nodes)?.id || '',
+              to: libraryHookNode.id,
+              label: 'calls'
+            };
+            
+            if (edge.from) {
+              this.edges.push(edge);
+              console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (calls via ${varName})`);
             }
           }
         }
@@ -2057,6 +2112,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
             finalLabel = `binds: ${varName}`;
           }
         }
+        // For library hooks (Next.js, etc.), add property name to label
+        if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.dataProperties) {
+          const dataProps = sourceNode.metadata.dataProperties as string[];
+          if (dataProps.includes(varName)) {
+            finalLabel = `binds: ${varName}`;
+          }
+        }
         
         console.log(`🚚   ✅ Creating edge from ${sourceNode.id} to ${elementNode.id} (${finalLabel})`);
         edges.push({
@@ -2111,6 +2173,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
                 finalLabel = `${edgeLabel}: ${varName}`;
               }
             }
+            // For library hooks (Next.js, etc.), add property name to label
+            if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.dataProperties) {
+              const dataProps = sourceNode.metadata.dataProperties as string[];
+              if (dataProps.includes(varName)) {
+                finalLabel = `${edgeLabel}: ${varName}`;
+              }
+            }
             
             console.log(`🚚   ✅ Creating ${finalLabel} edge from ${sourceNode.id} to ${conditionalSubgraph.id}`);
             edges.push({
@@ -2149,6 +2218,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
           if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.properties) {
             const properties = sourceNode.metadata.properties as string[];
             if (properties.includes(varName)) {
+              finalLabel = `display: ${varName}`;
+            }
+          }
+          // For library hooks (Next.js, etc.), add property name to label
+          if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.dataProperties) {
+            const dataProps = sourceNode.metadata.dataProperties as string[];
+            if (dataProps.includes(varName)) {
               finalLabel = `display: ${varName}`;
             }
           }
@@ -2338,6 +2414,28 @@ export class DefaultDFDBuilder implements DFDBuilder {
     );
     if (node) {
       console.log(`🔍 findNodeByVariableName: Found library hook node for property "${variableName}":`, node.label);
+      return node;
+    }
+
+    // For library hooks (Next.js, etc.), check if this is one of the data properties
+    node = nodes.find(n => 
+      n.metadata?.isLibraryHook && 
+      n.metadata?.dataProperties &&
+      (n.metadata.dataProperties as string[]).includes(variableName)
+    );
+    if (node) {
+      console.log(`🔍 findNodeByVariableName: Found library hook node for data property "${variableName}":`, node.label);
+      return node;
+    }
+
+    // For library hooks (Next.js, etc.), check if this is one of the process properties
+    node = nodes.find(n => 
+      n.metadata?.isLibraryHook && 
+      n.metadata?.processProperties &&
+      (n.metadata.processProperties as string[]).includes(variableName)
+    );
+    if (node) {
+      console.log(`🔍 findNodeByVariableName: Found library hook node for process property "${variableName}":`, node.label);
       return node;
     }
 

@@ -88,15 +88,12 @@ export default function NextJSSearchParams() {
   const searchParams = useSearchParams();
   const params = useParams();
 
-  const query = searchParams.get('query');
-  const filter = searchParams.get('filter');
-
   return (
     <div>
       <h1>Next.js Search Params Test</h1>
       <p>Route param ID: {params.id}</p>
-      <p>Search query: {query}</p>
-      <p>Filter: {filter}</p>
+      <p>Search query: {searchParams.get('query')}</p>
+      <p>Filter: {searchParams.get('filter')}</p>
     </div>
   );
 }
