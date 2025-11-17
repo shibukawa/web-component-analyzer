@@ -6,7 +6,6 @@
  */
 
 import { DFDNode, DFDEdge } from '../parser/types.js';
-import { EnrichedHookInfo } from '../analyzers/hooks-analyzer.js';
 import { LibraryHookHandler } from './swr.js';
 
 /**
@@ -28,7 +27,7 @@ export class NextJSHookHandler implements LibraryHookHandler {
 
   createNodes(
     hook: any,
-    enrichedHook: EnrichedHookInfo,
+    enrichedHook: any,
     serverNodeId: string | null,
     generateNodeId: (prefix: string) => string
   ): { nodes: DFDNode[]; edges: DFDEdge[] } {

@@ -5,7 +5,6 @@
  */
 
 import { DFDNode, DFDEdge } from '../parser/types.js';
-import { EnrichedHookInfo } from '../analyzers/hooks-analyzer.js';
 
 export interface LibraryHookHandler {
   /**
@@ -18,7 +17,7 @@ export interface LibraryHookHandler {
    */
   createNodes(
     hook: any,
-    enrichedHook: EnrichedHookInfo,
+    enrichedHook: any,
     serverNodeId: string | null,
     generateNodeId: (prefix: string) => string
   ): {
@@ -40,7 +39,7 @@ export class SWRHookHandler implements LibraryHookHandler {
 
   createNodes(
     hook: any,
-    enrichedHook: EnrichedHookInfo,
+    enrichedHook: any,
     serverNodeId: string | null,
     generateNodeId: (prefix: string) => string
   ): { nodes: DFDNode[]; edges: DFDEdge[] } {

@@ -4,29 +4,13 @@
 
 import * as swc from '@swc/core';
 import { HookInfo, HookCategory } from '../parser/types';
-import { hookRegistry } from '../utils/hook-registry';
 import { TypeResolver, TypeQueryRequest } from '../services/type-resolver';
-import { HookAdapter, ReturnValuePattern, ReturnValueMapping, DFDElementType } from '../utils/library-adapter-types';
 
 /**
  * Hooks Analyzer interface
  */
 export interface HooksAnalyzer {
   analyzeHooks(body: swc.ModuleItem[] | swc.Statement[]): Promise<HookInfo[]>;
-}
-
-/**
- * Enriched Hook Information with library adapter metadata
- * Extends HookInfo with library-specific information
- */
-export interface EnrichedHookInfo extends HookInfo {
-  /** Name of the library this hook belongs to (e.g., 'swr', '@tanstack/react-query') */
-  libraryName?: string;
-  /** Mappings from return value variables to DFD element types and metadata */
-  returnValueMappings?: Map<string, {
-    dfdElementType: 'external-entity-input' | 'data-store' | 'process';
-    metadata?: Record<string, any>;
-  }>;
 }
 
 /**
@@ -116,25 +100,19 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       console.log(`🪝   Arguments:`, hook.arguments);
       console.log(`🪝   Dependencies:`, hook.dependencies);
       
-      if (declaration) {
-        // First, try to apply library adapter if active libraries are present
-        if (this.activeLibraries.length > 0) {
-          console.log(`🪝   Attempting to apply library adapter...`);
-          const enrichedHook = this.applyLibraryAdapter(hook, declaration);
-          if (enrichedHook) {
-            console.log(`🪝   ✅ Applied library adapter for ${hook.hookName}`);
-            console.log(`🪝      Library: ${enrichedHook.libraryName}`);
-            console.log(`🪝      Mappings:`, enrichedHook.returnValueMappings);
-            hooks.push(enrichedHook);
-            continue;
-          } else {
-            console.log(`🪝   ⚠️ No library adapter found for ${hook.hookName}`);
-          }
-        } else {
-          console.log(`🪝   ⚠️ No active libraries, skipping adapter application`);
+      // Set library name based on active libraries
+      // This helps processors identify which hooks they should handle
+      const enrichedHook = hook as any;
+      if (this.activeLibraries.length > 0) {
+        // For now, we'll use a simple heuristic: check if the hook is from an active library
+        // Processors will do more sophisticated matching
+        for (const libraryName of this.activeLibraries) {
+          enrichedHook.libraryName = libraryName;
+          break; // Use the first active library for now
         }
-        
-        // Fall back to existing classification logic
+      }
+      
+      if (declaration) {
         // Check if this is useContext - classify with TypeResolver
         if (hook.hookName === 'useContext') {
           const classifiedHook = await this.classifyUseContextReturnValues(hook, declaration);
@@ -145,8 +123,8 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
           const classifiedHook = await this.classifyUseReducerStateProperties(hook, declaration);
           hooks.push(classifiedHook);
         }
-        // Check if this is a custom hook (not in registry) - classify with heuristics
-        else if (!hookRegistry.getHookCategory(hook.hookName)) {
+        // Check if this is a custom hook - classify with heuristics
+        else if (hook.hookName.startsWith('use') && hook.hookName[3] === hook.hookName[3].toUpperCase()) {
           const classifiedHook = await this.classifyCustomHookReturnValues(hook, declaration);
           hooks.push(classifiedHook);
         } else {
@@ -160,9 +138,6 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     if (hooks.length > 0) {
       hooks.forEach(h => {
         console.log(`🪝   ✅ ${h.hookName}:`, h.variables);
-        if ((h as EnrichedHookInfo).libraryName) {
-          console.log(`🪝      Library: ${(h as EnrichedHookInfo).libraryName}`);
-        }
       });
     }
 
@@ -356,10 +331,6 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       return null;
     }
 
-    const category = hookRegistry.getHookCategory(hookName);
-    // For custom hooks (not in registry), category will be null/undefined
-    // We still want to extract them for type classification
-
     // Special handling for useReducer: extract only top-level array elements
     let variables: string[];
     if (hookName === 'useReducer' && declaration.id.type === 'ArrayPattern') {
@@ -407,9 +378,17 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
 
     console.log(`[HooksAnalyzer] Extracted hook: ${hookName}, line: ${position?.line}, column: ${position?.column}, typeParam: ${typeParameter || 'none'}, argIds: ${argumentIdentifiers.join(', ')}`);
 
+    // Determine library name from active libraries
+    let libraryName: string | undefined;
+    for (const activeLib of this.activeLibraries) {
+      // Simple heuristic: if the hook name is known to belong to a library
+      // For now, we'll set it in the classification phase
+      // This is a placeholder for future enhancement
+    }
+
     return {
       hookName,
-      category: category as any, // Allow undefined for custom hooks
+      category: null as any, // Category is no longer used, processors handle classification
       variables,
       dependencies,
       isReadWritePair,
@@ -420,7 +399,8 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       typeParameter,
       line: position?.line,
       column: position?.column,
-    };
+      libraryName, // Add library name for processor routing
+    } as any;
   }
   
   /**
@@ -484,10 +464,6 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
       return null;
     }
 
-    const category = hookRegistry.getHookCategory(hookName);
-    // For custom hooks (not in registry), category will be null/undefined
-    // We still want to extract them
-
     const dependencies = this.extractDependencies(callExpression);
 
     // Extract position information
@@ -498,7 +474,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
 
     return {
       hookName,
-      category: category as any, // Allow undefined for custom hooks
+      category: null as any, // Category is no longer used
       variables: [],
       dependencies,
       isReadWritePair: false,
@@ -518,11 +494,6 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     hookInfo: HookInfo,
     declaration: swc.VariableDeclarator
   ): Promise<HookInfo> {
-    // Only classify custom hooks (not in registry)
-    if (hookRegistry.getHookCategory(hookInfo.hookName)) {
-      return hookInfo;
-    }
-
     // Skip if no variables to classify
     if (hookInfo.variables.length === 0) {
       return hookInfo;
@@ -555,191 +526,6 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     }
   }
 
-  /**
-   * Apply library adapter to a hook call
-   * @param hookInfo - Hook information to enrich
-   * @param declaration - Variable declaration containing the hook call
-   * @returns EnrichedHookInfo with library metadata or null if no adapter found
-   */
-  private applyLibraryAdapter(
-    hookInfo: HookInfo,
-    declaration: swc.VariableDeclarator
-  ): EnrichedHookInfo | null {
-    console.log(`🪝 applyLibraryAdapter: Checking ${this.activeLibraries.length} active libraries for ${hookInfo.hookName}`);
-    
-    // Check each active library for an adapter for this hook
-    for (const libraryName of this.activeLibraries) {
-      console.log(`🪝   Checking library: ${libraryName}`);
-      const adapter = hookRegistry.getLibraryAdapter(libraryName, hookInfo.hookName);
-      
-      if (adapter) {
-        console.log(`🪝   ✅ Found library adapter for ${hookInfo.hookName} from ${libraryName}`);
-        console.log(`🪝      Adapter return pattern type: ${adapter.returnPattern.type}`);
-        console.log(`🪝      Adapter mappings count: ${adapter.returnPattern.mappings.length}`);
-        
-        // Extract return value mappings from the destructuring pattern
-        const returnValueMappings = this.extractReturnValueMappings(declaration.id, adapter);
-        
-        if (returnValueMappings.size === 0) {
-          console.log(`🪝   ⚠️ No return value mappings extracted, skipping adapter`);
-          continue;
-        }
-        
-        console.log(`🪝   ✅ Extracted ${returnValueMappings.size} return value mappings`);
-        returnValueMappings.forEach((value, key) => {
-          console.log(`🪝      ${key} -> ${value.dfdElementType}`);
-        });
-        
-        // Create enriched hook info
-        const enrichedHookInfo: EnrichedHookInfo = {
-          ...hookInfo,
-          libraryName,
-          returnValueMappings
-        };
-        
-        return enrichedHookInfo;
-      } else {
-        console.log(`🪝   ⚠️ No adapter found for ${hookInfo.hookName} in ${libraryName}`);
-      }
-    }
-    
-    console.log(`🪝 ⚠️ No library adapter found for ${hookInfo.hookName} in any active library`);
-    return null;
-  }
-
-  /**
-   * Extract return value mappings from a destructuring pattern using a library adapter
-   * @param pattern - The destructuring pattern (identifier, array, or object)
-   * @param adapter - The hook adapter with return value pattern
-   * @returns Map of variable names to DFD element types and metadata
-   */
-  private extractReturnValueMappings(
-    pattern: swc.Pattern,
-    adapter: HookAdapter
-  ): Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }> {
-    const mappings = new Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }>();
-    const returnPattern = adapter.returnPattern;
-    
-    console.log(`🪝 Extracting return value mappings, pattern type: ${pattern.type}, adapter pattern type: ${returnPattern.type}`);
-    
-    // Handle single identifier (e.g., const data = useSWR(...))
-    if (pattern.type === 'Identifier') {
-      if (returnPattern.type === 'single' && returnPattern.mappings.length > 0) {
-        const mapping = returnPattern.mappings[0];
-        mappings.set(pattern.value, {
-          dfdElementType: mapping.dfdElementType,
-          metadata: mapping.metadata
-        });
-        console.log(`🪝   Single: ${pattern.value} -> ${mapping.dfdElementType}`);
-      }
-    }
-    // Handle array destructuring (e.g., const [data, error] = useSWR(...))
-    else if (pattern.type === 'ArrayPattern') {
-      if (returnPattern.type === 'array') {
-        for (let i = 0; i < pattern.elements.length && i < returnPattern.mappings.length; i++) {
-          const element = pattern.elements[i];
-          if (!element || element.type === 'RestElement') {
-            continue;
-          }
-          
-          const mapping = returnPattern.mappings[i];
-          
-          // Extract variable name from the element
-          if (element.type === 'Identifier') {
-            mappings.set(element.value, {
-              dfdElementType: mapping.dfdElementType,
-              metadata: mapping.metadata
-            });
-            console.log(`🪝   Array[${i}]: ${element.value} -> ${mapping.dfdElementType}`);
-          } else if (element.type === 'ObjectPattern') {
-            // Nested object destructuring in array (rare but possible)
-            const nestedMappings = this.extractObjectPatternMappings(element, returnPattern.mappings);
-            nestedMappings.forEach((value, key) => mappings.set(key, value));
-          }
-        }
-      }
-    }
-    // Handle object destructuring (e.g., const { data, error, isLoading } = useSWR(...))
-    else if (pattern.type === 'ObjectPattern') {
-      if (returnPattern.type === 'object') {
-        const objectMappings = this.extractObjectPatternMappings(pattern, returnPattern.mappings);
-        objectMappings.forEach((value, key) => mappings.set(key, value));
-      }
-    }
-    
-    return mappings;
-  }
-
-  /**
-   * Extract mappings from an object destructuring pattern
-   * @param pattern - The object pattern
-   * @param adapterMappings - The adapter's return value mappings
-   * @returns Map of variable names to DFD element types and metadata
-   */
-  private extractObjectPatternMappings(
-    pattern: swc.ObjectPattern,
-    adapterMappings: ReturnValueMapping[]
-  ): Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }> {
-    const mappings = new Map<string, { dfdElementType: DFDElementType; metadata?: Record<string, any> }>();
-    
-    for (const property of pattern.properties) {
-      if (property.type === 'KeyValuePatternProperty') {
-        const key = property.key;
-        const value = property.value;
-        
-        if (key.type === 'Identifier') {
-          const propertyName = key.value;
-          
-          // Find the corresponding adapter mapping
-          const adapterMapping = adapterMappings.find(m => m.propertyName === propertyName);
-          
-          if (adapterMapping) {
-            // Extract the variable name from the value pattern
-            if (value.type === 'Identifier') {
-              mappings.set(value.value, {
-                dfdElementType: adapterMapping.dfdElementType,
-                metadata: adapterMapping.metadata
-              });
-              console.log(`🪝   Object: ${value.value} (from ${propertyName}) -> ${adapterMapping.dfdElementType}`);
-            } else if (value.type === 'AssignmentPattern' && value.left.type === 'Identifier') {
-              // Handle default values: { data = null }
-              mappings.set(value.left.value, {
-                dfdElementType: adapterMapping.dfdElementType,
-                metadata: adapterMapping.metadata
-              });
-              console.log(`🪝   Object: ${value.left.value} (from ${propertyName}, with default) -> ${adapterMapping.dfdElementType}`);
-            }
-          }
-        }
-      } else if (property.type === 'AssignmentPatternProperty') {
-        const key = property.key;
-        
-        if (key.type === 'Identifier') {
-          const propertyName = key.value;
-          
-          // Find the corresponding adapter mapping
-          const adapterMapping = adapterMappings.find(m => m.propertyName === propertyName);
-          
-          if (adapterMapping) {
-            mappings.set(propertyName, {
-              dfdElementType: adapterMapping.dfdElementType,
-              metadata: adapterMapping.metadata
-            });
-            console.log(`🪝   Object: ${propertyName} -> ${adapterMapping.dfdElementType}`);
-          }
-        }
-      }
-    }
-    
-    return mappings;
-  }
-
-  /**
-   * Classify useContext return values using TypeResolver
-   * @param hookInfo - Hook information to classify
-   * @param declaration - Variable declaration containing the hook call
-   * @returns Updated HookInfo with type classifications
-   */
   private async classifyUseContextReturnValues(
     hookInfo: HookInfo,
     declaration: swc.VariableDeclarator

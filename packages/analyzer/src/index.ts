@@ -14,6 +14,3 @@ export * from './analyzers/import-detector.js';
 export * from './services/type-classifier.js';
 export * from './services/type-resolver.js';
 export * from './utils/error-handler.js';
-export { hookRegistry, HookCategory } from './utils/hook-registry.js';
-export * from './utils/library-adapter-types.js';
-export * from './utils/library-adapters.js';

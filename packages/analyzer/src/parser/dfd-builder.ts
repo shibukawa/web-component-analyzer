@@ -25,6 +25,9 @@ import {
 import { SubgraphBuilder } from '../analyzers/subgraph-builder';
 import { TypeClassifier } from '../services/type-classifier';
 import { getLibraryHandlerRegistry, resetLibraryHandlerRegistry } from '../third-party/index.js';
+import { getProcessorRegistry } from '../libraries/index.js';
+import { ProcessorContext, ProcessorResult } from '../libraries/types';
+import { createLogger } from '../libraries/logger';
 
 /**
  * DFD Builder interface
@@ -41,17 +44,41 @@ export class DefaultDFDBuilder implements DFDBuilder {
   private edges: DFDEdge[] = [];
   private nodeIdCounter = 0;
   private exportedHandlerSubgroups: DFDSubgraph[] = [];
+  private currentAnalysis: ComponentAnalysis | null = null;
+  private verbose: boolean = false; // Set to true to enable detailed logging
+
+  constructor() {
+    // Processor registry is initialized globally in libraries/index.ts
+    // Check environment variable for verbose logging
+    this.verbose = process.env.DFD_BUILDER_VERBOSE === 'true';
+  }
+  
+  /**
+   * Log message only if verbose mode is enabled
+   */
+  private log(message: string, ...args: any[]): void {
+    if (this.verbose) {
+      console.log(message, ...args);
+    }
+  }
 
   /**
    * Build DFD source data from component analysis
    */
   build(analysis: ComponentAnalysis): DFDSourceData {
-    console.log('🚚 DFD Builder: Starting build');
-    console.log('🚚 DFD Builder: Hooks to process:', analysis.hooks.length);
-    console.log('🚚 DFD Builder: Hooks:', analysis.hooks.map(h => ({ name: h.hookName, category: h.category, vars: h.variables })));
+    this.log('🚚 DFD Builder: Starting build');
+    this.log('🚚 DFD Builder: Hooks to process:', analysis.hooks.length);
+    this.log('🚚 DFD Builder: Hooks:', analysis.hooks.map(h => ({ name: h.hookName, category: h.category, vars: h.variables })));
+    
+    // Store analysis for processor context
+    this.currentAnalysis = analysis;
     
     // Reset library handlers for new component analysis
     resetLibraryHandlerRegistry();
+    
+    // Reset processor registry (resets stateful processors like Next.js)
+    const processorRegistry = getProcessorRegistry();
+    processorRegistry.reset();
     
     // Reset state
     this.nodes = [];
@@ -62,7 +89,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // Create nodes for all elements
     this.createPropsNodes(analysis.props);
     this.createHookNodes(analysis.hooks);
-    console.log('🚚 DFD Builder: Nodes after hooks:', this.nodes.length);
+    this.log('🚚 DFD Builder: Nodes after hooks:', this.nodes.length);
     this.createProcessNodes(analysis.processes);
     
     // Create exported handlers subgroups for imperative handle calls
@@ -73,22 +100,22 @@ export class DefaultDFDBuilder implements DFDBuilder {
       const subgraphBuilder = new SubgraphBuilder();
       const rootSubgraph = subgraphBuilder.buildRootSubgraph(analysis.jsxOutput.structure);
       analysis.jsxOutput.rootSubgraph = rootSubgraph;
-      console.log('🚚 DFD Builder: Built root subgraph with', rootSubgraph.elements.length, 'elements');
+      this.log('🚚 DFD Builder: Built root subgraph with', rootSubgraph.elements.length, 'elements');
       
       // Collect all nodes from subgraph structure and add to this.nodes
       const subgraphNodes = this.collectElementNodes(rootSubgraph);
       this.nodes.push(...subgraphNodes);
-      console.log('🚚 DFD Builder: Added', subgraphNodes.length, 'nodes from subgraph structure');
+      this.log('🚚 DFD Builder: Added', subgraphNodes.length, 'nodes from subgraph structure');
       
       // Collect conditional subgraphs as nodes
       const conditionalSubgraphNodes = this.collectConditionalSubgraphNodes(rootSubgraph);
       this.nodes.push(...conditionalSubgraphNodes);
-      console.log('🚚 DFD Builder: Added', conditionalSubgraphNodes.length, 'conditional subgraph nodes');
+      this.log('🚚 DFD Builder: Added', conditionalSubgraphNodes.length, 'conditional subgraph nodes');
       
       // Build display and control visibility edges
       const displayEdges = this.buildDisplayEdges(rootSubgraph, this.nodes);
       this.edges.push(...displayEdges);
-      console.log('🚚 DFD Builder: Created', displayEdges.length, 'display/control edges');
+      this.log('🚚 DFD Builder: Created', displayEdges.length, 'display/control edges');
       
       // Build attribute reference edges
       const typeClassifier = new TypeClassifier();
@@ -111,52 +138,64 @@ export class DefaultDFDBuilder implements DFDBuilder {
           this.edges.push(...attrEdges);
         }
       }
-      console.log('🚚 DFD Builder: Created attribute reference edges');
+      this.log('🚚 DFD Builder: Created attribute reference edges');
       
       // Build edges from inline handlers to JSX elements
       this.buildInlineHandlerEdges(analysis, elementNodes);
-      console.log('🚚 DFD Builder: Created inline handler edges');
+      this.log('🚚 DFD Builder: Created inline handler edges');
       
       // Build edges from processes to context functions
       this.buildProcessToContextFunctionEdges(analysis);
-      console.log('🚚 DFD Builder: Created process to context function edges');
+      this.log('🚚 DFD Builder: Created process to context function edges');
       
       // Build edges from processes to custom hook functions
       this.buildProcessToCustomHookFunctionEdges(analysis);
-      console.log('🚚 DFD Builder: Created process to custom hook function edges');
+      this.log('🚚 DFD Builder: Created process to custom hook function edges');
       
       // Build edges from props to states (initial values)
       this.buildPropToStateInitialValueEdges(analysis);
-      console.log('🚚 DFD Builder: Created prop to state initial value edges');
+      this.log('🚚 DFD Builder: Created prop to state initial value edges');
       
       // Build edges from data stores to processes (reads)
       this.buildProcessToDataStoreEdges(analysis);
-      console.log('🚚 DFD Builder: Created data store to process edges');
+      this.log('🚚 DFD Builder: Created data store to process edges');
       
       // Build edges from processes to data stores (writes)
       this.buildProcessToDataStoreWriteEdges(analysis);
-      console.log('🚚 DFD Builder: Created process to data store write edges');
+      this.log('🚚 DFD Builder: Created process to data store write edges');
       
       // Build edges from mutation library hooks to Server (writes)
       this.buildMutationToServerEdges();
-      console.log('🚚 DFD Builder: Created mutation to server edges');
+      this.log('🚚 DFD Builder: Created mutation to server edges');
       
       // Build edges from external entity inputs to processes (reads)
       this.buildProcessToExternalEntityEdges(analysis);
-      console.log('🚚 DFD Builder: Created external entity to process edges');
+      this.log('🚚 DFD Builder: Created external entity to process edges');
       
       // Build edges from processes to function props (calls)
       this.buildProcessToFunctionPropEdges(analysis);
-      console.log('🚚 DFD Builder: Created process to function prop edges');
+      this.log('🚚 DFD Builder: Created process to function prop edges');
+      
+      // Build edges from processes to library hook process properties (e.g., onClick: mutate)
+      this.buildProcessToLibraryHookProcessEdges(analysis);
+      this.log('🚚 DFD Builder: Created process to library hook process edges');
+      
+      // Build edges from props to library hooks (e.g., url prop to useSWR)
+      this.buildPropToLibraryHookEdges(analysis);
+      this.log('🚚 DFD Builder: Created prop to library hook edges');
       
       // Build edges from JSX elements with ref to exported handlers subgroups
       this.buildJSXToExportedHandlersEdges(rootSubgraph);
-      console.log('🚚 DFD Builder: Created JSX to exported handlers edges');
+      this.log('🚚 DFD Builder: Created JSX to exported handlers edges');
     }
 
-    console.log('🚚 DFD Builder: Exported handler subgroups:', this.exportedHandlerSubgroups.length);
+    // Merge duplicate edges with different sub-labels
+    this.mergeEdgesWithSubLabels();
+    this.log('🚚 DFD Builder: Merged duplicate edges');
+
+    this.log('🚚 DFD Builder: Exported handler subgroups:', this.exportedHandlerSubgroups.length);
     if (this.exportedHandlerSubgroups.length > 0) {
-      console.log('🚚 DFD Builder: Subgroups:', this.exportedHandlerSubgroups.map(sg => ({ id: sg.id, elements: sg.elements.length })));
+      this.log('🚚 DFD Builder: Subgroups:', this.exportedHandlerSubgroups.map(sg => ({ id: sg.id, elements: sg.elements.length })));
     }
     
     return {
@@ -169,7 +208,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
   /**
    * Build edges from processes to context functions
-   * Creates edges when a process calls a function from useContext
+   * Creates edges when a process calls a function from context
    */
   private buildProcessToContextFunctionEdges(analysis: ComponentAnalysis): void {
     const contextFunctionNodes = this.nodes.filter(
@@ -213,7 +252,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
       node => node.metadata?.category === 'custom-hook-function'
     );
 
-    console.log('🚚 buildProcessToCustomHookFunctionEdges: Custom hook function nodes:', customHookFunctionNodes.length);
+    this.log('🚚 buildProcessToCustomHookFunctionEdges: Custom hook function nodes:', customHookFunctionNodes.length);
 
     for (const process of analysis.processes) {
       const processNode = this.nodes.find(
@@ -243,13 +282,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
   /**
    * Build edges from hook output (functions) to hook input (data)
    * Creates edges showing that calling a function updates the data
-   * Applies to both useContext and custom hooks
+   * Applies to context and custom hooks
    */
 
 
   /**
    * Build edges from props to states (initial values)
-   * Creates edges when a prop is used as initial value for useState
+   * Creates edges when a prop is used as initial value for state
    */
   private buildPropToStateInitialValueEdges(analysis: ComponentAnalysis): void {
     const propNodes = this.nodes.filter(
@@ -260,8 +299,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
       node => node.type === 'data-store' && node.metadata?.category === 'state'
     );
     
-    console.log('🚚 buildPropToStateInitialValueEdges: Prop nodes:', propNodes.length);
-    console.log('🚚 buildPropToStateInitialValueEdges: State nodes:', stateNodes.length);
+    this.log('🚚 buildPropToStateInitialValueEdges: Prop nodes:', propNodes.length);
+    this.log('🚚 buildPropToStateInitialValueEdges: State nodes:', stateNodes.length);
     
     for (const stateNode of stateNodes) {
       const initialValue = stateNode.metadata?.initialValue;
@@ -319,7 +358,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
             isReferenced = true;
           }
         }
-        // For useReducer, check if any state property is referenced
+        // For reducer state, check if any state property is referenced
         else if (dataStoreNode.metadata?.isReducer && dataStoreNode.metadata?.stateProperties) {
           const stateProps = dataStoreNode.metadata.stateProperties as string[];
           console.log(`🔍 Checking reducer ${dataStoreNode.label} state properties:`, stateProps);
@@ -356,7 +395,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
         }
         
         if (isReferenced) {
-          // For useReducer and library hooks, include matched properties in label
+          // For reducer state and library hooks, include matched properties in label
           let edgeLabel = 'reads';
           if ((dataStoreNode.metadata?.isReducer || dataStoreNode.metadata?.isLibraryHook) && (dataStoreNode as any).__matchedProps) {
             const matchedProps = (dataStoreNode as any).__matchedProps as string[];
@@ -409,7 +448,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
             }
             
             if (isReferenced) {
-              // For useReducer and library hooks, include matched properties in label
+              // For reducer state and library hooks, include matched properties in label
               let edgeLabel = 'reads';
               if ((dataStoreNode.metadata?.isReducer || dataStoreNode.metadata?.isLibraryHook) && (dataStoreNode as any).__matchedPropsCleanup) {
                 const matchedProps = (dataStoreNode as any).__matchedPropsCleanup as string[];
@@ -439,8 +478,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
       node => node.type === 'external-entity-input'
     );
 
-    console.log('🚚 buildProcessToExternalEntityEdges: External entity nodes:', externalEntityNodes.length);
-    console.log('🚚 buildProcessToExternalEntityEdges: Processes:', analysis.processes.length);
+    this.log('🚚 buildProcessToExternalEntityEdges: External entity nodes:', externalEntityNodes.length);
+    this.log('🚚 buildProcessToExternalEntityEdges: Processes:', analysis.processes.length);
 
     for (const process of analysis.processes) {
       // Skip inline handlers - they're handled separately
@@ -530,9 +569,9 @@ export class DefaultDFDBuilder implements DFDBuilder {
       node => node.type === 'data-store'
     );
 
-    console.log('🚚 buildProcessToDataStoreWriteEdges: Data store nodes:', dataStoreNodes.length);
-    console.log('🚚 buildProcessToDataStoreWriteEdges: Data stores:', dataStoreNodes.map(n => ({ label: n.label, writeVar: n.metadata?.writeVariable })));
-    console.log('🚚 buildProcessToDataStoreWriteEdges: Processes:', analysis.processes.length);
+    this.log('🚚 buildProcessToDataStoreWriteEdges: Data store nodes:', dataStoreNodes.length);
+    this.log('🚚 buildProcessToDataStoreWriteEdges: Data stores:', dataStoreNodes.map(n => ({ label: n.label, writeVar: n.metadata?.writeVariable })));
+    this.log('🚚 buildProcessToDataStoreWriteEdges: Processes:', analysis.processes.length);
 
     for (const process of analysis.processes) {
       // Skip inline handlers - they're handled separately
@@ -557,7 +596,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
         if (dataStoreNode.metadata?.isReadWritePair && dataStoreNode.metadata?.writeVariable) {
           const setterName = dataStoreNode.metadata.writeVariable as string;
           if (process.references.includes(setterName)) {
-            // Use "dispatch" label for useReducer, "writes" for others
+            // Use "dispatch" label for reducer state, "writes" for others
             const label = dataStoreNode.metadata?.isReducer ? 'dispatch' : 'writes';
             console.log(`🚚 ✅ Creating ${label} edge from ${process.name} to ${dataStoreNode.label}`);
             this.edges.push({
@@ -597,7 +636,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
             if (dataStoreNode.metadata?.isReadWritePair && dataStoreNode.metadata?.writeVariable) {
               const setterName = dataStoreNode.metadata.writeVariable as string;
               if (process.cleanupProcess.references.includes(setterName)) {
-                // Use "dispatch" label for useReducer, "writes" for others
+                // Use "dispatch" label for reducer state, "writes" for others
                 const label = dataStoreNode.metadata?.isReducer ? 'dispatch' : 'writes';
                 console.log(`🚚 ✅ Creating ${label} edge from cleanup ${process.cleanupProcess.name} to ${dataStoreNode.label}`);
                 this.edges.push({
@@ -630,7 +669,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
    * Creates edges when a mutation hook (useSWRMutation, useSWRConfig) writes to server
    */
   private buildMutationToServerEdges(): void {
-    console.log('🚚 buildMutationToServerEdges: Starting');
+    this.log('🚚 buildMutationToServerEdges: Starting');
     
     // Find all library hook nodes with process properties (mutations)
     const mutationHookNodes = this.nodes.filter(
@@ -647,45 +686,185 @@ export class DefaultDFDBuilder implements DFDBuilder {
       
       console.log(`🚚 Processing mutation hook: ${hookName}, has server: ${!!serverNodeId}`);
       
-      // For useSWRMutation, create edge from hook to server (mutation writes to server)
-      if (hookName === 'useSWRMutation' && serverNodeId) {
-        const serverNode = this.nodes.find(n => n.id === serverNodeId);
-        if (serverNode) {
-          this.edges.push({
-            from: hookNode.id,
-            to: serverNodeId,
-            label: 'mutates'
-          });
-          console.log(`🚚 ✅ Created mutates edge from ${hookNode.label} to ${serverNode.label}`);
-        }
+      // For useSWRMutation, the edge is already created by the processor
+      // Skip here to avoid duplication
+      if (hookName === 'useSWRMutation') {
+        console.log(`🚚 Skipping useSWRMutation (edge already created by processor)`);
+        continue;
       }
       
-      // For useSWRConfig, create a generic Server node if it doesn't exist
+      // For useSWRConfig, the edge is already created by the processor
+      // Skip here to avoid duplication
       if (hookName === 'useSWRConfig') {
-        // Check if a generic Server node already exists
-        let genericServerNode = this.nodes.find(
-          n => n.metadata?.category === 'server' && !n.metadata?.endpoint
-        );
-        
-        if (!genericServerNode) {
-          // Create a generic Server node
-          const genericServerNodeId = this.createServerNode(undefined, hookNode.line, hookNode.column);
-          genericServerNode = this.nodes.find(n => n.id === genericServerNodeId);
-          console.log(`🚚 ✅ Created generic Server node for useSWRConfig`);
+        console.log(`🚚 Skipping useSWRConfig (edge already created by processor)`);
+        continue;
+      }
+    }
+    
+    this.log('🚚 buildMutationToServerEdges: Completed');
+  }
+
+  /**
+   * Merge duplicate edges with different sub-labels
+   * For example: merge "onClick" and "onClick: mutate" into a single edge with label "onClick: mutate"
+   * This prevents duplicate edges when the same connection has multiple sub-labels
+   */
+  private mergeEdgesWithSubLabels(): void {
+    console.log(`🚚 mergeEdgesWithSubLabels: Starting with ${this.edges.length} edges`);
+    
+    // Group edges by (from, to) pair
+    const edgeGroups = new Map<string, DFDEdge[]>();
+    
+    for (const edge of this.edges) {
+      const key = `${edge.from}|${edge.to}`;
+      if (!edgeGroups.has(key)) {
+        edgeGroups.set(key, []);
+      }
+      edgeGroups.get(key)!.push(edge);
+    }
+    
+    // Process each group
+    const mergedEdges: DFDEdge[] = [];
+    
+    for (const [key, edges] of edgeGroups.entries()) {
+      if (edges.length === 1) {
+        // No duplicates, keep as is
+        mergedEdges.push(edges[0]);
+        continue;
+      }
+      
+      // Check if we have edges with sub-labels (containing ":")
+      const baseLabels = new Map<string, DFDEdge[]>();
+      
+      for (const edge of edges) {
+        const label = edge.label || '';
+        const baseLabel = label.split(':')[0].trim();
+        if (!baseLabels.has(baseLabel)) {
+          baseLabels.set(baseLabel, []);
         }
-        
-        if (genericServerNode) {
-          this.edges.push({
-            from: hookNode.id,
-            to: genericServerNode.id,
-            label: 'mutates'
-          });
-          console.log(`🚚 ✅ Created mutates edge from ${hookNode.label} to ${genericServerNode.label}`);
+        baseLabels.get(baseLabel)!.push(edge);
+      }
+      
+      // For each base label group, keep only the most specific one (with sub-label if available)
+      for (const [baseLabel, labelEdges] of baseLabels.entries()) {
+        if (labelEdges.length === 1) {
+          mergedEdges.push(labelEdges[0]);
+        } else {
+          // Multiple edges with same base label
+          // Prefer the one with sub-label (contains ":")
+          const withSubLabel = labelEdges.find(e => (e.label || '').includes(':'));
+          if (withSubLabel) {
+            mergedEdges.push(withSubLabel);
+            console.log(`🚚 Merged edges: kept "${withSubLabel.label}" (removed duplicates)`);
+          } else {
+            // All have same label, keep first one
+            mergedEdges.push(labelEdges[0]);
+          }
         }
       }
     }
     
-    console.log('🚚 buildMutationToServerEdges: Completed');
+    console.log(`🚚 mergeEdgesWithSubLabels: Reduced from ${this.edges.length} to ${mergedEdges.length} edges`);
+    this.edges = mergedEdges;
+  }
+
+  /**
+   * Build edges from processes to library hook process properties
+   * For example: onClick handler calling useSWR's mutate function
+   */
+  private buildProcessToLibraryHookProcessEdges(analysis: ComponentAnalysis): void {
+    this.log('🚚 buildProcessToLibraryHookProcessEdges: Starting');
+    
+    // Find all library hook nodes with process properties
+    const libraryHookNodes = this.nodes.filter(
+      node => node.metadata?.isLibraryHook && 
+              node.metadata?.processProperties &&
+              (node.metadata.processProperties as string[]).length > 0
+    );
+    
+    console.log(`🚚 Found ${libraryHookNodes.length} library hook nodes with process properties`);
+    
+    // For each process, check if it calls any library hook process properties
+    for (const process of analysis.processes) {
+      console.log(`🚚 Checking process: ${process.name}`);
+      
+      // Check if this process calls any library hook process properties
+      for (const libraryHookNode of libraryHookNodes) {
+        const processProperties = libraryHookNode.metadata?.processProperties as string[] || [];
+        
+        // Check if any process property is referenced in this process
+        for (const propName of processProperties) {
+          // Simple heuristic: if the process name contains the property name
+          // or if the process calls the property
+          if (process.name.includes(propName) || 
+              (process as any).callExpressions?.some((call: any) => call.includes(propName))) {
+            
+            // Create edge from process to library hook
+            const edge: DFDEdge = {
+              from: this.findNodeByVariable(process.name, this.nodes)?.id || '',
+              to: libraryHookNode.id,
+              label: `onClick: ${propName}`
+            };
+            
+            if (edge.from) {
+              this.edges.push(edge);
+              console.log(`🚚 ✅ Created edge from ${process.name} to ${libraryHookNode.label} (${propName})`);
+            }
+          }
+        }
+      }
+    }
+    
+    this.log('🚚 buildProcessToLibraryHookProcessEdges: Completed');
+  }
+
+  /**
+   * Build edges from props to library hooks
+   * For example: url prop used as argument to useSWR
+   */
+  private buildPropToLibraryHookEdges(analysis: ComponentAnalysis): void {
+    this.log('🚚 buildPropToLibraryHookEdges: Starting');
+    
+    // Find all prop nodes
+    const propNodes = this.nodes.filter(
+      node => node.type === 'external-entity-input' && node.metadata?.category === 'prop'
+    );
+    
+    // Find all library hook nodes
+    const libraryHookNodes = this.nodes.filter(
+      node => node.metadata?.isLibraryHook
+    );
+    
+    console.log(`🚚 Found ${propNodes.length} prop nodes and ${libraryHookNodes.length} library hook nodes`);
+    
+    // For each library hook, check if it uses any props as arguments
+    for (const hookNode of libraryHookNodes) {
+      const hookName = hookNode.metadata?.hookName as string;
+      
+      // Find the hook in the analysis
+      const hook = analysis.hooks.find(h => h.hookName === hookName);
+      if (!hook) {continue;}
+      
+      // Check if any prop is used as an argument
+      const hookAny = hook as any;
+      if (hookAny.argumentIdentifiers && hookAny.argumentIdentifiers.length > 0) {
+        for (const argId of hookAny.argumentIdentifiers) {
+          // Find the prop node with this name
+          const propNode = propNodes.find(p => p.label === argId);
+          if (propNode) {
+            // Create edge from prop to library hook
+            this.edges.push({
+              from: propNode.id,
+              to: hookNode.id,
+              label: 'reads'
+            });
+            console.log(`🚚 ✅ Created edge from prop ${argId} to ${hookName}`);
+          }
+        }
+      }
+    }
+    
+    this.log('🚚 buildPropToLibraryHookEdges: Completed');
   }
 
   /**
@@ -693,6 +872,90 @@ export class DefaultDFDBuilder implements DFDBuilder {
    */
   private generateNodeId(prefix: string): string {
     return `${prefix}_${this.nodeIdCounter++}`;
+  }
+
+  /**
+   * Create ProcessorContext for hook processing
+   * Provides utilities and state access to processors
+   */
+  private createProcessorContext(processorId: string): ProcessorContext {
+    if (!this.currentAnalysis) {
+      throw new Error('Cannot create processor context: no analysis available');
+    }
+
+    return {
+      analysis: this.currentAnalysis,
+      nodes: this.nodes,
+      edges: this.edges,
+      generateNodeId: (prefix: string) => this.generateNodeId(prefix),
+      findNodeByVariable: (varName: string, nodes: DFDNode[]) => this.findNodeByVariable(varName, nodes) ?? null,
+      createServerNode: (endpoint?: string, line?: number, column?: number) => this.createServerNode(endpoint, line, column),
+      logger: createLogger(processorId, false, false) // debug=false, verbose=false for concise logging
+    };
+  }
+
+  /**
+   * Process a hook using the processor registry
+   * Returns true if the hook was handled by a processor
+   */
+  private processHookWithRegistry(hook: HookInfo): boolean {
+    try {
+      // Get global processor registry
+      const processorRegistry = getProcessorRegistry();
+      
+      // Find appropriate processor
+      const context = this.createProcessorContext('dfd-builder');
+      const processor = processorRegistry.findProcessor(hook, context);
+      
+      if (!processor) {
+        // No processor found for this hook
+        return false;
+      }
+
+      // Log which processor is handling the hook (always shown for visibility)
+      console.log(`[processor] ${processor.metadata.id} → ${hook.hookName}`);
+
+      // Create processor-specific context
+      const processorContext = this.createProcessorContext(processor.metadata.id);
+      
+      // Process the hook
+      const result: ProcessorResult = processor.process(hook, processorContext);
+      
+      if (!result.handled) {
+        this.log(`[processor] ${processor.metadata.id} did not handle ${hook.hookName}`);
+        return false;
+      }
+
+      // Collect nodes and edges from processor result
+      this.nodes.push(...result.nodes);
+      this.edges.push(...result.edges);
+      
+      // Collect subgraphs if any
+      if (result.subgraphs && result.subgraphs.length > 0) {
+        this.exportedHandlerSubgroups.push(...result.subgraphs);
+      }
+
+      this.log(`[processor] Successfully processed ${hook.hookName} with ${processor.metadata.id}: ${result.nodes.length} nodes, ${result.edges.length} edges`);
+      return true;
+    } catch (error) {
+      // Log error with full context and return false to allow fallback to old methods
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      console.error(`[processor-error] Failed to process ${hook.hookName}:`, {
+        error: errorMessage,
+        stack: errorStack,
+        hookInfo: {
+          hookName: hook.hookName,
+          category: hook.category,
+          variables: hook.variables
+        }
+      });
+      
+      // Return false to allow fallback to old processing methods
+      // This ensures no breaking changes to existing functionality
+      return false;
+    }
   }
 
   /**
@@ -816,6 +1079,12 @@ export class DefaultDFDBuilder implements DFDBuilder {
    */
   private createHookNodes(hooks: HookInfo[]): void {
     for (const hook of hooks) {
+      // Check if this hook should be processed by a registered processor
+      const handled = this.processHookWithRegistry(hook);
+      if (handled) {
+        continue;
+      }
+
       // Check if this hook has library adapter mappings
       const enrichedHook = hook as any;
       if (enrichedHook.libraryName && enrichedHook.returnValueMappings) {
@@ -831,14 +1100,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
       }
 
       switch (hook.category) {
-        case 'context':
-          this.createContextNode(hook);
-          break;
         case 'data-fetching':
           this.createDataFetchingNode(hook);
-          break;
-        case 'state':
-          this.createStateNode(hook);
           break;
         case 'state-management':
           this.createStateManagementNode(hook);
@@ -1110,132 +1373,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
-   * Create unified node for useContext based on type classification
-   * Similar to custom hooks, creates a single data-store node with only data values
-   * Function values are excluded from the node but stored as write methods
-   */
-  private createContextNode(hook: HookInfo): void {
-    console.log(`🚚 Creating useContext node for: ${hook.hookName}`);
-    
-    // If no type classification is available, fall back to old behavior
-    if (!hook.variableTypes || hook.variableTypes.size === 0) {
-      console.log(`🚚 No type classification for ${hook.hookName}, using legacy classification`);
-      this.createContextNodeLegacy(hook);
-      return;
-    }
-
-    // Separate data values from function values
-    const dataValues: string[] = [];
-    const functionValues: string[] = [];
-    
-    for (const [varName, varType] of hook.variableTypes.entries()) {
-      if (varType === 'function') {
-        functionValues.push(varName);
-      } else {
-        dataValues.push(varName);
-      }
-    }
-
-    console.log(`🚚 Data values:`, dataValues);
-    console.log(`🚚 Function values:`, functionValues);
-
-    // Create individual nodes for each data value (input subgraph)
-    for (const dataValue of dataValues) {
-      this.nodes.push({
-        id: this.generateNodeId('context-data'),
-        label: dataValue,
-        type: 'external-entity-input',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'context-data',
-          hookName: hook.hookName,
-          variableName: dataValue,
-          subgraph: `${hook.hookName}-input`,
-          line: hook.line,
-          column: hook.column
-        }
-      });
-      console.log(`🚚 Created context data node: ${dataValue}`);
-    }
-
-    // Create individual nodes for each function value (output subgraph)
-    for (const functionValue of functionValues) {
-      this.nodes.push({
-        id: this.generateNodeId('context-function'),
-        label: functionValue,
-        type: 'external-entity-output',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'context-function',
-          hookName: hook.hookName,
-          variableName: functionValue,
-          subgraph: `${hook.hookName}-output`,
-          line: hook.line,
-          column: hook.column
-        }
-      });
-      console.log(`🚚 Created context function node: ${functionValue}`);
-    }
-  }
-
-  /**
-   * Legacy createContextNode implementation for contexts without type classification
-   * Uses heuristic-based classification (isReadWritePair, isFunctionOnly)
-   */
-  private createContextNodeLegacy(hook: HookInfo): void {
-    // Classify based on pattern
-    let nodeType: 'external-entity-input' | 'data-store' | 'external-entity-output';
-    
-    if (hook.isFunctionOnly) {
-      // Write-only functions → external-entity-output
-      nodeType = 'external-entity-output';
-    } else if (hook.isReadWritePair) {
-      // Read-write pair → data-store
-      nodeType = 'data-store';
-    } else {
-      // Read-only → external-entity-input
-      nodeType = 'external-entity-input';
-    }
-
-    // For read-write pairs, create a single node
-    if (hook.isReadWritePair && hook.variables.length === 2) {
-      const [readVar, writeVar] = hook.variables;
-      this.nodes.push({
-        id: this.generateNodeId('context'),
-        label: readVar,
-        type: nodeType,
-        metadata: {
-          category: 'context',
-          hookName: hook.hookName,
-          isReadWritePair: true,
-          isFunctionOnly: hook.isFunctionOnly,
-          readVariable: readVar,
-          writeVariable: writeVar
-        }
-      });
-    } else {
-      // For other cases, create individual nodes
-      for (const variable of hook.variables) {
-        this.nodes.push({
-          id: this.generateNodeId('context'),
-          label: variable,
-          type: nodeType,
-          metadata: {
-            category: 'context',
-            hookName: hook.hookName,
-            isReadWritePair: hook.isReadWritePair,
-            isFunctionOnly: hook.isFunctionOnly
-          }
-        });
-      }
-    }
-  }
-
-  /**
    * Create unified node for custom hooks (data-store)
-   * Similar to useState, creates a single node for the hook with only data values
+   * Creates a single node for the hook with only data values
    * Function values are excluded from the node but stored as write methods
    */
   private createCustomHookNode(hook: HookInfo): void {
@@ -1340,87 +1479,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   /**
    * Create nodes for state hooks (data-store)
    */
-  private createStateNode(hook: HookInfo): void {
-    // Skip useRef - refs don't participate in data flow
-    if (hook.hookName === 'useRef') {
-      console.log(`[DFDBuilder] Skipping useRef: ${hook.variables.join(', ')}`);
-      return;
-    }
-    
-    // Special handling for useReducer - always treat as read-write pair
-    if (hook.hookName === 'useReducer' && hook.variables.length === 2) {
-      const [stateVar, dispatchVar] = hook.variables;
-      console.log(`[DFDBuilder] Creating useReducer node: stateVar=${stateVar}, dispatchVar=${dispatchVar}, reducerName=${hook.reducerName}, stateProperties=`, hook.stateProperties);
-      
-      // Use reducer function name as label (e.g., "counterReducer")
-      // If not available, fall back to state variable name
-      const label = hook.reducerName || stateVar;
-      console.log(`[DFDBuilder] useReducer label: ${label}`);
-      
-      this.nodes.push({
-        id: this.generateNodeId('state'),
-        label,
-        type: 'data-store',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'state',
-          hookName: hook.hookName,
-          isReadWritePair: true,
-          readVariable: stateVar,
-          writeVariable: dispatchVar,
-          stateProperties: hook.stateProperties,
-          reducerName: hook.reducerName,
-          isReducer: true,
-          line: hook.line,
-          column: hook.column
-        }
-      });
-      return;
-    }
 
-    // For read-write pairs (e.g., [count, setCount]), create a single node
-    // using the read variable name
-    if (hook.isReadWritePair && hook.variables.length === 2) {
-      const [readVar, writeVar] = hook.variables;
-      console.log(`[DFDBuilder] Creating state node: ${readVar}, line: ${hook.line}, column: ${hook.column}`);
-      this.nodes.push({
-        id: this.generateNodeId('state'),
-        label: readVar,
-        type: 'data-store',
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'state',
-          hookName: hook.hookName,
-          isReadWritePair: true,
-          readVariable: readVar,
-          writeVariable: writeVar,
-          initialValue: hook.initialValue, // Store initial value for edge creation
-          line: hook.line,
-          column: hook.column
-        }
-      });
-    } else {
-      // For other cases, create individual nodes
-      for (const variable of hook.variables) {
-        this.nodes.push({
-          id: this.generateNodeId('state'),
-          label: variable,
-          type: 'data-store',
-          line: hook.line,
-          column: hook.column,
-          metadata: {
-            category: 'state',
-            hookName: hook.hookName,
-            isReadWritePair: hook.isReadWritePair,
-            line: hook.line,
-            column: hook.column
-          }
-        });
-      }
-    }
-  }
 
   /**
    * Create nodes for state management hooks (data-store)
@@ -1540,40 +1599,21 @@ export class DefaultDFDBuilder implements DFDBuilder {
       const processNodeId = this.generateNodeId('process');
       console.log(`[DFDBuilder] Creating process node: ${process.name}, line: ${process.line}, column: ${process.column}`);
       
-      // Check if this is useImperativeHandle with exported handlers
-      if (process.type === 'useImperativeHandle' && process.exportedHandlers && process.exportedHandlers.length > 0) {
-        console.log(`[DFDBuilder] Creating useImperativeHandle with ${process.exportedHandlers.length} exported handlers`);
-        
-        // Don't create parent useImperativeHandle process node - only create the subgroup
-        // The exported handlers will be shown in the subgroup instead
-        
-        // Create subgroup for exported handlers
-        const subgroup = this.createExportedHandlersSubgroup(process, processNodeId);
-        
-        // Store subgroup in a temporary array (will be added to DFDSourceData later)
-        if (!this.exportedHandlerSubgroups) {
-          this.exportedHandlerSubgroups = [];
-        }
-        this.exportedHandlerSubgroups.push(subgroup);
-        
-        console.log(`[DFDBuilder] Created exported handlers subgroup: ${subgroup.id}`);
-      } else {
-        // Regular process node
-        this.nodes.push({
-          id: processNodeId,
-          label: process.name,
-          type: 'process',
+      // Regular process node
+      this.nodes.push({
+        id: processNodeId,
+        label: process.name,
+        type: 'process',
+        line: process.line,
+        column: process.column,
+        metadata: {
+          processType: process.type,
+          dependencies: process.dependencies,
+          references: process.references,
           line: process.line,
-          column: process.column,
-          metadata: {
-            processType: process.type,
-            dependencies: process.dependencies,
-            references: process.references,
-            line: process.line,
-            column: process.column
-          }
-        });
-      }
+          column: process.column
+        }
+      });
 
       // Create nodes for external function calls
       this.createExternalCallNodes(process, processNodeId);
@@ -1663,7 +1703,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
-   * Create subgroup for exported handlers from useImperativeHandle
+   * Create subgroup for exported handlers
    */
   private createExportedHandlersSubgroup(
     process: ProcessInfo,
@@ -1705,7 +1745,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
-   * Create node for an exported handler from useImperativeHandle
+   * Create node for an exported handler
    */
   private createExportedHandlerNode(
     handler: ExportedHandlerInfo,
@@ -1901,20 +1941,26 @@ export class DefaultDFDBuilder implements DFDBuilder {
         console.log(`🚚   Variable ${varName} classified as: ${varType}`);
         
         if (varType === 'function') {
+          // Create label with variable name for library hook process properties
+          let edgeLabel = attributeName;
+          if (targetNode.metadata?.isLibraryHook && targetNode.metadata?.processProperties?.includes(varName)) {
+            edgeLabel = `${attributeName}: ${varName}`;
+          }
+          
           // Check if edge already exists
           const existingEdge = this.edges.find(
-            e => e.from === elementNode.id && e.to === targetNode.id && e.label === attributeName
+            e => e.from === elementNode.id && e.to === targetNode.id && e.label === edgeLabel
           );
           
           if (existingEdge) {
-            console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${targetNode.id} (${attributeName}), skipping duplicate`);
+            console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${targetNode.id} (${edgeLabel}), skipping duplicate`);
           } else {
             // Function variable: create edge from element to function
-            console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${targetNode.id} (${attributeName})`);
+            console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${targetNode.id} (${edgeLabel})`);
             this.edges.push({
               from: elementNode.id,
               to: targetNode.id,
-              label: attributeName
+              label: edgeLabel
             });
           }
         } else {
@@ -1996,7 +2042,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
         }
       } else {
         // Data variable: create edge from data to element (data binds to element attribute)
-        // For useReducer, add property name to label
+        // For reducer state, add property name to label
         let finalLabel = 'binds';
         if (sourceNode.metadata?.isReducer && sourceNode.metadata?.stateProperties) {
           const stateProps = sourceNode.metadata.stateProperties as string[];
@@ -2031,7 +2077,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   private buildDisplayEdges(subgraph: DFDSubgraph, nodes: DFDNode[]): DFDEdge[] {
     const edges: DFDEdge[] = [];
 
-    console.log('🚚 buildDisplayEdges: Starting');
+    this.log('🚚 buildDisplayEdges: Starting');
 
     // First, create control visibility/iterates over edges for conditional subgraphs
     const conditionalSubgraphs = this.collectConditionalSubgraphs(subgraph);
@@ -2050,7 +2096,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           const sourceNode = this.findNodeByVariable(varName, nodes);
           
           if (sourceNode) {
-            // For useReducer, add property name to label
+            // For reducer state, add property name to label
             let finalLabel = edgeLabel;
             if (sourceNode.metadata?.isReducer && sourceNode.metadata?.stateProperties) {
               const stateProps = sourceNode.metadata.stateProperties as string[];
@@ -2091,7 +2137,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
         const sourceNode = this.findNodeByVariable(varName, nodes);
         
         if (sourceNode) {
-          // For useReducer, add property name to label
+          // For reducer state, add property name to label
           let finalLabel = 'display';
           if (sourceNode.metadata?.isReducer && sourceNode.metadata?.stateProperties) {
             const stateProps = sourceNode.metadata.stateProperties as string[];
@@ -2263,7 +2309,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
       return node;
     }
 
-    // For useReducer, check if this is a state property
+    // For reducer state, check if this is a state property
     node = nodes.find(n => 
       n.metadata?.isReducer && 
       n.metadata?.stateProperties &&
@@ -2274,7 +2320,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
       return node;
     }
 
-    // For useReducer, check if this is the state variable itself
+    // For reducer state, check if this is the state variable itself
     node = nodes.find(n => 
       n.metadata?.isReducer && 
       n.metadata?.readVariable === variableName
@@ -2295,7 +2341,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
       return node;
     }
 
-    // For custom hooks and useContext, check if this is one of the data values
+    // For custom hooks, check if this is one of the data values
     node = nodes.find(n => 
       n.metadata?.dataValues &&
       (n.metadata.dataValues as string[]).includes(variableName)
@@ -2537,7 +2583,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
     const allPropNodes = this.nodes.filter(
       node => node.type === 'external-entity-input' && node.metadata?.category === 'prop'
     );
-    console.log('🚚 buildProcessToFunctionPropEdges: All prop nodes:', allPropNodes.map(n => ({ 
+    this.log('🚚 buildProcessToFunctionPropEdges: All prop nodes:', allPropNodes.map(n => ({ 
       label: n.label, 
       isFunctionType: n.metadata?.isFunctionType 
     })));
@@ -2548,8 +2594,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
               node.metadata?.category === 'prop'
     );
     
-    console.log('🚚 buildProcessToFunctionPropEdges: Function prop nodes (output):', functionPropNodes.length);
-    console.log('🚚 buildProcessToFunctionPropEdges: Function props:', functionPropNodes.map(n => n.label));
+    this.log('🚚 buildProcessToFunctionPropEdges: Function prop nodes (output):', functionPropNodes.length);
+    this.log('🚚 buildProcessToFunctionPropEdges: Function props:', functionPropNodes.map(n => n.label));
     
     for (const process of analysis.processes) {
       // Skip inline handlers

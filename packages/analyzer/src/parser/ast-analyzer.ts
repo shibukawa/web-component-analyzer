@@ -10,7 +10,6 @@ import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
 import { ConditionalStructureExtractor } from '../analyzers/conditional-extractor';
 import { TypeResolver } from '../services/type-resolver';
 import { createImportDetector } from '../analyzers/import-detector';
-import { hookRegistry } from '../utils/hook-registry';
 
 /**
  * AST Analyzer interface for analyzing React components
