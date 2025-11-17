@@ -1,0 +1,61 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  process_0[["useEffect"]]
+  process_1[["handleSubmit"]]
+  process_2[["handleReset"]]
+  process_3[["handleValueChange"]]
+  childRef_exported_handlers_focus[["focus"]]
+  childRef_exported_handlers_getValue[["getValue"]]
+  childRef_exported_handlers_reset[["reset"]]
+  jsx_element_0["ImperativeChild"]
+  jsx_element_1["button"]
+  jsx_element_2["button"]
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;ImperativeChild&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  subgraph childRef_exported_handlers["exported handlers"]
+    direction TB
+      childRef_exported_handlers_focus[["focus"]]
+      childRef_exported_handlers_getValue[["getValue"]]
+      childRef_exported_handlers_reset[["reset"]]
+  end
+  process_0 eprocess_0_childRef_exported_handlers_focus@-->|"calls"| childRef_exported_handlers_focus
+  eprocess_0_childRef_exported_handlers_focus@{ animate: true }
+  process_1 eprocess_1_childRef_exported_handlers_getValue@-->|"calls"| childRef_exported_handlers_getValue
+  eprocess_1_childRef_exported_handlers_getValue@{ animate: true }
+  process_2 eprocess_2_childRef_exported_handlers_reset@-->|"calls"| childRef_exported_handlers_reset
+  eprocess_2_childRef_exported_handlers_reset@{ animate: true }
+  jsx_element_0 ejsx_element_0_process_3@-->|"onValueChange"| process_3
+  ejsx_element_0_process_3@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_1@-->|"onClick"| process_1
+  ejsx_element_1_process_1@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_2@-->|"onClick"| process_2
+  ejsx_element_2_process_2@{ animate: true }
+  jsx_element_0 ejsx_element_0_childRef_exported_handlers@---->|"exports"| childRef_exported_handlers
+  ejsx_element_0_childRef_exported_handlers@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class process_0 process
+  class process_1 process
+  class process_2 process
+  class process_3 process
+  class childRef_exported_handlers_focus process
+  class childRef_exported_handlers_getValue process
+  class childRef_exported_handlers_reset process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class childRef_exported_handlers_focus exportedHandler
+  class childRef_exported_handlers_getValue exportedHandler
+  class childRef_exported_handlers_reset exportedHandler

@@ -1,0 +1,17 @@
+{
+  "description": "Test case: Unsupported file type",
+  "expectedBehavior": "Extension should display 'Unsupported file type' error",
+  "requirements": "7.3",
+  "testData": [
+    {
+      "id": 1,
+      "name": "Test Item 1",
+      "value": 100
+    },
+    {
+      "id": 2,
+      "name": "Test Item 2",
+      "value": 200
+    }
+  ]
+}

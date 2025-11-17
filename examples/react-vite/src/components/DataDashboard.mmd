@@ -1,0 +1,393 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  subgraph InputProps["Input Props"]
+    direction TB
+    prop_0("apiEndpoint")
+    prop_1("refreshInterval")
+    prop_4("filters")
+  end
+  state_5[("data")]
+  state_6[("loading")]
+  state_7[("error")]
+  state_8[("searchQuery")]
+  state_9[("sortConfig")]
+  state_10[("filterValues")]
+  state_11[("currentPage")]
+  state_12[("pageSize")]
+  state_13[("selectedItems")]
+  state_14[("chartType")]
+  state_15[("lastRefresh")]
+  process_16[["fetchData"]]
+  process_17[["handleRefresh"]]
+  process_18[["handleSort"]]
+  process_19[["handleFilterChange"]]
+  process_20[["handlePageChange"]]
+  process_21[["handleSearch"]]
+  process_22[["handleExport"]]
+  process_23[["handleSelectItem"]]
+  process_24[["handleBulkAction"]]
+  process_25[["handleChartTypeChange"]]
+  process_26[["validFilters"]]
+  process_27[["filteredData"]]
+  process_28[["sortedData"]]
+  process_29[["paginatedData"]]
+  process_30[["stats"]]
+  process_31[["chartData"]]
+  process_32[["totalPages"]]
+  process_33[["hasSelection"]]
+  process_34[["formatExportData"]]
+  process_35[["useEffect"]]
+  process_36[["useEffect"]]
+  process_37[["useEffect"]]
+  process_38[["useEffect"]]
+  jsx_element_1["button"]
+  jsx_element_0["#quot;text#quot;"]
+  jsx_element_2["div"]
+  jsx_element_3["input"]
+  jsx_element_4["select"]
+  jsx_element_5["select"]
+  jsx_element_6["input"]
+  jsx_element_7["input"]
+  jsx_element_8["button"]
+  jsx_element_9["button"]
+  jsx_element_10["button"]
+  jsx_element_11["button"]
+  jsx_element_12["div"]
+  jsx_element_13["div"]
+  jsx_element_14["div"]
+  jsx_element_15["div"]
+  jsx_element_16["div"]
+  jsx_element_17["span"]
+  jsx_element_18["button"]
+  jsx_element_19["button"]
+  jsx_element_20["button"]
+  jsx_element_21["input"]
+  jsx_element_22["th"]
+  jsx_element_23["th"]
+  jsx_element_24["th"]
+  jsx_element_25["th"]
+  jsx_element_26["th"]
+  jsx_element_33["tr"]
+  jsx_element_27["input"]
+  jsx_element_28["td"]
+  jsx_element_29["td"]
+  jsx_element_30["td"]
+  jsx_element_31["td"]
+  jsx_element_32["td"]
+  jsx_element_34["p"]
+  jsx_element_35["pre"]
+  jsx_element_36["button"]
+  jsx_element_37["span"]
+  jsx_element_38["button"]
+  jsx_element_39["button"]
+  subgraph_1@{ shape: hex, label: "{loading}" }
+  subgraph_3@{ shape: hex, label: "{error}" }
+  subgraph_4@{ shape: hex, label: "{hasSelection}" }
+  subgraph_5@{ shape: hex, label: "{chartType === expression}" }
+  subgraph_6@{ shape: hex, label: "{loop}" }
+  subgraph_7@{ shape: hex, label: "{!chartType === expression}" }
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
+    subgraph subgraph_1["{loading}"]
+      direction TB
+        jsx_element_0@{ shape: hex, label: "#quot;text#quot;" }
+    end
+    subgraph subgraph_3["{error}"]
+      direction TB
+        jsx_element_2@{ shape: hex, label: "&lt;div&gt;" }
+    end
+      jsx_element_3@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;select&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;select&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_7@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_9@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_10@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_11@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_12@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_13@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_14@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_15@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_16@{ shape: hex, label: "&lt;div&gt;" }
+    subgraph subgraph_4["{hasSelection}"]
+      direction TB
+        jsx_element_17@{ shape: hex, label: "&lt;span&gt;" }
+        jsx_element_18@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_19@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_20@{ shape: hex, label: "&lt;button&gt;" }
+    end
+    subgraph subgraph_5["{chartType === expression}"]
+      direction TB
+        jsx_element_21@{ shape: hex, label: "&lt;input&gt;" }
+        jsx_element_22@{ shape: hex, label: "&lt;th&gt;" }
+        jsx_element_23@{ shape: hex, label: "&lt;th&gt;" }
+        jsx_element_24@{ shape: hex, label: "&lt;th&gt;" }
+        jsx_element_25@{ shape: hex, label: "&lt;th&gt;" }
+        jsx_element_26@{ shape: hex, label: "&lt;th&gt;" }
+      subgraph subgraph_6["{paginatedData}"]
+        direction TB
+          jsx_element_33@{ shape: hex, label: "&lt;tr&gt;" }
+          jsx_element_27@{ shape: hex, label: "&lt;input&gt;" }
+          jsx_element_28@{ shape: hex, label: "&lt;td&gt;" }
+          jsx_element_29@{ shape: hex, label: "&lt;td&gt;" }
+          jsx_element_30@{ shape: hex, label: "&lt;td&gt;" }
+          jsx_element_31@{ shape: hex, label: "&lt;td&gt;" }
+          jsx_element_32@{ shape: hex, label: "&lt;td&gt;" }
+      end
+    end
+    subgraph subgraph_7["{!(chartType === expression)}"]
+      direction TB
+        jsx_element_34@{ shape: hex, label: "&lt;p&gt;" }
+        jsx_element_35@{ shape: hex, label: "&lt;pre&gt;" }
+    end
+      jsx_element_36@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_37@{ shape: hex, label: "&lt;span&gt;" }
+      jsx_element_38@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_39@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  subgraph OutputProps["Output Props"]
+    direction TB
+    prop_2["onDataUpdate"]
+    prop_3["onError"]
+  end
+  state_6 estate_6_subgraph_1@-->|"control visibility"| subgraph_1
+  estate_6_subgraph_1@{ animate: true }
+  state_7 estate_7_subgraph_3@-->|"control visibility"| subgraph_3
+  estate_7_subgraph_3@{ animate: true }
+  process_33 eprocess_33_subgraph_4@-->|"control visibility"| subgraph_4
+  eprocess_33_subgraph_4@{ animate: true }
+  state_14 estate_14_subgraph_5@-->|"control visibility"| subgraph_5
+  estate_14_subgraph_5@{ animate: true }
+  process_29 eprocess_29_subgraph_6@-->|"iterates over"| subgraph_6
+  eprocess_29_subgraph_6@{ animate: true }
+  state_14 estate_14_subgraph_7@-->|"control visibility"| subgraph_7
+  estate_14_subgraph_7@{ animate: true }
+  state_7 estate_7_jsx_element_2@-->|"display"| jsx_element_2
+  estate_7_jsx_element_2@{ animate: true }
+  process_30 eprocess_30_jsx_element_12@-->|"display"| jsx_element_12
+  eprocess_30_jsx_element_12@{ animate: true }
+  process_30 eprocess_30_jsx_element_13@-->|"display"| jsx_element_13
+  eprocess_30_jsx_element_13@{ animate: true }
+  process_30 eprocess_30_jsx_element_14@-->|"display"| jsx_element_14
+  eprocess_30_jsx_element_14@{ animate: true }
+  process_30 eprocess_30_jsx_element_15@-->|"display"| jsx_element_15
+  eprocess_30_jsx_element_15@{ animate: true }
+  process_30 eprocess_30_jsx_element_16@-->|"display"| jsx_element_16
+  eprocess_30_jsx_element_16@{ animate: true }
+  state_13 estate_13_jsx_element_17@-->|"display"| jsx_element_17
+  estate_13_jsx_element_17@{ animate: true }
+  state_14 estate_14_jsx_element_34@-->|"display"| jsx_element_34
+  estate_14_jsx_element_34@{ animate: true }
+  process_31 eprocess_31_jsx_element_35@-->|"display"| jsx_element_35
+  eprocess_31_jsx_element_35@{ animate: true }
+  state_11 estate_11_jsx_element_37@-->|"display"| jsx_element_37
+  estate_11_jsx_element_37@{ animate: true }
+  process_32 eprocess_32_jsx_element_37@-->|"display"| jsx_element_37
+  eprocess_32_jsx_element_37@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_17@-->|"onClick"| process_17
+  ejsx_element_1_process_17@{ animate: true }
+  state_6 estate_6_jsx_element_1@-->|"binds"| jsx_element_1
+  estate_6_jsx_element_1@{ animate: true }
+  state_8 estate_8_jsx_element_3@-->|"binds"| jsx_element_3
+  estate_8_jsx_element_3@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_21@-->|"onChange"| process_21
+  ejsx_element_3_process_21@{ animate: true }
+  state_10 estate_10_jsx_element_4@-->|"binds"| jsx_element_4
+  estate_10_jsx_element_4@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_19@-->|"onChange"| process_19
+  ejsx_element_4_process_19@{ animate: true }
+  state_10 estate_10_jsx_element_5@-->|"binds"| jsx_element_5
+  estate_10_jsx_element_5@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_19@-->|"onChange"| process_19
+  ejsx_element_5_process_19@{ animate: true }
+  state_10 estate_10_jsx_element_6@-->|"binds"| jsx_element_6
+  estate_10_jsx_element_6@{ animate: true }
+  jsx_element_6 ejsx_element_6_process_19@-->|"onChange"| process_19
+  ejsx_element_6_process_19@{ animate: true }
+  state_10 estate_10_jsx_element_7@-->|"binds"| jsx_element_7
+  estate_10_jsx_element_7@{ animate: true }
+  jsx_element_7 ejsx_element_7_process_19@-->|"onChange"| process_19
+  ejsx_element_7_process_19@{ animate: true }
+  jsx_element_8 ejsx_element_8_process_25@-->|"onClick"| process_25
+  ejsx_element_8_process_25@{ animate: true }
+  jsx_element_9 ejsx_element_9_process_25@-->|"onClick"| process_25
+  ejsx_element_9_process_25@{ animate: true }
+  jsx_element_10 ejsx_element_10_process_25@-->|"onClick"| process_25
+  ejsx_element_10_process_25@{ animate: true }
+  jsx_element_11 ejsx_element_11_process_25@-->|"onClick"| process_25
+  ejsx_element_11_process_25@{ animate: true }
+  jsx_element_18 ejsx_element_18_process_24@-->|"onClick"| process_24
+  ejsx_element_18_process_24@{ animate: true }
+  jsx_element_19 ejsx_element_19_process_24@-->|"onClick"| process_24
+  ejsx_element_19_process_24@{ animate: true }
+  jsx_element_20 ejsx_element_20_state_13@-->|"onClick"| state_13
+  ejsx_element_20_state_13@{ animate: true }
+  state_13 estate_13_jsx_element_21@-->|"binds"| jsx_element_21
+  estate_13_jsx_element_21@{ animate: true }
+  jsx_element_21 ejsx_element_21_process_29@-->|"checked"| process_29
+  ejsx_element_21_process_29@{ animate: true }
+  jsx_element_22 ejsx_element_22_process_18@-->|"onClick"| process_18
+  ejsx_element_22_process_18@{ animate: true }
+  jsx_element_23 ejsx_element_23_process_18@-->|"onClick"| process_18
+  ejsx_element_23_process_18@{ animate: true }
+  jsx_element_24 ejsx_element_24_process_18@-->|"onClick"| process_18
+  ejsx_element_24_process_18@{ animate: true }
+  jsx_element_25 ejsx_element_25_process_18@-->|"onClick"| process_18
+  ejsx_element_25_process_18@{ animate: true }
+  jsx_element_26 ejsx_element_26_process_18@-->|"onClick"| process_18
+  ejsx_element_26_process_18@{ animate: true }
+  state_13 estate_13_jsx_element_27@-->|"binds"| jsx_element_27
+  estate_13_jsx_element_27@{ animate: true }
+  jsx_element_27 ejsx_element_27_process_23@-->|"onChange"| process_23
+  ejsx_element_27_process_23@{ animate: true }
+  jsx_element_36 ejsx_element_36_process_20@-->|"onClick"| process_20
+  ejsx_element_36_process_20@{ animate: true }
+  state_11 estate_11_jsx_element_36@-->|"binds"| jsx_element_36
+  estate_11_jsx_element_36@{ animate: true }
+  jsx_element_38 ejsx_element_38_process_20@-->|"onClick"| process_20
+  ejsx_element_38_process_20@{ animate: true }
+  state_11 estate_11_jsx_element_38@-->|"binds"| jsx_element_38
+  estate_11_jsx_element_38@{ animate: true }
+  jsx_element_38 ejsx_element_38_process_32@-->|"disabled"| process_32
+  ejsx_element_38_process_32@{ animate: true }
+  jsx_element_39 ejsx_element_39_process_22@-->|"onClick"| process_22
+  ejsx_element_39_process_22@{ animate: true }
+  state_13 estate_13_process_24@-->|"reads"| process_24
+  estate_13_process_24@{ animate: true }
+  state_10 estate_10_process_26@-->|"reads"| process_26
+  estate_10_process_26@{ animate: true }
+  state_5 estate_5_process_27@-->|"reads"| process_27
+  estate_5_process_27@{ animate: true }
+  state_8 estate_8_process_27@-->|"reads"| process_27
+  estate_8_process_27@{ animate: true }
+  state_9 estate_9_process_28@-->|"reads"| process_28
+  estate_9_process_28@{ animate: true }
+  state_12 estate_12_process_29@-->|"reads"| process_29
+  estate_12_process_29@{ animate: true }
+  state_14 estate_14_process_31@-->|"reads"| process_31
+  estate_14_process_31@{ animate: true }
+  state_12 estate_12_process_32@-->|"reads"| process_32
+  estate_12_process_32@{ animate: true }
+  state_13 estate_13_process_33@-->|"reads"| process_33
+  estate_13_process_33@{ animate: true }
+  state_5 estate_5_process_35@-->|"reads"| process_35
+  estate_5_process_35@{ animate: true }
+  state_10 estate_10_process_35@-->|"reads"| process_35
+  estate_10_process_35@{ animate: true }
+  process_16 eprocess_16_state_6@-->|"writes"| state_6
+  eprocess_16_state_6@{ animate: true }
+  process_16 eprocess_16_state_7@-->|"writes"| state_7
+  eprocess_16_state_7@{ animate: true }
+  process_18 eprocess_18_state_9@-->|"writes"| state_9
+  eprocess_18_state_9@{ animate: true }
+  process_19 eprocess_19_state_10@-->|"writes"| state_10
+  eprocess_19_state_10@{ animate: true }
+  process_19 eprocess_19_state_11@-->|"writes"| state_11
+  eprocess_19_state_11@{ animate: true }
+  process_20 eprocess_20_state_11@-->|"writes"| state_11
+  eprocess_20_state_11@{ animate: true }
+  process_21 eprocess_21_state_8@-->|"writes"| state_8
+  eprocess_21_state_8@{ animate: true }
+  process_21 eprocess_21_state_11@-->|"writes"| state_11
+  eprocess_21_state_11@{ animate: true }
+  process_23 eprocess_23_state_13@-->|"writes"| state_13
+  eprocess_23_state_13@{ animate: true }
+  process_24 eprocess_24_state_13@-->|"writes"| state_13
+  eprocess_24_state_13@{ animate: true }
+  process_25 eprocess_25_state_14@-->|"writes"| state_14
+  eprocess_25_state_14@{ animate: true }
+  prop_1 eprop_1_process_35@-->|"reads"| process_35
+  eprop_1_process_35@{ animate: true }
+  process_35 eprocess_35_prop_2@-->|"calls"| prop_2
+  eprocess_35_prop_2@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class prop_0 inputProp
+  class prop_1 inputProp
+  class prop_4 inputProp
+  class prop_2 outputProp
+  class prop_3 outputProp
+  class state_5 dataStore
+  class state_6 dataStore
+  class state_7 dataStore
+  class state_8 dataStore
+  class state_9 dataStore
+  class state_10 dataStore
+  class state_11 dataStore
+  class state_12 dataStore
+  class state_13 dataStore
+  class state_14 dataStore
+  class state_15 dataStore
+  class process_16 process
+  class process_17 process
+  class process_18 process
+  class process_19 process
+  class process_20 process
+  class process_21 process
+  class process_22 process
+  class process_23 process
+  class process_24 process
+  class process_25 process
+  class process_26 process
+  class process_27 process
+  class process_28 process
+  class process_29 process
+  class process_30 process
+  class process_31 process
+  class process_32 process
+  class process_33 process
+  class process_34 process
+  class process_35 process
+  class process_36 process
+  class process_37 process
+  class process_38 process
+  class jsx_element_1 jsxElement
+  class jsx_element_0 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_8 jsxElement
+  class jsx_element_9 jsxElement
+  class jsx_element_10 jsxElement
+  class jsx_element_11 jsxElement
+  class jsx_element_12 jsxElement
+  class jsx_element_13 jsxElement
+  class jsx_element_14 jsxElement
+  class jsx_element_15 jsxElement
+  class jsx_element_16 jsxElement
+  class jsx_element_17 jsxElement
+  class jsx_element_18 jsxElement
+  class jsx_element_19 jsxElement
+  class jsx_element_20 jsxElement
+  class jsx_element_21 jsxElement
+  class jsx_element_22 jsxElement
+  class jsx_element_23 jsxElement
+  class jsx_element_24 jsxElement
+  class jsx_element_25 jsxElement
+  class jsx_element_26 jsxElement
+  class jsx_element_33 jsxElement
+  class jsx_element_27 jsxElement
+  class jsx_element_28 jsxElement
+  class jsx_element_29 jsxElement
+  class jsx_element_30 jsxElement
+  class jsx_element_31 jsxElement
+  class jsx_element_32 jsxElement
+  class jsx_element_34 jsxElement
+  class jsx_element_35 jsxElement
+  class jsx_element_36 jsxElement
+  class jsx_element_37 jsxElement
+  class jsx_element_38 jsxElement
+  class jsx_element_39 jsxElement

@@ -1,0 +1,110 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  subgraph InputProps["Input Props"]
+    direction TB
+    prop_0("userId")
+    prop_1("userName")
+    prop_2("initialEmail")
+  end
+  state_5[("email")]
+  state_6[("isEditing")]
+  process_7[["handleSave"]]
+  process_8[["handleCancel"]]
+  process_9[["handleDelete"]]
+  jsx_element_0["h2"]
+  jsx_element_1["p"]
+  jsx_element_2["input"]
+  jsx_element_3["button"]
+  jsx_element_4["button"]
+  jsx_element_5["button"]
+  jsx_element_6["button"]
+  subgraph_1@{ shape: hex, label: "{isEditing}" }
+  subgraph_2@{ shape: hex, label: "{!isEditing}" }
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;h2&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
+    subgraph subgraph_1["{isEditing}"]
+      direction TB
+        jsx_element_2@{ shape: hex, label: "&lt;input&gt;" }
+        jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
+    end
+    subgraph subgraph_2["{!(isEditing)}"]
+      direction TB
+        jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_6@{ shape: hex, label: "&lt;button&gt;" }
+    end
+  end
+  subgraph OutputProps["Output Props"]
+    direction TB
+    prop_3["onUpdate"]
+    prop_4["onDelete"]
+  end
+  state_6 estate_6_subgraph_1@-->|"control visibility"| subgraph_1
+  estate_6_subgraph_1@{ animate: true }
+  state_6 estate_6_subgraph_2@-->|"control visibility"| subgraph_2
+  estate_6_subgraph_2@{ animate: true }
+  prop_1 eprop_1_jsx_element_0@-->|"display"| jsx_element_0
+  eprop_1_jsx_element_0@{ animate: true }
+  prop_0 eprop_0_jsx_element_1@-->|"display"| jsx_element_1
+  eprop_0_jsx_element_1@{ animate: true }
+  state_5 estate_5_jsx_element_2@-->|"binds"| jsx_element_2
+  estate_5_jsx_element_2@{ animate: true }
+  jsx_element_2 ejsx_element_2_state_5@-->|"onChange"| state_5
+  ejsx_element_2_state_5@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_7@-->|"onClick"| process_7
+  ejsx_element_3_process_7@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_8@-->|"onClick"| process_8
+  ejsx_element_4_process_8@{ animate: true }
+  jsx_element_5 ejsx_element_5_state_6@-->|"onClick"| state_6
+  ejsx_element_5_state_6@{ animate: true }
+  jsx_element_6 ejsx_element_6_process_9@-->|"onClick"| process_9
+  ejsx_element_6_process_9@{ animate: true }
+  prop_2 eprop_2_state_5@-->|"initializes"| state_5
+  eprop_2_state_5@{ animate: true }
+  state_5 estate_5_process_7@-->|"reads"| process_7
+  estate_5_process_7@{ animate: true }
+  process_7 eprocess_7_state_6@-->|"writes"| state_6
+  eprocess_7_state_6@{ animate: true }
+  process_8 eprocess_8_state_5@-->|"writes"| state_5
+  eprocess_8_state_5@{ animate: true }
+  process_8 eprocess_8_state_6@-->|"writes"| state_6
+  eprocess_8_state_6@{ animate: true }
+  prop_0 eprop_0_process_7@-->|"reads"| process_7
+  eprop_0_process_7@{ animate: true }
+  prop_2 eprop_2_process_8@-->|"reads"| process_8
+  eprop_2_process_8@{ animate: true }
+  prop_0 eprop_0_process_9@-->|"reads"| process_9
+  eprop_0_process_9@{ animate: true }
+  process_7 eprocess_7_prop_3@-->|"calls"| prop_3
+  eprocess_7_prop_3@{ animate: true }
+  process_9 eprocess_9_prop_4@-->|"calls"| prop_4
+  eprocess_9_prop_4@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class prop_0 inputProp
+  class prop_1 inputProp
+  class prop_2 inputProp
+  class prop_3 outputProp
+  class prop_4 outputProp
+  class state_5 dataStore
+  class state_6 dataStore
+  class process_7 process
+  class process_8 process
+  class process_9 process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement

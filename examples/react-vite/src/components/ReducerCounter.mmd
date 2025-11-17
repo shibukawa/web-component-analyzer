@@ -1,0 +1,83 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  state_0[("counterReducer")]
+  process_1[["useEffect"]]
+  process_2[["handleIncrement"]]
+  process_3[["handleDecrement"]]
+  process_4[["handleStepChange"]]
+  process_5[["handleReset"]]
+  jsx_element_0["p"]
+  jsx_element_1["p"]
+  jsx_element_2["p"]
+  jsx_element_3["button"]
+  jsx_element_4["button"]
+  jsx_element_5["button"]
+  jsx_element_6["input"]
+  jsx_element_7["li"]
+  subgraph_1@{ shape: hex, label: "{loop}" }
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;input&gt;" }
+    subgraph subgraph_1["{history}"]
+      direction TB
+        jsx_element_7@{ shape: hex, label: "&lt;li&gt;" }
+    end
+  end
+  state_0 estate_0_subgraph_1@-->|"iterates over: history"| subgraph_1
+  estate_0_subgraph_1@{ animate: true }
+  state_0 estate_0_jsx_element_0@-->|"display: count"| jsx_element_0
+  estate_0_jsx_element_0@{ animate: true }
+  state_0 estate_0_jsx_element_1@-->|"display: step"| jsx_element_1
+  estate_0_jsx_element_1@{ animate: true }
+  state_0 estate_0_jsx_element_2@-->|"display: history"| jsx_element_2
+  estate_0_jsx_element_2@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_2@-->|"onClick"| process_2
+  ejsx_element_3_process_2@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_3@-->|"onClick"| process_3
+  ejsx_element_4_process_3@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_5@-->|"onClick"| process_5
+  ejsx_element_5_process_5@{ animate: true }
+  state_0 estate_0_jsx_element_6@-->|"binds: step"| jsx_element_6
+  estate_0_jsx_element_6@{ animate: true }
+  jsx_element_6 ejsx_element_6_process_4@-->|"onChange"| process_4
+  ejsx_element_6_process_4@{ animate: true }
+  process_1 eprocess_1_state_0@-->|"dispatch"| state_0
+  eprocess_1_state_0@{ animate: true }
+  process_2 eprocess_2_state_0@-->|"dispatch"| state_0
+  eprocess_2_state_0@{ animate: true }
+  process_3 eprocess_3_state_0@-->|"dispatch"| state_0
+  eprocess_3_state_0@{ animate: true }
+  process_4 eprocess_4_state_0@-->|"dispatch"| state_0
+  eprocess_4_state_0@{ animate: true }
+  process_5 eprocess_5_state_0@-->|"dispatch"| state_0
+  eprocess_5_state_0@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class state_0 dataStore
+  class process_1 process
+  class process_2 process
+  class process_3 process
+  class process_4 process
+  class process_5 process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement

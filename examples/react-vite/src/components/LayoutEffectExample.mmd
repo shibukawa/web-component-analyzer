@@ -1,0 +1,57 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  state_0[("width")]
+  state_1[("height")]
+  process_2[["useLayoutEffect"]]
+  cleanup_3[["cleanup"]]
+  divRef_exported_handlers_getBoundingClientRect[["getBoundingClientRect"]]
+  jsx_element_0["div"]
+  jsx_element_1["p"]
+  jsx_element_2["p"]
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  subgraph divRef_exported_handlers["exported handlers"]
+    direction TB
+      divRef_exported_handlers_getBoundingClientRect[["getBoundingClientRect"]]
+  end
+  process_2 eprocess_2_cleanup_3@-.->|"cleanup"| cleanup_3
+  eprocess_2_cleanup_3@{ animate: true }
+  process_2 eprocess_2_divRef_exported_handlers_getBoundingClientRect@-->|"calls"| divRef_exported_handlers_getBoundingClientRect
+  eprocess_2_divRef_exported_handlers_getBoundingClientRect@{ animate: true }
+  state_0 estate_0_jsx_element_1@-->|"display"| jsx_element_1
+  estate_0_jsx_element_1@{ animate: true }
+  state_1 estate_1_jsx_element_2@-->|"display"| jsx_element_2
+  estate_1_jsx_element_2@{ animate: true }
+  process_2 eprocess_2_state_0@-->|"writes"| state_0
+  eprocess_2_state_0@{ animate: true }
+  process_2 eprocess_2_state_1@-->|"writes"| state_1
+  eprocess_2_state_1@{ animate: true }
+  cleanup_3 ecleanup_3_state_0@-->|"writes"| state_0
+  ecleanup_3_state_0@{ animate: true }
+  cleanup_3 ecleanup_3_state_1@-->|"writes"| state_1
+  ecleanup_3_state_1@{ animate: true }
+  jsx_element_0 ejsx_element_0_divRef_exported_handlers@---->|"exports"| divRef_exported_handlers
+  ejsx_element_0_divRef_exported_handlers@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class state_0 dataStore
+  class state_1 dataStore
+  class process_2 process
+  class cleanup_3 process
+  class divRef_exported_handlers_getBoundingClientRect process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class divRef_exported_handlers_getBoundingClientRect exportedHandler

@@ -1,0 +1,113 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  state_0[("searchResults")]
+  state_1[("counterValue")]
+  state_2[("todos")]
+  process_3[["handleUserUpdate"]]
+  process_4[["handleUserDelete"]]
+  process_5[["handleTodoToggle"]]
+  process_6[["handleTodoEdit"]]
+  process_7[["handleTodoRemove"]]
+  process_8[["handleCounterChange"]]
+  process_9[["handleLimitReached"]]
+  process_10[["handleSearch"]]
+  process_11[["handleSearchClear"]]
+  jsx_element_0["UserProfile"]
+  jsx_element_1["TodoItem"]
+  jsx_element_2["Counter"]
+  jsx_element_3["p"]
+  jsx_element_4["SearchBox"]
+  jsx_element_5["li"]
+  subgraph_1@{ shape: hex, label: "{loop}" }
+  subgraph_2@{ shape: hex, label: "{searchResults.length &gt; expression}" }
+  subgraph_3@{ shape: hex, label: "{loop}" }
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;UserProfile&gt;" }
+    subgraph subgraph_1["{todos}"]
+      direction TB
+        jsx_element_1@{ shape: hex, label: "&lt;TodoItem&gt;" }
+    end
+      jsx_element_2@{ shape: hex, label: "&lt;Counter&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;SearchBox&gt;" }
+    subgraph subgraph_2["{searchResults.length &gt; expression}"]
+      direction TB
+      subgraph subgraph_3["{searchResults}"]
+        direction TB
+          jsx_element_5@{ shape: hex, label: "&lt;li&gt;" }
+      end
+    end
+  end
+  state_2 estate_2_subgraph_1@-->|"iterates over"| subgraph_1
+  estate_2_subgraph_1@{ animate: true }
+  state_0 estate_0_subgraph_2@-->|"control visibility"| subgraph_2
+  estate_0_subgraph_2@{ animate: true }
+  state_0 estate_0_subgraph_3@-->|"iterates over"| subgraph_3
+  estate_0_subgraph_3@{ animate: true }
+  state_1 estate_1_jsx_element_3@-->|"display"| jsx_element_3
+  estate_1_jsx_element_3@{ animate: true }
+  jsx_element_0 ejsx_element_0_process_3@-->|"onUpdate"| process_3
+  ejsx_element_0_process_3@{ animate: true }
+  jsx_element_0 ejsx_element_0_process_4@-->|"onDelete"| process_4
+  ejsx_element_0_process_4@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_5@-->|"onToggle"| process_5
+  ejsx_element_1_process_5@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_6@-->|"onEdit"| process_6
+  ejsx_element_1_process_6@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_7@-->|"onRemove"| process_7
+  ejsx_element_1_process_7@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_8@-->|"onChange"| process_8
+  ejsx_element_2_process_8@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_9@-->|"onLimitReached"| process_9
+  ejsx_element_2_process_9@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_10@-->|"onSearch"| process_10
+  ejsx_element_4_process_10@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_11@-->|"onClear"| process_11
+  ejsx_element_4_process_11@{ animate: true }
+  state_2 estate_2_process_5@-->|"reads"| process_5
+  estate_2_process_5@{ animate: true }
+  state_2 estate_2_process_6@-->|"reads"| process_6
+  estate_2_process_6@{ animate: true }
+  state_2 estate_2_process_7@-->|"reads"| process_7
+  estate_2_process_7@{ animate: true }
+  process_5 eprocess_5_state_2@-->|"writes"| state_2
+  eprocess_5_state_2@{ animate: true }
+  process_6 eprocess_6_state_2@-->|"writes"| state_2
+  eprocess_6_state_2@{ animate: true }
+  process_7 eprocess_7_state_2@-->|"writes"| state_2
+  eprocess_7_state_2@{ animate: true }
+  process_8 eprocess_8_state_1@-->|"writes"| state_1
+  eprocess_8_state_1@{ animate: true }
+  process_10 eprocess_10_state_0@-->|"writes"| state_0
+  eprocess_10_state_0@{ animate: true }
+  process_11 eprocess_11_state_0@-->|"writes"| state_0
+  eprocess_11_state_0@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class state_0 dataStore
+  class state_1 dataStore
+  class state_2 dataStore
+  class process_3 process
+  class process_4 process
+  class process_5 process
+  class process_6 process
+  class process_7 process
+  class process_8 process
+  class process_9 process
+  class process_10 process
+  class process_11 process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
