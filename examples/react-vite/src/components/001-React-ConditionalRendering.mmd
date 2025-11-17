@@ -6,6 +6,7 @@ flowchart LR
   end
   state_1[("count")]
   process_2[["handleIncrement"]]
+  jsx_element_3["div"]
   jsx_element_0["p"]
   jsx_element_1["button"]
   jsx_element_2["p"]
@@ -13,6 +14,7 @@ flowchart LR
   subgraph_2@{ shape: hex, label: "{count &gt; expression}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_3@{ shape: hex, label: "&lt;div&gt;" }
     subgraph subgraph_1["{isLoggedIn}"]
       direction TB
         jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
@@ -27,6 +29,10 @@ flowchart LR
   eprop_0_subgraph_1@{ animate: true }
   state_1 estate_1_subgraph_2@-->|"control visibility"| subgraph_2
   estate_1_subgraph_2@{ animate: true }
+  prop_0 eprop_0_jsx_element_3@-->|"display"| jsx_element_3
+  eprop_0_jsx_element_3@{ animate: true }
+  state_1 estate_1_jsx_element_3@-->|"display"| jsx_element_3
+  estate_1_jsx_element_3@{ animate: true }
   state_1 estate_1_jsx_element_0@-->|"display"| jsx_element_0
   estate_1_jsx_element_0@{ animate: true }
   state_1 estate_1_jsx_element_2@-->|"display"| jsx_element_2
@@ -50,6 +56,7 @@ flowchart LR
   class prop_0 inputProp
   class state_1 dataStore
   class process_2 process
+  class jsx_element_3 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement

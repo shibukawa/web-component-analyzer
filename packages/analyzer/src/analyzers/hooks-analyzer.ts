@@ -112,9 +112,17 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
         }
       }
       
+      console.log(`🪝 enrichedHook.libraryName:`, enrichedHook.libraryName);
+      
       if (declaration) {
+        // Check if this is React Hook Form hook - classify with special logic
+        if (enrichedHook.libraryName === 'react-hook-form') {
+          console.log(`🪝 ✅ Detected React Hook Form hook: ${hook.hookName}`);
+          const classifiedHook = this.classifyReactHookFormReturnValues(hook);
+          hooks.push(classifiedHook);
+        }
         // Check if this is useContext - classify with TypeResolver
-        if (hook.hookName === 'useContext') {
+        else if (hook.hookName === 'useContext') {
           const classifiedHook = await this.classifyUseContextReturnValues(hook, declaration);
           hooks.push(classifiedHook);
         }
@@ -518,6 +526,73 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
    * @param declaration - Variable declaration containing the hook call
    * @returns Updated HookInfo with type classifications
    */
+  /**
+   * Classify React Hook Form hook return values
+   * React Hook Form hooks have well-known return value patterns
+   * @param hookInfo - The hook information to classify
+   * @returns Updated HookInfo with type classifications
+   */
+  private classifyReactHookFormReturnValues(hookInfo: HookInfo): HookInfo {
+    const variableTypes = new Map<string, 'function' | 'data'>();
+    
+    // Define known return value types for each React Hook Form hook
+    const reactHookFormPatterns: Record<string, Record<string, 'function' | 'data'>> = {
+      useForm: {
+        register: 'function',
+        handleSubmit: 'function',
+        formState: 'data',
+        setValue: 'function',
+        reset: 'function',
+        watch: 'function',
+        getValues: 'function',
+        control: 'data',
+        unregister: 'function',
+        trigger: 'function',
+        clearErrors: 'function'
+      },
+      useController: {
+        field: 'data',
+        fieldState: 'data'
+      },
+      useWatch: {
+        value: 'data'
+      },
+      useFormState: {
+        isDirty: 'data',
+        isValid: 'data',
+        errors: 'data',
+        isSubmitting: 'data',
+        isLoading: 'data',
+        isValidating: 'data',
+        touchedFields: 'data',
+        dirtyFields: 'data'
+      }
+    };
+    
+    const pattern = reactHookFormPatterns[hookInfo.hookName];
+    
+    if (pattern) {
+      for (const varName of hookInfo.variables) {
+        const type = pattern[varName] || 'data'; // Default to data if not found
+        variableTypes.set(varName, type);
+        console.log(`🪝   ${varName}: ${type} (React Hook Form pattern)`);
+      }
+    } else {
+      // Fallback to heuristic if hook pattern not found
+      for (const varName of hookInfo.variables) {
+        const isFunctionName = /^(on|handle|set|get|update|delete|create|fetch|load|toggle|increment|decrement|dispatch|navigate|logout|login|submit|register|reset)[A-Z]/.test(varName) ||
+                              ['dispatch', 'navigate', 'logout', 'login', 'submit', 'reset', 'clear', 'increment', 'decrement', 'register', 'handleSubmit'].includes(varName);
+        variableTypes.set(varName, isFunctionName ? 'function' : 'data');
+        console.log(`🪝   ${varName}: ${isFunctionName ? 'function' : 'data'} (heuristic)`);
+      }
+    }
+    
+    return {
+      ...hookInfo,
+      variableTypes
+    };
+  }
+
   private async classifyCustomHookReturnValues(
     hookInfo: HookInfo,
     declaration: swc.VariableDeclarator

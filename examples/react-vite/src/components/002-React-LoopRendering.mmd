@@ -3,29 +3,37 @@ flowchart LR
   state_0[("items")]
   state_1[("matrix")]
   process_2[["handleAddItem"]]
+  jsx_element_1["ul"]
   jsx_element_0["li"]
-  jsx_element_1["span"]
-  jsx_element_2["button"]
+  jsx_element_3["div"]
+  jsx_element_2["span"]
+  jsx_element_4["button"]
   subgraph_1@{ shape: hex, label: "{loop}" }
   subgraph_2@{ shape: hex, label: "{loop}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_1@{ shape: hex, label: "&lt;ul&gt;" }
     subgraph subgraph_1["{items}"]
       direction TB
         jsx_element_0@{ shape: hex, label: "&lt;li&gt;" }
     end
+      jsx_element_3@{ shape: hex, label: "&lt;div&gt;" }
     subgraph subgraph_2["{matrix}"]
       direction TB
-        jsx_element_1@{ shape: hex, label: "&lt;span&gt;" }
+        jsx_element_2@{ shape: hex, label: "&lt;span&gt;" }
     end
-      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
   end
   state_0 estate_0_subgraph_1@-->|"iterates over"| subgraph_1
   estate_0_subgraph_1@{ animate: true }
   state_1 estate_1_subgraph_2@-->|"iterates over"| subgraph_2
   estate_1_subgraph_2@{ animate: true }
-  jsx_element_2 ejsx_element_2_process_2@-->|"onClick"| process_2
-  ejsx_element_2_process_2@{ animate: true }
+  state_0 estate_0_jsx_element_1@-->|"display"| jsx_element_1
+  estate_0_jsx_element_1@{ animate: true }
+  state_1 estate_1_jsx_element_3@-->|"display"| jsx_element_3
+  estate_1_jsx_element_3@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_2@-->|"onClick"| process_2
+  ejsx_element_4_process_2@{ animate: true }
   process_2 eprocess_2_state_0@-->|"writes"| state_0
   eprocess_2_state_0@{ animate: true }
 
@@ -41,6 +49,8 @@ flowchart LR
   class state_0 dataStore
   class state_1 dataStore
   class process_2 process
-  class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
+  class jsx_element_0 jsxElement
+  class jsx_element_3 jsxElement
   class jsx_element_2 jsxElement
+  class jsx_element_4 jsxElement

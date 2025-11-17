@@ -194,6 +194,7 @@ export interface JSXElementStructure {
   children: JSXStructure[];
   line?: number;
   column?: number;
+  metadata?: Record<string, any>; // Additional metadata for special handling
 }
 
 /**

@@ -273,21 +273,21 @@
     - Verify router state data store node
     - _Requirements: 3, 14_
 
-- [ ] 13. Add React Hook Form library support
-  - [ ] 13.1 Define React Hook Form adapters in library-adapters.json
+- [x] 13. Add React Hook Form library support
+  - [x] 13.1 Define React Hook Form adapters in library-adapters.json
     - Add adapters for useForm (register, handleSubmit, formState, setValue, reset)
     - Add adapters for useController (field, fieldState)
     - Add adapters for useWatch (returns watched field value)
     - Add adapters for useFormState (formState object)
     - _Requirements: 5_
   
-  - [ ] 13.2 Create 109-ReactHookForm-BasicForm.tsx acceptance test
+  - [x] 13.2 Create 109-ReactHookForm-BasicForm.tsx acceptance test
     - Component using useForm
     - Include embedded YAML specification
     - Verify formState data stores and register/handleSubmit processes
     - _Requirements: 5, 14_
   
-  - [ ] 13.3 Create 110-ReactHookForm-Controller.tsx acceptance test
+  - [x] 13.3 Create 110-ReactHookForm-Controller.tsx acceptance test
     - Component using useController
     - Include embedded YAML specification
     - Verify field state data store

@@ -66,6 +66,26 @@ export interface ProcessorContext {
 }
 
 /**
+ * Custom edge builder function
+ * Called during attribute reference processing to create library-specific edges
+ */
+export type CustomEdgeBuilder = (params: {
+  /** The JSX element node */
+  elementNode: DFDNode;
+  /** The source node (e.g., library hook node) */
+  sourceNode: DFDNode;
+  /** The attribute reference information */
+  attributeRef: {
+    attributeName: string;
+    referencedVariable: string;
+  };
+  /** The JSX element structure */
+  element: any; // JSXElementStructure
+  /** All nodes in the graph */
+  nodes: DFDNode[];
+}) => DFDEdge[];
+
+/**
  * Result returned by a processor after processing a hook
  */
 export interface ProcessorResult {
@@ -80,6 +100,9 @@ export interface ProcessorResult {
   
   /** Whether this processor fully handled the hook */
   handled: boolean;
+  
+  /** Optional custom edge builders for attribute references */
+  customEdgeBuilders?: Record<string, CustomEdgeBuilder>;
 }
 
 /**

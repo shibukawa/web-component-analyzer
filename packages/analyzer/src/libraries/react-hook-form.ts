@@ -226,8 +226,145 @@ export class ReactHookFormLibraryProcessor implements HookProcessor {
     nodes.push(node);
     logger.node('created', node);
 
-    logger.complete({ nodes, edges, handled: true });
-    return { nodes, edges, handled: true };
+    // Add custom edge builder for register function
+    const customEdgeBuilders: Record<string, any> = {};
+    if (hook.variables.includes('register')) {
+      customEdgeBuilders['register'] = this.createRegisterEdgeBuilder(nodeId);
+    }
+
+    const result = { 
+      nodes, 
+      edges, 
+      handled: true,
+      customEdgeBuilders: Object.keys(customEdgeBuilders).length > 0 ? customEdgeBuilders : undefined
+    };
+    
+    logger.complete(result);
+    return result;
+  }
+
+  /**
+   * Create custom edge builder for register function
+   * Handles bidirectional data flow between register and input elements
+   */
+  private createRegisterEdgeBuilder(hookNodeId: string): any {
+    return (params: any) => {
+      const { elementNode, sourceNode, attributeRef, element } = params;
+      const edges: DFDEdge[] = [];
+
+      // Only handle spread:register attributes on input elements
+      if (!attributeRef.attributeName.startsWith('spread:register:') || element.tagName !== 'input') {
+        return edges;
+      }
+
+      // Extract field name from attribute name
+      // attributeName format: "spread:register:fieldName"
+      const fieldName = attributeRef.attributeName.substring('spread:register:'.length);
+
+      // Forward edge: register binds field to input (register -> input)
+      edges.push({
+        from: sourceNode.id,
+        to: elementNode.id,
+        label: `binds: ${fieldName}`
+      });
+
+      // Reverse edge: input onChange updates register (input -> register)
+      edges.push({
+        from: elementNode.id,
+        to: sourceNode.id,
+        label: 'onChange'
+      });
+
+      return edges;
+    };
+  }
+
+  /**
+   * Create custom edge builder for field property from useController
+   * Handles bidirectional data flow between field and input elements
+   */
+  private createFieldEdgeBuilder(hookNodeId: string, defaultFieldName: string): any {
+    return (params: any) => {
+      const { elementNode, sourceNode, attributeRef, element } = params;
+      const edges: DFDEdge[] = [];
+
+      // Only handle spread:field attributes on input elements
+      if (!attributeRef.attributeName.startsWith('spread:field') || element.tagName !== 'input') {
+        return edges;
+      }
+
+      // Try to extract field name from element's name attribute or metadata
+      let fieldName = defaultFieldName;
+      
+      // Check if element has metadata with fieldName
+      if (element.metadata?.fieldName) {
+        fieldName = element.metadata.fieldName;
+      } else {
+        // Try to find name attribute in attributeReferences
+        const nameAttr = element.attributeReferences?.find((attr: any) => 
+          attr.attributeName === 'name'
+        );
+        if (nameAttr && nameAttr.referencedVariable) {
+          // If it's a string literal (starts with quote), extract it
+          const varName = nameAttr.referencedVariable;
+          if (varName.startsWith('"') || varName.startsWith("'")) {
+            fieldName = varName.slice(1, -1);
+          } else {
+            fieldName = varName;
+          }
+        }
+      }
+
+      // Forward edge: field binds to input (field -> input)
+      edges.push({
+        from: sourceNode.id,
+        to: elementNode.id,
+        label: `binds: ${fieldName}`
+      });
+
+      // Reverse edge: input onChange updates field (input -> field)
+      edges.push({
+        from: elementNode.id,
+        to: sourceNode.id,
+        label: 'onChange'
+      });
+
+      return edges;
+    };
+  }
+
+  /**
+   * Extract field name from useController hook arguments
+   * Looks for the 'name' property in the hook's arguments
+   * Note: This is a fallback - the actual field name is extracted from the input element's name attribute
+   */
+  private extractFieldNameFromHook(hook: HookInfo): string {
+    // Check if hook has arguments with name property
+    if (hook.arguments && hook.arguments.length > 0) {
+      const firstArg = hook.arguments[0];
+      
+      // If it's an object expression, look for 'name' property
+      if (firstArg.type === 'ObjectExpression') {
+        const nameProperty = (firstArg as any).properties?.find((prop: any) => 
+          prop.type === 'KeyValueProperty' && 
+          prop.key?.type === 'Identifier' && 
+          prop.key.value === 'name'
+        );
+        
+        if (nameProperty && nameProperty.value) {
+          // If value is a string literal, return it
+          if (nameProperty.value.type === 'StringLiteral') {
+            return nameProperty.value.value;
+          }
+          // If value is an identifier, return the identifier name
+          if (nameProperty.value.type === 'Identifier') {
+            return nameProperty.value.value;
+          }
+        }
+      }
+    }
+    
+    return 'field'; // Default fallback
   }
 
   /**
@@ -235,7 +372,7 @@ export class ReactHookFormLibraryProcessor implements HookProcessor {
    * Creates consolidated library-hook node with field state
    */
   private processUseController(hook: HookInfo, context: ProcessorContext): ProcessorResult {
-    const { generateNodeId, logger } = context;
+    const { generateNodeId, logger, nodes: existingNodes, analysis } = context;
     const nodes: DFDNode[] = [];
     const edges: DFDEdge[] = [];
 
@@ -271,8 +408,39 @@ export class ReactHookFormLibraryProcessor implements HookProcessor {
     nodes.push(node);
     logger.node('created', node);
 
-    logger.complete({ nodes, edges, handled: true });
-    return { nodes, edges, handled: true };
+    // Create edge from useForm's control to useController
+    // Find useForm node by checking if 'control' is referenced in hook arguments
+    const useFormNode = existingNodes.find(n => 
+      n.metadata?.hookName === 'useForm' && 
+      n.metadata?.libraryName === 'react-hook-form'
+    );
+    
+    if (useFormNode) {
+      edges.push({
+        from: useFormNode.id,
+        to: nodeId,
+        label: 'binds: control'
+      });
+      logger.edge('created', edges[edges.length - 1]);
+    }
+
+    // Add custom edge builder for field property (similar to register)
+    const customEdgeBuilders: Record<string, any> = {};
+    if (hook.variables.includes('field')) {
+      // Extract field name from hook arguments (fallback to 'field')
+      const fieldName = this.extractFieldNameFromHook(hook);
+      customEdgeBuilders['field'] = this.createFieldEdgeBuilder(nodeId, fieldName);
+    }
+
+    const result = { 
+      nodes, 
+      edges, 
+      handled: true,
+      customEdgeBuilders: Object.keys(customEdgeBuilders).length > 0 ? customEdgeBuilders : undefined
+    };
+    
+    logger.complete(result);
+    return result;
   }
 
   /**

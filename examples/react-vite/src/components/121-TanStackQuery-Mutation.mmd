@@ -5,6 +5,7 @@ flowchart LR
   server_2["Server: mutation"]
   library_hook_3[("useMutation")]
   process_4[["handleSubmit"]]
+  jsx_element_8["div"]
   jsx_element_4["form"]
   jsx_element_0["input"]
   jsx_element_1["textarea"]
@@ -19,6 +20,7 @@ flowchart LR
   subgraph_5@{ shape: hex, label: "{data}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_8@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_4@{ shape: hex, label: "&lt;form&gt;" }
       jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
       jsx_element_1@{ shape: hex, label: "&lt;textarea&gt;" }
@@ -50,6 +52,12 @@ flowchart LR
   elibrary_hook_3_subgraph_4@{ animate: true }
   library_hook_3 elibrary_hook_3_subgraph_5@-->|"control visibility: data"| subgraph_5
   elibrary_hook_3_subgraph_5@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_8@-->|"display: isLoading"| jsx_element_8
+  elibrary_hook_3_jsx_element_8@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_3@-->|"display: isLoading"| jsx_element_3
+  elibrary_hook_3_jsx_element_3@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_3@-->|"binds: isLoading"| jsx_element_3
+  elibrary_hook_3_jsx_element_3@{ animate: true }
   library_hook_3 elibrary_hook_3_jsx_element_6@-->|"display: error"| jsx_element_6
   elibrary_hook_3_jsx_element_6@{ animate: true }
   jsx_element_4 ejsx_element_4_process_4@-->|"onSubmit"| process_4
@@ -62,8 +70,6 @@ flowchart LR
   estate_1_jsx_element_1@{ animate: true }
   jsx_element_1 ejsx_element_1_state_1@-->|"onChange"| state_1
   ejsx_element_1_state_1@{ animate: true }
-  library_hook_3 elibrary_hook_3_jsx_element_3@-->|"binds: isLoading"| jsx_element_3
-  elibrary_hook_3_jsx_element_3@{ animate: true }
   state_0 estate_0_process_4@-->|"reads"| process_4
   estate_0_process_4@{ animate: true }
   state_1 estate_1_process_4@-->|"reads"| process_4
@@ -84,6 +90,7 @@ flowchart LR
   class state_1 dataStore
   class library_hook_3 dataStore
   class process_4 process
+  class jsx_element_8 jsxElement
   class jsx_element_4 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement

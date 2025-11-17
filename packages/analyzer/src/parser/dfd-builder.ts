@@ -46,6 +46,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   private exportedHandlerSubgroups: DFDSubgraph[] = [];
   private currentAnalysis: ComponentAnalysis | null = null;
   private verbose: boolean = false; // Set to true to enable detailed logging
+  private customEdgeBuilders: Map<string, any> = new Map(); // Store custom edge builders by variable name
 
   constructor() {
     // Processor registry is initialized globally in libraries/index.ts
@@ -85,6 +86,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
     this.edges = [];
     this.nodeIdCounter = 0;
     this.exportedHandlerSubgroups = [];
+    this.customEdgeBuilders.clear();
 
     // Create nodes for all elements
     this.createPropsNodes(analysis.props);
@@ -969,6 +971,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
       // Collect subgraphs if any
       if (result.subgraphs && result.subgraphs.length > 0) {
         this.exportedHandlerSubgroups.push(...result.subgraphs);
+      }
+
+      // Store custom edge builders if any
+      if (result.customEdgeBuilders) {
+        for (const [varName, builder] of Object.entries(result.customEdgeBuilders)) {
+          this.customEdgeBuilders.set(varName, builder);
+        }
       }
 
       this.log(`[processor] Successfully processed ${hook.hookName} with ${processor.metadata.id}: ${result.nodes.length} nodes, ${result.edges.length} edges`);
@@ -2053,6 +2062,20 @@ export class DefaultDFDBuilder implements DFDBuilder {
       }
 
       console.log(`🚚   ✅ Found source node: ${sourceNode.id}: ${sourceNode.label} (${sourceNode.type})`);
+
+      // Check if there's a custom edge builder for this variable
+      const customEdgeBuilder = this.customEdgeBuilders.get(varName);
+      if (customEdgeBuilder) {
+        const customEdges = customEdgeBuilder({
+          elementNode,
+          sourceNode,
+          attributeRef: attrRef,
+          element,
+          nodes
+        });
+        edges.push(...customEdges);
+        continue; // Skip default edge creation
+      }
 
       // Classify the variable type
       const varType = this.classifyVariable(varName, typeClassifier, sourceNode);

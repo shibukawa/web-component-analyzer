@@ -148,6 +148,38 @@ export class ConditionalStructureExtractor {
       }
     }
 
+    // Extract metadata for special handling (e.g., React Hook Form register field name)
+    const metadata: Record<string, any> = {};
+    
+    // Check for React Hook Form register spread operator
+    const registerAttr = attributeReferences.find(attr => {
+      return attr.referencedVariable === 'register' || 
+             (attr.attributeName === 'register' && attr.referencedVariable.includes('register'));
+    });
+    
+    if (registerAttr && tagName === 'input') {
+      // Try to extract field name from register call
+      // This would be in the form: {...register('fieldName')}
+      metadata.hasRegister = true;
+      
+      // Try to extract field name from JSX attributes
+      // Look for name attribute or data-field attribute
+      const nameAttr = element.opening.attributes.find(attr => {
+        if (attr.type === 'JSXAttribute' && attr.name.type === 'Identifier') {
+          return attr.name.value === 'name' || attr.name.value === 'data-field';
+        }
+        return false;
+      });
+      
+      if (nameAttr && nameAttr.type === 'JSXAttribute' && nameAttr.value) {
+        if (nameAttr.value.type === 'StringLiteral') {
+          metadata.fieldName = nameAttr.value.value;
+        } else if (nameAttr.value.type === 'JSXExpressionContainer' && nameAttr.value.expression.type === 'StringLiteral') {
+          metadata.fieldName = nameAttr.value.expression.value;
+        }
+      }
+    }
+
     return {
       type: 'element',
       tagName,
@@ -156,6 +188,7 @@ export class ConditionalStructureExtractor {
       children,
       line,
       column,
+      metadata,
     };
   }
 
@@ -464,6 +497,65 @@ export class ConditionalStructureExtractor {
                 referencedVariable: varName,
               });
             }
+          }
+        }
+      } else if ((attr as any).type === 'SpreadElement') {
+        // Handle spread attributes: {...register('fieldName')}
+        const spreadAttr = attr as any;
+        const spreadExpr = spreadAttr.arguments; // Use 'arguments' property for the expression
+        
+        if (spreadExpr && spreadExpr.type === 'CallExpression') {
+          // This is a function call like register('fieldName')
+          const callExpr = spreadExpr as swc.CallExpression;
+          
+          if (callExpr.callee.type === 'Identifier') {
+            const funcName = (callExpr.callee as swc.Identifier).value;
+            
+            // For React Hook Form register, extract the field name from the first argument
+            if (funcName === 'register' && callExpr.arguments.length > 0) {
+              const firstArg = callExpr.arguments[0];
+              const argExpr = (firstArg as any).expression || firstArg;
+              
+              if (argExpr && argExpr.type === 'StringLiteral') {
+                // register('fieldName') - extract field name
+                const fieldName = (argExpr as swc.StringLiteral).value;
+                
+                // Create attribute references for spread register with field name
+                // This will be used to generate both onChange and bind edges
+                references.push({
+                  attributeName: `spread:register:${fieldName}`,
+                  referencedVariable: funcName,
+                });
+              } else if (argExpr && argExpr.type === 'Identifier') {
+                // register(fieldNameVar) - extract variable
+                references.push({
+                  attributeName: 'spread:register',
+                  referencedVariable: funcName,
+                });
+              }
+            } else {
+              // Generic spread attribute - extract the function name
+              references.push({
+                attributeName: 'spread',
+                referencedVariable: funcName,
+              });
+            }
+          }
+        } else if (spreadExpr && spreadExpr.type === 'Identifier') {
+          // Simple spread: {...obj} or {...field}
+          const varName = (spreadExpr as swc.Identifier).value;
+          
+          // For React Hook Form field from useController
+          if (varName === 'field') {
+            references.push({
+              attributeName: 'spread:field',
+              referencedVariable: varName,
+            });
+          } else {
+            references.push({
+              attributeName: 'spread',
+              referencedVariable: varName,
+            });
           }
         }
       }

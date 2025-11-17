@@ -4,10 +4,12 @@ flowchart LR
   library_hook_1[("useQuery")]
   jsx_element_0["p"]
   jsx_element_1["p"]
+  jsx_element_7["div"]
+  jsx_element_5["div"]
   jsx_element_4["div"]
   jsx_element_2["h2"]
   jsx_element_3["p"]
-  jsx_element_5["button"]
+  jsx_element_6["button"]
   subgraph_1@{ shape: hex, label: "{isLoading}" }
   subgraph_2@{ shape: hex, label: "{isError}" }
   subgraph_3@{ shape: hex, label: "{data}" }
@@ -22,8 +24,10 @@ flowchart LR
       direction TB
         jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
     end
+      jsx_element_7@{ shape: hex, label: "&lt;div&gt;" }
     subgraph subgraph_3["{data}"]
       direction TB
+        jsx_element_5@{ shape: hex, label: "&lt;div&gt;" }
       subgraph subgraph_4["{data}"]
         direction TB
           jsx_element_4@{ shape: hex, label: "&lt;div&gt;" }
@@ -31,7 +35,7 @@ flowchart LR
           jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
       end
     end
-      jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;button&gt;" }
   end
   server_0 eserver_0_library_hook_1@-->|"fetch"| library_hook_1
   eserver_0_library_hook_1@{ animate: true }
@@ -45,8 +49,12 @@ flowchart LR
   elibrary_hook_1_subgraph_4@{ animate: true }
   library_hook_1 elibrary_hook_1_jsx_element_1@-->|"display: error"| jsx_element_1
   elibrary_hook_1_jsx_element_1@{ animate: true }
-  jsx_element_5 ejsx_element_5_library_hook_1@-->|"onClick: refetch"| library_hook_1
-  ejsx_element_5_library_hook_1@{ animate: true }
+  library_hook_1 elibrary_hook_1_jsx_element_7@-->|"display: data"| jsx_element_7
+  elibrary_hook_1_jsx_element_7@{ animate: true }
+  library_hook_1 elibrary_hook_1_jsx_element_5@-->|"display: data"| jsx_element_5
+  elibrary_hook_1_jsx_element_5@{ animate: true }
+  jsx_element_6 ejsx_element_6_library_hook_1@-->|"onClick: refetch"| library_hook_1
+  ejsx_element_6_library_hook_1@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -60,7 +68,9 @@ flowchart LR
   class library_hook_1 dataStore
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_5 jsxElement
   class jsx_element_4 jsxElement
   class jsx_element_2 jsxElement
   class jsx_element_3 jsxElement
-  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement

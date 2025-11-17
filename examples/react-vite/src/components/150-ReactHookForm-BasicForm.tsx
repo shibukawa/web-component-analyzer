@@ -111,6 +111,7 @@ export default function ReactHookFormBasicForm() {
             type="text"
             {...register('firstName', { required: 'First name is required' })}
             placeholder="Enter first name"
+            name="firstName"
           />
         </div>
         <div>
@@ -119,6 +120,7 @@ export default function ReactHookFormBasicForm() {
             type="email"
             {...register('email', { required: 'Email is required' })}
             placeholder="Enter email"
+            name="email"
           />
         </div>
         <button type="submit">Submit</button>

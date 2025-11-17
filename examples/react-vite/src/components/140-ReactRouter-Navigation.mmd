@@ -7,22 +7,30 @@ flowchart LR
   process_4[["handleNavigateToHome"]]
   process_5[["handleGoBack"]]
   jsx_element_0["p"]
-  jsx_element_1["button"]
+  jsx_element_1["p"]
   jsx_element_2["button"]
+  jsx_element_3["button"]
   subgraph subgraph_0["JSX Output"]
     direction TB
       jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
-      jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
       jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
   end
   library_hook_0 elibrary_hook_0_url_output_1@-->|"navigates"| url_output_1
   elibrary_hook_0_url_output_1@{ animate: true }
-  library_hook_3 elibrary_hook_3_jsx_element_0@-->|"display: location"| jsx_element_0
-  elibrary_hook_3_jsx_element_0@{ animate: true }
-  jsx_element_1 ejsx_element_1_process_4@-->|"onClick"| process_4
-  ejsx_element_1_process_4@{ animate: true }
-  jsx_element_2 ejsx_element_2_process_5@-->|"onClick"| process_5
-  ejsx_element_2_process_5@{ animate: true }
+  library_hook_2 elibrary_hook_2_jsx_element_0@-->|"display: params"| jsx_element_0
+  elibrary_hook_2_jsx_element_0@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_1@-->|"display: location"| jsx_element_1
+  elibrary_hook_3_jsx_element_1@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_4@-->|"onClick"| process_4
+  ejsx_element_2_process_4@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_5@-->|"onClick"| process_5
+  ejsx_element_3_process_5@{ animate: true }
+  process_4 eprocess_4_library_hook_0@-->|"calls"| library_hook_0
+  eprocess_4_library_hook_0@{ animate: true }
+  process_5 eprocess_5_library_hook_0@-->|"calls"| library_hook_0
+  eprocess_5_library_hook_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -39,3 +47,4 @@ flowchart LR
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement

@@ -1,28 +1,32 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
-  subgraph useRouterState_input["useRouterState - Input"]
-    direction TB
-    custom_hook_data_0[("routerState")]
-  end
+  library_hook_0[("useRouterState")]
+  url_input_1["URL: Input"]
   jsx_element_0["p"]
   jsx_element_1["p"]
+  jsx_element_3["p"]
   jsx_element_2["#quot;text#quot;"]
   subgraph_1@{ shape: hex, label: "{routerState.isTransitioning}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
       jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
       jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
     subgraph subgraph_1["{routerState.isTransitioning}"]
       direction TB
         jsx_element_2@{ shape: hex, label: "#quot;text#quot;" }
     end
   end
-  custom_hook_data_0 ecustom_hook_data_0_subgraph_1@-->|"control visibility"| subgraph_1
-  ecustom_hook_data_0_subgraph_1@{ animate: true }
-  custom_hook_data_0 ecustom_hook_data_0_jsx_element_0@-->|"display"| jsx_element_0
-  ecustom_hook_data_0_jsx_element_0@{ animate: true }
-  custom_hook_data_0 ecustom_hook_data_0_jsx_element_1@-->|"display"| jsx_element_1
-  ecustom_hook_data_0_jsx_element_1@{ animate: true }
+  url_input_1 eurl_input_1_library_hook_0@-->|"provides"| library_hook_0
+  eurl_input_1_library_hook_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_subgraph_1@-->|"control visibility: routerState"| subgraph_1
+  elibrary_hook_0_subgraph_1@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_0@-->|"display: routerState"| jsx_element_0
+  elibrary_hook_0_jsx_element_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_1@-->|"display: routerState"| jsx_element_1
+  elibrary_hook_0_jsx_element_1@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_3@-->|"display: routerState"| jsx_element_3
+  elibrary_hook_0_jsx_element_3@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -33,6 +37,8 @@ flowchart LR
   classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class library_hook_0 dataStore
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
+  class jsx_element_3 jsxElement
   class jsx_element_2 jsxElement

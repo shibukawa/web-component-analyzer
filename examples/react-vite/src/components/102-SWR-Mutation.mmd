@@ -4,6 +4,7 @@ flowchart LR
   server_1["Server: /api/user"]
   library_hook_2[("useSWRMutation")]
   process_3[["handleSubmit"]]
+  jsx_element_5["div"]
   jsx_element_0["input"]
   jsx_element_1["button"]
   jsx_element_2["p"]
@@ -14,6 +15,7 @@ flowchart LR
   subgraph_3@{ shape: hex, label: "{data}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_5@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
       jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
     subgraph subgraph_1["{isMutating}"]
@@ -37,6 +39,8 @@ flowchart LR
   elibrary_hook_2_subgraph_2@{ animate: true }
   library_hook_2 elibrary_hook_2_subgraph_3@-->|"control visibility: data"| subgraph_3
   elibrary_hook_2_subgraph_3@{ animate: true }
+  library_hook_2 elibrary_hook_2_jsx_element_5@-->|"display: isMutating"| jsx_element_5
+  elibrary_hook_2_jsx_element_5@{ animate: true }
   library_hook_2 elibrary_hook_2_jsx_element_3@-->|"display: error"| jsx_element_3
   elibrary_hook_2_jsx_element_3@{ animate: true }
   library_hook_2 elibrary_hook_2_jsx_element_4@-->|"display: data"| jsx_element_4
@@ -66,6 +70,7 @@ flowchart LR
   class state_0 dataStore
   class library_hook_2 dataStore
   class process_3 process
+  class jsx_element_5 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement

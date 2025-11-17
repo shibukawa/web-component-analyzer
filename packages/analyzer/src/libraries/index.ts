@@ -13,6 +13,7 @@ import { NextJSLibraryProcessor } from './next.js';
 import { TanStackQueryLibraryProcessor } from './tanstack-query.js';
 import { ReactRouterLibraryProcessor } from './react-router.js';
 import { TanStackRouterLibraryProcessor } from './tanstack-router.js';
+import { ReactHookFormLibraryProcessor } from './react-hook-form.js';
 
 /**
  * Global processor registry instance
@@ -57,6 +58,7 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new TanStackQueryLibraryProcessor());
   registry.register(new ReactRouterLibraryProcessor());
   registry.register(new TanStackRouterLibraryProcessor());
+  registry.register(new ReactHookFormLibraryProcessor());
   
   // Phase 3: Register remaining third-party library processors
   // registry.register(new CustomHookProcessor());
@@ -70,6 +72,7 @@ export { NextJSLibraryProcessor } from './next.js';
 export { TanStackQueryLibraryProcessor } from './tanstack-query.js';
 export { ReactRouterLibraryProcessor } from './react-router.js';
 export { TanStackRouterLibraryProcessor } from './tanstack-router.js';
+export { ReactHookFormLibraryProcessor } from './react-hook-form.js';
 export type {
   HookProcessor,
   ProcessorMetadata,
