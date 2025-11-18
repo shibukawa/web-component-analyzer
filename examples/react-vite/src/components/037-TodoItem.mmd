@@ -10,6 +10,7 @@ flowchart LR
   state_7[("editText")]
   process_8[["handleSaveEdit"]]
   process_9[["handleCancelEdit"]]
+  jsx_element_7["div"]
   jsx_element_0["input"]
   jsx_element_1["button"]
   jsx_element_2["button"]
@@ -21,6 +22,7 @@ flowchart LR
   subgraph_2@{ shape: hex, label: "{!isEditing}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_7@{ shape: hex, label: "&lt;div&gt;" }
     subgraph subgraph_1["{isEditing}"]
       direction TB
         jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
@@ -45,6 +47,8 @@ flowchart LR
   estate_6_subgraph_1@{ animate: true }
   state_6 estate_6_subgraph_2@-->|"control visibility"| subgraph_2
   estate_6_subgraph_2@{ animate: true }
+  state_6 estate_6_jsx_element_7@-->|"display"| jsx_element_7
+  estate_6_jsx_element_7@{ animate: true }
   prop_1 eprop_1_jsx_element_4@-->|"display"| jsx_element_4
   eprop_1_jsx_element_4@{ animate: true }
   state_7 estate_7_jsx_element_0@-->|"binds"| jsx_element_0
@@ -107,6 +111,7 @@ flowchart LR
   class state_7 dataStore
   class process_8 process
   class process_9 process
+  class jsx_element_7 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement

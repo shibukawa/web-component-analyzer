@@ -11,21 +11,25 @@ flowchart LR
   cleanup_5[["cleanup"]]
   external_call_6["api.unsubscribe"]
   external_call_7["logger.log"]
+  jsx_element_4["div"]
   jsx_element_0["p"]
-  jsx_element_1["#quot;text#quot;"]
   jsx_element_2["p"]
+  jsx_element_1["#quot;text#quot;"]
+  jsx_element_3["p"]
   subgraph_1@{ shape: hex, label: "{isConnected}" }
   subgraph_3@{ shape: hex, label: "{data}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_4@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_0@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
     subgraph subgraph_1["{isConnected}"]
       direction TB
         jsx_element_1@{ shape: hex, label: "#quot;text#quot;" }
     end
     subgraph subgraph_3["{data}"]
       direction TB
-        jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
+        jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
     end
   end
   process_3 eprocess_3_external_call_4@-->|"calls"| external_call_4
@@ -42,10 +46,14 @@ flowchart LR
   estate_2_subgraph_1@{ animate: true }
   state_1 estate_1_subgraph_3@-->|"control visibility"| subgraph_3
   estate_1_subgraph_3@{ animate: true }
+  state_1 estate_1_jsx_element_4@-->|"display"| jsx_element_4
+  estate_1_jsx_element_4@{ animate: true }
   prop_0 eprop_0_jsx_element_0@-->|"display"| jsx_element_0
   eprop_0_jsx_element_0@{ animate: true }
-  state_1 estate_1_jsx_element_2@-->|"display"| jsx_element_2
-  estate_1_jsx_element_2@{ animate: true }
+  state_2 estate_2_jsx_element_2@-->|"display"| jsx_element_2
+  estate_2_jsx_element_2@{ animate: true }
+  state_1 estate_1_jsx_element_3@-->|"display"| jsx_element_3
+  estate_1_jsx_element_3@{ animate: true }
   process_3 eprocess_3_state_1@-->|"writes"| state_1
   eprocess_3_state_1@{ animate: true }
   process_3 eprocess_3_state_2@-->|"writes"| state_2
@@ -69,6 +77,8 @@ flowchart LR
   class state_2 dataStore
   class process_3 process
   class cleanup_5 process
+  class jsx_element_4 jsxElement
   class jsx_element_0 jsxElement
-  class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_3 jsxElement

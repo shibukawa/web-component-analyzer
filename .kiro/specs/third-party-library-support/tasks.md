@@ -312,59 +312,96 @@
     - Verify multiple state input nodes
     - _Requirements: 6, 14_
 
-- [ ] 15. Add Jotai library support
-  - [ ] 15.1 Define Jotai adapters in library-adapters.json
+- [x] 17. Add Jotai library support
+  - [x] 17.1 Define Jotai adapters in library-adapters.json
     - Add adapters for useAtom (returns [value, setValue])
     - Add adapters for useAtomValue (returns value)
     - Add adapters for useSetAtom (returns setValue function)
     - _Requirements: 7_
   
-  - [ ] 15.2 Create 113-Jotai-AtomicState.tsx acceptance test
+  - [x] 17.2 Create 170-Jotai-AtomicState.tsx acceptance test
     - Component using useAtom
     - Include embedded YAML specification
     - Verify atom value input and setter process nodes
     - _Requirements: 7, 14_
   
-  - [ ] 15.3 Create 114-Jotai-ReadWrite.tsx acceptance test
+  - [x] 17.3 Create 171-Jotai-ReadWrite.tsx acceptance test
     - Component using useAtomValue and useSetAtom
     - Include embedded YAML specification
     - Verify read-only input and write-only process nodes
     - _Requirements: 7, 14_
 
-- [ ] 16. Add MobX library support
-  - [ ] 16.1 Define MobX adapters in library-adapters.json
+- [ ] 17.5 Refactor Jotai to use useState-like structure
+  - [x] 17.5.1 Modify Jotai processor to create data-store nodes for atoms
+    - Create data-store node named after the atom (e.g., "countAtom")
+    - For useAtom: create "reads" edge from atom to value variable, "set" edge from setter to atom
+    - For useAtomValue: create "reads" edge from atom to value variable
+    - For useSetAtom: create "set" edge from setter to atom
+    - Consolidate multiple hooks using the same atom into a single atom node
+    - _Requirements: 7_
+  
+  - [x] 17.5.2 Update 170-Jotai-AtomicState.tsx acceptance test
+    - Update YAML specification to reflect new structure
+    - Verify countAtom data-store node is created
+    - Verify "reads" and "set" edges are created
+    - _Requirements: 7, 14_
+  
+  - [x] 17.5.3 Update 171-Jotai-ReadWrite.tsx acceptance test
+    - Update YAML specification to reflect new structure
+    - Verify textAtom data-store node is created
+    - Verify separate useAtomValue and useSetAtom hooks reference the same atom node
+    - _Requirements: 7, 14_
+  
+  - [x] 17.5.4 Create 172-Jotai-DerivedAtom.tsx acceptance test
+    - Component using derived atom (atom that reads from other atoms)
+    - Include embedded YAML specification
+    - Verify base atom data-store node is created
+    - Verify derived atom data-store node is created
+    - Verify "reads" edge from base atom to derived atom
+    - Verify "reads" edge from derived atom to component variable
+    - _Requirements: 7, 14_
+  
+  - [x] 17.5.5 Implement derived atom dependency detection
+    - Detect when an atom definition reads from other atoms (using `get()` function)
+    - Parse atom definitions to extract dependencies
+    - Store atom dependencies in metadata during AST analysis
+    - Create "reads" edges between dependent atoms in DFD builder
+    - _Requirements: 7_
+
+- [ ] 15. Add MobX library support
+  - [ ] 15.1 Define MobX adapters in library-adapters.json
     - Add adapters for useObserver
     - Add adapters for useLocalObservable
     - Handle observable state access patterns
     - _Requirements: 8_
   
-  - [ ] 16.2 Create 115-MobX-ObservableState.tsx acceptance test
+  - [ ] 15.2 Create 150-MobX-ObservableState.tsx acceptance test
     - Component using observer HOC with observable state
     - Include embedded YAML specification
     - Verify observable state input and action process nodes
     - _Requirements: 8, 14_
   
-  - [ ] 16.3 Create 116-MobX-LocalObservable.tsx acceptance test
+  - [ ] 15.3 Create 151-MobX-LocalObservable.tsx acceptance test
     - Component using useLocalObservable
     - Include embedded YAML specification
     - Verify local observable state nodes
     - _Requirements: 8, 14_
 
-- [ ] 17. Add Apollo Client library support
-  - [ ] 17.1 Define Apollo Client adapters in library-adapters.json
+- [ ] 16. Add Apollo Client library support
+  - [ ] 16.1 Define Apollo Client adapters in library-adapters.json
     - Add adapters for useQuery (data, loading, error, refetch, fetchMore)
     - Add adapters for useMutation (mutation function, data, loading, error)
     - Add adapters for useSubscription (data, loading, error)
     - Add adapters for useLazyQuery
     - _Requirements: 9_
   
-  - [ ] 17.2 Create 117-Apollo-GraphQLQuery.tsx acceptance test
+  - [ ] 16.2 Create 160-Apollo-GraphQLQuery.tsx acceptance test
     - Component using useQuery from Apollo Client
     - Include embedded YAML specification
     - Verify query data input and loading/error state nodes
     - _Requirements: 9, 14_
   
-  - [ ] 17.3 Create 118-Apollo-Mutation.tsx acceptance test
+  - [ ] 16.3 Create 161-Apollo-Mutation.tsx acceptance test
     - Component using useMutation from Apollo Client
     - Include embedded YAML specification
     - Verify mutation process node
@@ -377,13 +414,13 @@
     - Support data, isLoading, isFetching, isError states
     - _Requirements: 10_
   
-  - [ ] 18.2 Create 119-RTKQuery-APIEndpoint.tsx acceptance test
+  - [ ] 18.2 Create 180-RTKQuery-APIEndpoint.tsx acceptance test
     - Component using generated query hook (e.g., useGetUserQuery)
     - Include embedded YAML specification
     - Verify query data input and loading state nodes
     - _Requirements: 10, 14_
   
-  - [ ] 18.3 Create 120-RTKQuery-Mutation.tsx acceptance test
+  - [ ] 18.3 Create 181-RTKQuery-Mutation.tsx acceptance test
     - Component using generated mutation hook (e.g., useUpdateUserMutation)
     - Include embedded YAML specification
     - Verify mutation trigger process node
@@ -396,13 +433,13 @@
     - Support nested procedure paths
     - _Requirements: 11_
   
-  - [ ] 19.2 Create 121-tRPC-TypeSafeProcedure.tsx acceptance test
+  - [ ] 19.2 Create 190-tRPC-TypeSafeProcedure.tsx acceptance test
     - Component using trpc.procedure.useQuery
     - Include embedded YAML specification
     - Verify procedure data input and loading state nodes
     - _Requirements: 11, 14_
   
-  - [ ] 19.3 Create 122-tRPC-Mutation.tsx acceptance test
+  - [ ] 19.3 Create 191-tRPC-Mutation.tsx acceptance test
     - Component using trpc.procedure.useMutation
     - Include embedded YAML specification
     - Verify mutation process node

@@ -12,18 +12,22 @@ flowchart LR
   process_10[["handleClear"]]
   process_11[["handleFocus"]]
   process_12[["handleBlur"]]
+  jsx_element_4["div"]
   jsx_element_0["input"]
   jsx_element_1["button"]
+  jsx_element_3["div"]
   jsx_element_2["small"]
   subgraph_1@{ shape: hex, label: "{query}" }
   subgraph_2@{ shape: hex, label: "{query}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_4@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
     subgraph subgraph_1["{query}"]
       direction TB
         jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
     end
+      jsx_element_3@{ shape: hex, label: "&lt;div&gt;" }
     subgraph subgraph_2["{query}"]
       direction TB
         jsx_element_2@{ shape: hex, label: "&lt;small&gt;" }
@@ -42,6 +46,10 @@ flowchart LR
   estate_6_subgraph_1@{ animate: true }
   state_6 estate_6_subgraph_2@-->|"control visibility"| subgraph_2
   estate_6_subgraph_2@{ animate: true }
+  state_6 estate_6_jsx_element_4@-->|"display"| jsx_element_4
+  estate_6_jsx_element_4@{ animate: true }
+  state_6 estate_6_jsx_element_3@-->|"display"| jsx_element_3
+  estate_6_jsx_element_3@{ animate: true }
   state_6 estate_6_jsx_element_2@-->|"display"| jsx_element_2
   estate_6_jsx_element_2@{ animate: true }
   state_6 estate_6_jsx_element_0@-->|"binds"| jsx_element_0
@@ -97,6 +105,8 @@ flowchart LR
   class process_10 process
   class process_11 process
   class process_12 process
+  class jsx_element_4 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
+  class jsx_element_3 jsxElement
   class jsx_element_2 jsxElement

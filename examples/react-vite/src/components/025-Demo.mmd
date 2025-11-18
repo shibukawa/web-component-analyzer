@@ -13,29 +13,35 @@ flowchart LR
   process_10[["handleSearch"]]
   process_11[["handleSearchClear"]]
   jsx_element_0["UserProfile"]
+  jsx_element_2["section"]
   jsx_element_1["TodoItem"]
-  jsx_element_2["Counter"]
-  jsx_element_3["p"]
-  jsx_element_4["SearchBox"]
-  jsx_element_5["li"]
+  jsx_element_3["Counter"]
+  jsx_element_4["p"]
+  jsx_element_8["section"]
+  jsx_element_5["SearchBox"]
+  jsx_element_7["ul"]
+  jsx_element_6["li"]
   subgraph_1@{ shape: hex, label: "{loop}" }
   subgraph_2@{ shape: hex, label: "{searchResults.length &gt; expression}" }
   subgraph_3@{ shape: hex, label: "{loop}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
       jsx_element_0@{ shape: hex, label: "&lt;UserProfile&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;section&gt;" }
     subgraph subgraph_1["{todos}"]
       direction TB
         jsx_element_1@{ shape: hex, label: "&lt;TodoItem&gt;" }
     end
-      jsx_element_2@{ shape: hex, label: "&lt;Counter&gt;" }
-      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
-      jsx_element_4@{ shape: hex, label: "&lt;SearchBox&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;Counter&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;section&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;SearchBox&gt;" }
     subgraph subgraph_2["{searchResults.length &gt; expression}"]
       direction TB
+        jsx_element_7@{ shape: hex, label: "&lt;ul&gt;" }
       subgraph subgraph_3["{searchResults}"]
         direction TB
-          jsx_element_5@{ shape: hex, label: "&lt;li&gt;" }
+          jsx_element_6@{ shape: hex, label: "&lt;li&gt;" }
       end
     end
   end
@@ -45,8 +51,14 @@ flowchart LR
   estate_0_subgraph_2@{ animate: true }
   state_0 estate_0_subgraph_3@-->|"iterates over"| subgraph_3
   estate_0_subgraph_3@{ animate: true }
-  state_1 estate_1_jsx_element_3@-->|"display"| jsx_element_3
-  estate_1_jsx_element_3@{ animate: true }
+  state_2 estate_2_jsx_element_2@-->|"display"| jsx_element_2
+  estate_2_jsx_element_2@{ animate: true }
+  state_1 estate_1_jsx_element_4@-->|"display"| jsx_element_4
+  estate_1_jsx_element_4@{ animate: true }
+  state_0 estate_0_jsx_element_8@-->|"display"| jsx_element_8
+  estate_0_jsx_element_8@{ animate: true }
+  state_0 estate_0_jsx_element_7@-->|"display"| jsx_element_7
+  estate_0_jsx_element_7@{ animate: true }
   jsx_element_0 ejsx_element_0_process_3@-->|"onUpdate"| process_3
   ejsx_element_0_process_3@{ animate: true }
   jsx_element_0 ejsx_element_0_process_4@-->|"onDelete"| process_4
@@ -57,14 +69,14 @@ flowchart LR
   ejsx_element_1_process_6@{ animate: true }
   jsx_element_1 ejsx_element_1_process_7@-->|"onRemove"| process_7
   ejsx_element_1_process_7@{ animate: true }
-  jsx_element_2 ejsx_element_2_process_8@-->|"onChange"| process_8
-  ejsx_element_2_process_8@{ animate: true }
-  jsx_element_2 ejsx_element_2_process_9@-->|"onLimitReached"| process_9
-  ejsx_element_2_process_9@{ animate: true }
-  jsx_element_4 ejsx_element_4_process_10@-->|"onSearch"| process_10
-  ejsx_element_4_process_10@{ animate: true }
-  jsx_element_4 ejsx_element_4_process_11@-->|"onClear"| process_11
-  ejsx_element_4_process_11@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_8@-->|"onChange"| process_8
+  ejsx_element_3_process_8@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_9@-->|"onLimitReached"| process_9
+  ejsx_element_3_process_9@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_10@-->|"onSearch"| process_10
+  ejsx_element_5_process_10@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_11@-->|"onClear"| process_11
+  ejsx_element_5_process_11@{ animate: true }
   state_2 estate_2_process_5@-->|"reads"| process_5
   estate_2_process_5@{ animate: true }
   state_2 estate_2_process_6@-->|"reads"| process_6
@@ -106,8 +118,11 @@ flowchart LR
   class process_10 process
   class process_11 process
   class jsx_element_0 jsxElement
-  class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement
+  class jsx_element_1 jsxElement
   class jsx_element_3 jsxElement
   class jsx_element_4 jsxElement
+  class jsx_element_8 jsxElement
   class jsx_element_5 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_6 jsxElement

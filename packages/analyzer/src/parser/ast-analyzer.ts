@@ -3,13 +3,14 @@
  */
 
 import type * as swc from '@swc/core';
-import { ComponentAnalysis, JSXInfo, ProcessInfo, JSXStructure, ConditionalBranch } from './types';
+import { ComponentAnalysis, JSXInfo, ProcessInfo, JSXStructure, ConditionalBranch, AtomDefinition } from './types';
 import { SWCPropsAnalyzer } from '../analyzers/props-analyzer';
 import { SWCHooksAnalyzer } from '../analyzers/hooks-analyzer';
 import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
 import { ConditionalStructureExtractor } from '../analyzers/conditional-extractor';
 import { TypeResolver } from '../services/type-resolver';
 import { createImportDetector } from '../analyzers/import-detector';
+import { analyzeJotaiAtoms } from '../libraries/jotai';
 
 /**
  * AST Analyzer interface for analyzing React components
@@ -57,6 +58,14 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
     imports.forEach(imp => {
       console.log(`🔍   - ${imp.source}:`, imp.imports.map(i => i.name).join(', '));
     });
+    
+    // Detect atom definitions (for Jotai) - only if Jotai is imported
+    let atomDefinitions: AtomDefinition[] = [];
+    const hasJotai = imports.some(imp => imp.source === 'jotai');
+    if (hasJotai) {
+      atomDefinitions = analyzeJotaiAtoms(module.body);
+      console.log('🔍 AST Analyzer: Jotai atom definitions detected:', atomDefinitions.length);
+    }
     
     // Get registered libraries from hook registry
     const registeredLibraries = new Set<string>();
@@ -130,6 +139,7 @@ export class SWCASTAnalyzer implements ASTAnalyzer {
       hooks,
       processes: allProcesses,
       jsxOutput,
+      atomDefinitions,
     };
   }
 

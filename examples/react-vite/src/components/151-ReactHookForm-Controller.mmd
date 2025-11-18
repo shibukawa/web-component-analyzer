@@ -2,9 +2,9 @@
 flowchart LR
   library_hook_0[("useForm")]
   library_hook_1[("useController")]
+  jsx_element_2["div"]
   jsx_element_0["input"]
   jsx_element_1["span"]
-  jsx_element_2["div"]
   subgraph_1@{ shape: hex, label: "{fieldState.error}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
@@ -15,14 +15,18 @@ flowchart LR
         jsx_element_1@{ shape: hex, label: "&lt;span&gt;" }
     end
   end
-  library_hook_0 -->|"binds: control"| library_hook_1
-  library_hook_1 -->|"binds: field"| jsx_element_0
-  jsx_element_0 -->|"onChange"| library_hook_1
-  library_hook_1 -->|"display: fieldState"| jsx_element_2
+  library_hook_0 elibrary_hook_0_library_hook_1@-->|"binds: control"| library_hook_1
+  elibrary_hook_0_library_hook_1@{ animate: true }
   library_hook_1 elibrary_hook_1_subgraph_1@-->|"control visibility: fieldState"| subgraph_1
   elibrary_hook_1_subgraph_1@{ animate: true }
+  library_hook_1 elibrary_hook_1_jsx_element_2@-->|"display: fieldState"| jsx_element_2
+  elibrary_hook_1_jsx_element_2@{ animate: true }
   library_hook_1 elibrary_hook_1_jsx_element_1@-->|"display: fieldState"| jsx_element_1
   elibrary_hook_1_jsx_element_1@{ animate: true }
+  library_hook_1 elibrary_hook_1_jsx_element_0@-->|"binds: field"| jsx_element_0
+  elibrary_hook_1_jsx_element_0@{ animate: true }
+  jsx_element_0 ejsx_element_0_library_hook_1@-->|"onChange"| library_hook_1
+  ejsx_element_0_library_hook_1@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -35,5 +39,6 @@ flowchart LR
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
   class library_hook_0 dataStore
   class library_hook_1 dataStore
-  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
   class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement

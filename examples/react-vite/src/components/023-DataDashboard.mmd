@@ -40,6 +40,7 @@ flowchart LR
   process_36[["useEffect"]]
   process_37[["useEffect"]]
   process_38[["useEffect"]]
+  jsx_element_41["div"]
   jsx_element_1["button"]
   jsx_element_0["#quot;text#quot;"]
   jsx_element_2["div"]
@@ -67,6 +68,7 @@ flowchart LR
   jsx_element_24["th"]
   jsx_element_25["th"]
   jsx_element_26["th"]
+  jsx_element_34["tbody"]
   jsx_element_33["tr"]
   jsx_element_27["input"]
   jsx_element_28["td"]
@@ -74,12 +76,12 @@ flowchart LR
   jsx_element_30["td"]
   jsx_element_31["td"]
   jsx_element_32["td"]
-  jsx_element_34["p"]
-  jsx_element_35["pre"]
-  jsx_element_36["button"]
-  jsx_element_37["span"]
-  jsx_element_38["button"]
+  jsx_element_35["p"]
+  jsx_element_36["pre"]
+  jsx_element_37["button"]
+  jsx_element_38["span"]
   jsx_element_39["button"]
+  jsx_element_40["button"]
   subgraph_1@{ shape: hex, label: "{loading}" }
   subgraph_3@{ shape: hex, label: "{error}" }
   subgraph_4@{ shape: hex, label: "{hasSelection}" }
@@ -88,6 +90,7 @@ flowchart LR
   subgraph_7@{ shape: hex, label: "{!chartType === expression}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_41@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
     subgraph subgraph_1["{loading}"]
       direction TB
@@ -126,6 +129,7 @@ flowchart LR
         jsx_element_24@{ shape: hex, label: "&lt;th&gt;" }
         jsx_element_25@{ shape: hex, label: "&lt;th&gt;" }
         jsx_element_26@{ shape: hex, label: "&lt;th&gt;" }
+        jsx_element_34@{ shape: hex, label: "&lt;tbody&gt;" }
       subgraph subgraph_6["{paginatedData}"]
         direction TB
           jsx_element_33@{ shape: hex, label: "&lt;tr&gt;" }
@@ -139,13 +143,13 @@ flowchart LR
     end
     subgraph subgraph_7["{!(chartType === expression)}"]
       direction TB
-        jsx_element_34@{ shape: hex, label: "&lt;p&gt;" }
-        jsx_element_35@{ shape: hex, label: "&lt;pre&gt;" }
+        jsx_element_35@{ shape: hex, label: "&lt;p&gt;" }
+        jsx_element_36@{ shape: hex, label: "&lt;pre&gt;" }
     end
-      jsx_element_36@{ shape: hex, label: "&lt;button&gt;" }
-      jsx_element_37@{ shape: hex, label: "&lt;span&gt;" }
-      jsx_element_38@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_37@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_38@{ shape: hex, label: "&lt;span&gt;" }
       jsx_element_39@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_40@{ shape: hex, label: "&lt;button&gt;" }
   end
   subgraph OutputProps["Output Props"]
     direction TB
@@ -164,6 +168,16 @@ flowchart LR
   eprocess_29_subgraph_6@{ animate: true }
   state_14 estate_14_subgraph_7@-->|"control visibility"| subgraph_7
   estate_14_subgraph_7@{ animate: true }
+  state_7 estate_7_jsx_element_41@-->|"display"| jsx_element_41
+  estate_7_jsx_element_41@{ animate: true }
+  process_33 eprocess_33_jsx_element_41@-->|"display"| jsx_element_41
+  eprocess_33_jsx_element_41@{ animate: true }
+  state_14 estate_14_jsx_element_41@-->|"display"| jsx_element_41
+  estate_14_jsx_element_41@{ animate: true }
+  state_6 estate_6_jsx_element_1@-->|"display"| jsx_element_1
+  estate_6_jsx_element_1@{ animate: true }
+  state_6 estate_6_jsx_element_1@-->|"binds"| jsx_element_1
+  estate_6_jsx_element_1@{ animate: true }
   state_7 estate_7_jsx_element_2@-->|"display"| jsx_element_2
   estate_7_jsx_element_2@{ animate: true }
   process_30 eprocess_30_jsx_element_12@-->|"display"| jsx_element_12
@@ -178,18 +192,18 @@ flowchart LR
   eprocess_30_jsx_element_16@{ animate: true }
   state_13 estate_13_jsx_element_17@-->|"display"| jsx_element_17
   estate_13_jsx_element_17@{ animate: true }
-  state_14 estate_14_jsx_element_34@-->|"display"| jsx_element_34
-  estate_14_jsx_element_34@{ animate: true }
-  process_31 eprocess_31_jsx_element_35@-->|"display"| jsx_element_35
-  eprocess_31_jsx_element_35@{ animate: true }
-  state_11 estate_11_jsx_element_37@-->|"display"| jsx_element_37
-  estate_11_jsx_element_37@{ animate: true }
-  process_32 eprocess_32_jsx_element_37@-->|"display"| jsx_element_37
-  eprocess_32_jsx_element_37@{ animate: true }
+  process_29 eprocess_29_jsx_element_34@-->|"display"| jsx_element_34
+  eprocess_29_jsx_element_34@{ animate: true }
+  state_14 estate_14_jsx_element_35@-->|"display"| jsx_element_35
+  estate_14_jsx_element_35@{ animate: true }
+  process_31 eprocess_31_jsx_element_36@-->|"display"| jsx_element_36
+  eprocess_31_jsx_element_36@{ animate: true }
+  state_11 estate_11_jsx_element_38@-->|"display"| jsx_element_38
+  estate_11_jsx_element_38@{ animate: true }
+  process_32 eprocess_32_jsx_element_38@-->|"display"| jsx_element_38
+  eprocess_32_jsx_element_38@{ animate: true }
   jsx_element_1 ejsx_element_1_process_17@-->|"onClick"| process_17
   ejsx_element_1_process_17@{ animate: true }
-  state_6 estate_6_jsx_element_1@-->|"binds"| jsx_element_1
-  estate_6_jsx_element_1@{ animate: true }
   state_8 estate_8_jsx_element_3@-->|"binds"| jsx_element_3
   estate_8_jsx_element_3@{ animate: true }
   jsx_element_3 ejsx_element_3_process_21@-->|"onChange"| process_21
@@ -242,18 +256,18 @@ flowchart LR
   estate_13_jsx_element_27@{ animate: true }
   jsx_element_27 ejsx_element_27_process_23@-->|"onChange"| process_23
   ejsx_element_27_process_23@{ animate: true }
-  jsx_element_36 ejsx_element_36_process_20@-->|"onClick"| process_20
-  ejsx_element_36_process_20@{ animate: true }
-  state_11 estate_11_jsx_element_36@-->|"binds"| jsx_element_36
-  estate_11_jsx_element_36@{ animate: true }
-  jsx_element_38 ejsx_element_38_process_20@-->|"onClick"| process_20
-  ejsx_element_38_process_20@{ animate: true }
-  state_11 estate_11_jsx_element_38@-->|"binds"| jsx_element_38
-  estate_11_jsx_element_38@{ animate: true }
-  jsx_element_38 ejsx_element_38_process_32@-->|"disabled"| process_32
-  ejsx_element_38_process_32@{ animate: true }
-  jsx_element_39 ejsx_element_39_process_22@-->|"onClick"| process_22
-  ejsx_element_39_process_22@{ animate: true }
+  jsx_element_37 ejsx_element_37_process_20@-->|"onClick"| process_20
+  ejsx_element_37_process_20@{ animate: true }
+  state_11 estate_11_jsx_element_37@-->|"binds"| jsx_element_37
+  estate_11_jsx_element_37@{ animate: true }
+  jsx_element_39 ejsx_element_39_process_20@-->|"onClick"| process_20
+  ejsx_element_39_process_20@{ animate: true }
+  state_11 estate_11_jsx_element_39@-->|"binds"| jsx_element_39
+  estate_11_jsx_element_39@{ animate: true }
+  jsx_element_39 ejsx_element_39_process_32@-->|"disabled"| process_32
+  ejsx_element_39_process_32@{ animate: true }
+  jsx_element_40 ejsx_element_40_process_22@-->|"onClick"| process_22
+  ejsx_element_40_process_22@{ animate: true }
   state_13 estate_13_process_24@-->|"reads"| process_24
   estate_13_process_24@{ animate: true }
   state_10 estate_10_process_26@-->|"reads"| process_26
@@ -351,6 +365,7 @@ flowchart LR
   class process_36 process
   class process_37 process
   class process_38 process
+  class jsx_element_41 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_2 jsxElement
@@ -378,6 +393,7 @@ flowchart LR
   class jsx_element_24 jsxElement
   class jsx_element_25 jsxElement
   class jsx_element_26 jsxElement
+  class jsx_element_34 jsxElement
   class jsx_element_33 jsxElement
   class jsx_element_27 jsxElement
   class jsx_element_28 jsxElement
@@ -385,9 +401,9 @@ flowchart LR
   class jsx_element_30 jsxElement
   class jsx_element_31 jsxElement
   class jsx_element_32 jsxElement
-  class jsx_element_34 jsxElement
   class jsx_element_35 jsxElement
   class jsx_element_36 jsxElement
   class jsx_element_37 jsxElement
   class jsx_element_38 jsxElement
   class jsx_element_39 jsxElement
+  class jsx_element_40 jsxElement

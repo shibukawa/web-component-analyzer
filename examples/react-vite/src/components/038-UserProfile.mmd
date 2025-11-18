@@ -11,17 +11,20 @@ flowchart LR
   process_7[["handleSave"]]
   process_8[["handleCancel"]]
   process_9[["handleDelete"]]
+  jsx_element_8["div"]
   jsx_element_0["h2"]
   jsx_element_1["p"]
   jsx_element_2["input"]
   jsx_element_3["button"]
   jsx_element_4["button"]
-  jsx_element_5["button"]
+  jsx_element_5["p"]
   jsx_element_6["button"]
+  jsx_element_7["button"]
   subgraph_1@{ shape: hex, label: "{isEditing}" }
   subgraph_2@{ shape: hex, label: "{!isEditing}" }
   subgraph subgraph_0["JSX Output"]
     direction TB
+      jsx_element_8@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_0@{ shape: hex, label: "&lt;h2&gt;" }
       jsx_element_1@{ shape: hex, label: "&lt;p&gt;" }
     subgraph subgraph_1["{isEditing}"]
@@ -32,8 +35,9 @@ flowchart LR
     end
     subgraph subgraph_2["{!(isEditing)}"]
       direction TB
-        jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_5@{ shape: hex, label: "&lt;p&gt;" }
         jsx_element_6@{ shape: hex, label: "&lt;button&gt;" }
+        jsx_element_7@{ shape: hex, label: "&lt;button&gt;" }
     end
   end
   subgraph OutputProps["Output Props"]
@@ -45,10 +49,14 @@ flowchart LR
   estate_6_subgraph_1@{ animate: true }
   state_6 estate_6_subgraph_2@-->|"control visibility"| subgraph_2
   estate_6_subgraph_2@{ animate: true }
+  state_6 estate_6_jsx_element_8@-->|"display"| jsx_element_8
+  estate_6_jsx_element_8@{ animate: true }
   prop_1 eprop_1_jsx_element_0@-->|"display"| jsx_element_0
   eprop_1_jsx_element_0@{ animate: true }
   prop_0 eprop_0_jsx_element_1@-->|"display"| jsx_element_1
   eprop_0_jsx_element_1@{ animate: true }
+  state_5 estate_5_jsx_element_5@-->|"display"| jsx_element_5
+  estate_5_jsx_element_5@{ animate: true }
   state_5 estate_5_jsx_element_2@-->|"binds"| jsx_element_2
   estate_5_jsx_element_2@{ animate: true }
   jsx_element_2 ejsx_element_2_state_5@-->|"onChange"| state_5
@@ -57,10 +65,10 @@ flowchart LR
   ejsx_element_3_process_7@{ animate: true }
   jsx_element_4 ejsx_element_4_process_8@-->|"onClick"| process_8
   ejsx_element_4_process_8@{ animate: true }
-  jsx_element_5 ejsx_element_5_state_6@-->|"onClick"| state_6
-  ejsx_element_5_state_6@{ animate: true }
-  jsx_element_6 ejsx_element_6_process_9@-->|"onClick"| process_9
-  ejsx_element_6_process_9@{ animate: true }
+  jsx_element_6 ejsx_element_6_state_6@-->|"onClick"| state_6
+  ejsx_element_6_state_6@{ animate: true }
+  jsx_element_7 ejsx_element_7_process_9@-->|"onClick"| process_9
+  ejsx_element_7_process_9@{ animate: true }
   prop_2 eprop_2_state_5@-->|"initializes"| state_5
   eprop_2_state_5@{ animate: true }
   state_5 estate_5_process_7@-->|"reads"| process_7
@@ -101,6 +109,7 @@ flowchart LR
   class process_7 process
   class process_8 process
   class process_9 process
+  class jsx_element_8 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement
@@ -108,3 +117,4 @@ flowchart LR
   class jsx_element_4 jsxElement
   class jsx_element_5 jsxElement
   class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement

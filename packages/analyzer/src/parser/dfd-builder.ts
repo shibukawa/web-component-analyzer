@@ -166,6 +166,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
       this.buildProcessToDataStoreWriteEdges(analysis);
       this.log('🚚 DFD Builder: Created process to data store write edges');
       
+      // Build edges between dependent atoms (Jotai derived atoms)
+      this.buildAtomDependencyEdges(analysis);
+      this.log('🚚 DFD Builder: Created atom dependency edges');
+      
       // Build edges from mutation library hooks to Server (writes)
       this.buildMutationToServerEdges();
       this.log('🚚 DFD Builder: Created mutation to server edges');
@@ -661,6 +665,59 @@ export class DefaultDFDBuilder implements DFDBuilder {
               }
             }
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * Build edges between dependent atoms (Jotai derived atoms)
+   * Creates "reads" edges from base atoms to derived atoms
+   */
+  private buildAtomDependencyEdges(analysis: ComponentAnalysis): void {
+    // Get all atom definitions
+    const atomDefinitions = analysis.atomDefinitions || [];
+    
+    if (atomDefinitions.length === 0) {
+      return;
+    }
+    
+    // Get all Jotai atom nodes
+    const atomNodes = this.nodes.filter(
+      node => node.type === 'data-store' && node.metadata?.category === 'jotai-atom'
+    );
+    
+    // For each derived atom, create edges from its dependencies
+    for (const atomDef of atomDefinitions) {
+      if (!atomDef.isDerived || atomDef.dependencies.length === 0) {
+        continue;
+      }
+      
+      // Find the node for this derived atom
+      const derivedAtomNode = atomNodes.find(
+        node => node.metadata?.atomName === atomDef.name
+      );
+      
+      if (!derivedAtomNode) {
+        console.log(`🔬 Atom dependency: Derived atom node not found for ${atomDef.name}`);
+        continue;
+      }
+      
+      // Create edges from each dependency to this derived atom
+      for (const depName of atomDef.dependencies) {
+        const depAtomNode = atomNodes.find(
+          node => node.metadata?.atomName === depName
+        );
+        
+        if (depAtomNode) {
+          console.log(`🔬 Atom dependency: Creating edge from ${depName} to ${atomDef.name}`);
+          this.edges.push({
+            from: depAtomNode.id,
+            to: derivedAtomNode.id,
+            label: 'reads'
+          });
+        } else {
+          console.log(`🔬 Atom dependency: Dependency atom node not found for ${depName}`);
         }
       }
     }
@@ -2386,6 +2443,24 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // For read-write pairs, check if this is the write variable (setter)
     node = nodes.find(n => 
       n.metadata?.isReadWritePair && 
+      n.metadata?.writeVariable === variableName
+    );
+    if (node) {
+      return node;
+    }
+
+    // For Jotai atoms (read-only or write-only), check if this is the read variable
+    node = nodes.find(n => 
+      n.metadata?.category === 'jotai-atom' && 
+      n.metadata?.readVariable === variableName
+    );
+    if (node) {
+      return node;
+    }
+
+    // For Jotai atoms (write-only), check if this is the write variable
+    node = nodes.find(n => 
+      n.metadata?.category === 'jotai-atom' && 
       n.metadata?.writeVariable === variableName
     );
     if (node) {

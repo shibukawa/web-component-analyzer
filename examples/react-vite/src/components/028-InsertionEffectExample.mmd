@@ -1,10 +1,9 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
   state_0[("isActive")]
-  custom_hook_1[("useInsertionEffect")]
-  process_2[["useInsertionEffect"]]
-  cleanup_3[["cleanup"]]
-  process_4[["handleToggle"]]
+  process_1[["useInsertionEffect"]]
+  cleanup_2[["cleanup"]]
+  process_3[["handleToggle"]]
   jsx_element_1["button"]
   jsx_element_0["#quot;text#quot;"]
   subgraph_1@{ shape: hex, label: "{isActive}" }
@@ -16,16 +15,18 @@ flowchart LR
         jsx_element_0@{ shape: hex, label: "#quot;text#quot;" }
     end
   end
-  process_2 eprocess_2_cleanup_3@-.->|"cleanup"| cleanup_3
-  eprocess_2_cleanup_3@{ animate: true }
+  process_1 eprocess_1_cleanup_2@-.->|"cleanup"| cleanup_2
+  eprocess_1_cleanup_2@{ animate: true }
   state_0 estate_0_subgraph_1@-->|"control visibility"| subgraph_1
   estate_0_subgraph_1@{ animate: true }
-  jsx_element_1 ejsx_element_1_process_4@-->|"onClick"| process_4
-  ejsx_element_1_process_4@{ animate: true }
-  state_0 estate_0_process_4@-->|"reads"| process_4
-  estate_0_process_4@{ animate: true }
-  process_4 eprocess_4_state_0@-->|"writes"| state_0
-  eprocess_4_state_0@{ animate: true }
+  state_0 estate_0_jsx_element_1@-->|"display"| jsx_element_1
+  estate_0_jsx_element_1@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_3@-->|"onClick"| process_3
+  ejsx_element_1_process_3@{ animate: true }
+  state_0 estate_0_process_3@-->|"reads"| process_3
+  estate_0_process_3@{ animate: true }
+  process_3 eprocess_3_state_0@-->|"writes"| state_0
+  eprocess_3_state_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -37,9 +38,8 @@ flowchart LR
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
   class state_0 dataStore
-  class custom_hook_1 dataStore
-  class process_2 process
-  class cleanup_3 process
-  class process_4 process
+  class process_1 process
+  class cleanup_2 process
+  class process_3 process
   class jsx_element_1 jsxElement
   class jsx_element_0 jsxElement

@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && node fix-imports.mjs",
+    "build": "tsc --build && node fix-imports.mjs",
     "build:clean": "tsc --build --clean && tsc --build && node fix-imports.mjs",
     "dev": "tsc --watch",
     "lint": "eslint src"

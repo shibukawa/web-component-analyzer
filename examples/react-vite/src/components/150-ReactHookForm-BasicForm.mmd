@@ -13,13 +13,20 @@ flowchart LR
       jsx_element_1@{ shape: hex, label: "&lt;input&gt;" }
       jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
   end
-  jsx_element_3 -->|"onSubmit"| library_hook_0
-  jsx_element_3 -->|"onSubmit"| process_1
-  library_hook_0 -->|"binds: firstName"| jsx_element_0
-  jsx_element_0 -->|"onChange"| library_hook_0
-  library_hook_0 -->|"binds: email"| jsx_element_1
-  jsx_element_1 -->|"onChange"| library_hook_0
-  jsx_element_2 -->|"onClick: reset"| library_hook_0
+  jsx_element_3 ejsx_element_3_library_hook_0@-->|"onSubmit"| library_hook_0
+  ejsx_element_3_library_hook_0@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_1@-->|"onSubmit"| process_1
+  ejsx_element_3_process_1@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_0@-->|"binds: firstName"| jsx_element_0
+  elibrary_hook_0_jsx_element_0@{ animate: true }
+  jsx_element_0 ejsx_element_0_library_hook_0@-->|"onChange"| library_hook_0
+  ejsx_element_0_library_hook_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_1@-->|"binds: email"| jsx_element_1
+  elibrary_hook_0_jsx_element_1@{ animate: true }
+  jsx_element_1 ejsx_element_1_library_hook_0@-->|"onChange"| library_hook_0
+  ejsx_element_1_library_hook_0@{ animate: true }
+  jsx_element_2 ejsx_element_2_library_hook_0@-->|"onClick: reset"| library_hook_0
+  ejsx_element_2_library_hook_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px

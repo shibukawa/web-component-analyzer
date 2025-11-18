@@ -28,8 +28,23 @@ function walkDir(dir) {
 function fixImports() {
   console.log('🔧 Fixing ESM imports to add .js extensions...\n');
 
+  // Check if dist directory exists
+  if (!fs.existsSync(distDir)) {
+    console.error('❌ Error: dist directory not found');
+    console.error(`   Expected location: ${distDir}`);
+    console.error('   This usually means TypeScript compilation failed.');
+    console.error('   Please check the TypeScript compilation output above.');
+    process.exit(1);
+  }
+
   // Find all .js files in dist
   const files = walkDir(distDir);
+  
+  if (files.length === 0) {
+    console.log('ℹ️  No .js files found in dist directory');
+    console.log('✅ Fixed 0 files');
+    return;
+  }
   
   let fixedCount = 0;
   

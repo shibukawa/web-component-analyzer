@@ -46,6 +46,17 @@ export interface ParseError {
 }
 
 /**
+ * Information about an atom definition (Jotai)
+ */
+export interface AtomDefinition {
+  name: string;
+  line?: number;
+  column?: number;
+  dependencies: string[];
+  isDerived: boolean;
+}
+
+/**
  * Component analysis result containing all extracted information
  */
 export interface ComponentAnalysis {
@@ -55,6 +66,7 @@ export interface ComponentAnalysis {
   hooks: HookInfo[];
   processes: ProcessInfo[];
   jsxOutput: JSXInfo;
+  atomDefinitions?: AtomDefinition[]; // Jotai atom definitions
 }
 
 /**
