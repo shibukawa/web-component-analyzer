@@ -29,7 +29,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       
       - name: Build analyzer package
-        run: pnpm --filter @web-component-analyzer/analyzer run build
+        run: pnpm --filter @web-component-analyzer/analyzer run build:clean
       
       - name: Verify analyzer build
         run: |
