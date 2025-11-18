@@ -51,6 +51,9 @@ function createNodeReactParser() {
 export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): Promise<TestResult> {
   const startTime = Date.now();
   
+  // Check if this is a negative test case (expects error)
+  const isNegativeTest = testCase.componentPath.includes('_ng.tsx') || testCase.componentPath.includes('_ng.jsx');
+  
   try {
     // Read component source code
     if (!fs.existsSync(testCase.componentPath)) {
@@ -83,11 +86,32 @@ export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): P
     const dfdData = await parser.parse(sourceCode, testCase.componentPath);
     
     if (!dfdData || dfdData.nodes.length === 0) {
+      // For negative tests, this is expected behavior (test passes)
+      if (isNegativeTest) {
+        return {
+          testName: testCase.testName,
+          componentPath: testCase.componentPath,
+          passed: true,
+          duration: Date.now() - startTime,
+        };
+      }
+      
       return {
         testName: testCase.testName,
         componentPath: testCase.componentPath,
         passed: false,
         error: 'Failed to parse component or no data flow detected',
+        duration: Date.now() - startTime,
+      };
+    }
+    
+    // For negative tests, if we got here without error, the test fails
+    if (isNegativeTest) {
+      return {
+        testName: testCase.testName,
+        componentPath: testCase.componentPath,
+        passed: false,
+        error: 'Expected parsing to fail, but it succeeded',
         duration: Date.now() - startTime,
       };
     }
@@ -121,6 +145,16 @@ export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): P
       duration: Date.now() - startTime,
     };
   } catch (error) {
+    // For negative tests, catching an error means the test passed
+    if (isNegativeTest) {
+      return {
+        testName: testCase.testName,
+        componentPath: testCase.componentPath,
+        passed: true,
+        duration: Date.now() - startTime,
+      };
+    }
+    
     return {
       testName: testCase.testName,
       componentPath: testCase.componentPath,

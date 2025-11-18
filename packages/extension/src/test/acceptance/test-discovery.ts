@@ -43,19 +43,19 @@ export function discoverTests(baseDir: string): TestDiscoveryResult {
     };
   }
   
-  // Scan directory for component files
+  // Scan directory for component files (including _ng.tsx negative test files)
   const files = fs.readdirSync(baseDir);
-  const componentFiles = files.filter(f => /^\d+-.*\.(tsx|jsx|vue|svelte)$/.test(f));
+  const componentFiles = files.filter(f => /^\d+-.*(_ng)?\.(tsx|jsx|vue|svelte)$/.test(f));
   
   // For each component file, check if there's a corresponding .mmd file
   for (const componentFile of componentFiles) {
     const componentPath = path.join(baseDir, componentFile);
-    const mmdFile = componentFile.replace(/\.(tsx|jsx|vue|svelte)$/, '.mmd');
+    const mmdFile = componentFile.replace(/(_ng)?\.(tsx|jsx|vue|svelte)$/, '$1.mmd');
     const referencePath = path.join(baseDir, mmdFile);
     
     // Only include if .mmd file exists
     if (fs.existsSync(referencePath)) {
-      const testName = componentFile.replace(/\.(tsx|jsx|vue|svelte)$/, '');
+      const testName = componentFile.replace(/(_ng)?\.(tsx|jsx|vue|svelte)$/, '$1');
       const number = extractTestNumber(componentFile) || 0;
       
       // Determine framework from file extension
