@@ -1,0 +1,103 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  state_0[("name")]
+  state_1[("email")]
+  server_2["Server: GraphQL"]
+  library_hook_3[("useMutation")]
+  process_4[["handleSubmit"]]
+  jsx_element_8["div"]
+  jsx_element_4["form"]
+  jsx_element_0["input"]
+  jsx_element_1["input"]
+  jsx_element_3["button"]
+  jsx_element_2["#quot;text#quot;"]
+  jsx_element_5["p"]
+  jsx_element_6["p"]
+  jsx_element_7["p"]
+  subgraph_1@{ shape: hex, label: "{loading}" }
+  subgraph_3@{ shape: hex, label: "{loading}" }
+  subgraph_4@{ shape: hex, label: "{error}" }
+  subgraph_5@{ shape: hex, label: "{data}" }
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_8@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;form&gt;" }
+      jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+    subgraph subgraph_1["{loading}"]
+      direction TB
+        jsx_element_2@{ shape: hex, label: "#quot;text#quot;" }
+    end
+    subgraph subgraph_3["{loading}"]
+      direction TB
+        jsx_element_5@{ shape: hex, label: "&lt;p&gt;" }
+    end
+    subgraph subgraph_4["{error}"]
+      direction TB
+        jsx_element_6@{ shape: hex, label: "&lt;p&gt;" }
+    end
+    subgraph subgraph_5["{data}"]
+      direction TB
+        jsx_element_7@{ shape: hex, label: "&lt;p&gt;" }
+    end
+  end
+  library_hook_3 elibrary_hook_3_server_2@-->|"mutate"| server_2
+  elibrary_hook_3_server_2@{ animate: true }
+  library_hook_3 elibrary_hook_3_subgraph_1@-->|"control visibility: loading"| subgraph_1
+  elibrary_hook_3_subgraph_1@{ animate: true }
+  library_hook_3 elibrary_hook_3_subgraph_3@-->|"control visibility: loading"| subgraph_3
+  elibrary_hook_3_subgraph_3@{ animate: true }
+  library_hook_3 elibrary_hook_3_subgraph_4@-->|"control visibility: error"| subgraph_4
+  elibrary_hook_3_subgraph_4@{ animate: true }
+  library_hook_3 elibrary_hook_3_subgraph_5@-->|"control visibility: data"| subgraph_5
+  elibrary_hook_3_subgraph_5@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_8@-->|"display: loading"| jsx_element_8
+  elibrary_hook_3_jsx_element_8@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_3@-->|"display: loading"| jsx_element_3
+  elibrary_hook_3_jsx_element_3@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_3@-->|"binds: loading"| jsx_element_3
+  elibrary_hook_3_jsx_element_3@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_6@-->|"display: error"| jsx_element_6
+  elibrary_hook_3_jsx_element_6@{ animate: true }
+  library_hook_3 elibrary_hook_3_jsx_element_7@-->|"display: data"| jsx_element_7
+  elibrary_hook_3_jsx_element_7@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_4@-->|"onSubmit"| process_4
+  ejsx_element_4_process_4@{ animate: true }
+  state_0 estate_0_jsx_element_0@-->|"binds"| jsx_element_0
+  estate_0_jsx_element_0@{ animate: true }
+  jsx_element_0 ejsx_element_0_state_0@-->|"onChange"| state_0
+  ejsx_element_0_state_0@{ animate: true }
+  state_1 estate_1_jsx_element_1@-->|"binds"| jsx_element_1
+  estate_1_jsx_element_1@{ animate: true }
+  jsx_element_1 ejsx_element_1_state_1@-->|"onChange"| state_1
+  ejsx_element_1_state_1@{ animate: true }
+  state_0 estate_0_process_4@-->|"reads"| process_4
+  estate_0_process_4@{ animate: true }
+  state_1 estate_1_process_4@-->|"reads"| process_4
+  estate_1_process_4@{ animate: true }
+  process_4 eprocess_4_library_hook_3@-->|"calls: mutate"| library_hook_3
+  eprocess_4_library_hook_3@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class state_0 dataStore
+  class state_1 dataStore
+  class library_hook_3 dataStore
+  class process_4 process
+  class jsx_element_8 jsxElement
+  class jsx_element_4 jsxElement
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement
