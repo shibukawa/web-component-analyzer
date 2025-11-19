@@ -24,7 +24,6 @@ import {
 } from './types';
 import { SubgraphBuilder } from '../analyzers/subgraph-builder';
 import { TypeClassifier } from '../services/type-classifier';
-import { getLibraryHandlerRegistry, resetLibraryHandlerRegistry } from '../third-party/index.js';
 import { getProcessorRegistry } from '../libraries/index.js';
 import { ProcessorContext, ProcessorResult } from '../libraries/types';
 import { createLogger } from '../libraries/logger';
@@ -73,9 +72,6 @@ export class DefaultDFDBuilder implements DFDBuilder {
     
     // Store analysis for processor context
     this.currentAnalysis = analysis;
-    
-    // Reset library handlers for new component analysis
-    resetLibraryHandlerRegistry();
     
     // Reset processor registry (resets stateful processors like Next.js)
     const processorRegistry = getProcessorRegistry();
@@ -1187,14 +1183,6 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue;
       }
 
-      // Check if this hook has library adapter mappings
-      const enrichedHook = hook as any;
-      if (enrichedHook.libraryName && enrichedHook.returnValueMappings) {
-        console.log(`🚚 Processing library hook: ${hook.hookName} from ${enrichedHook.libraryName}`);
-        this.buildNodesFromLibraryHook(hook);
-        continue;
-      }
-
       // Check if this is a custom hook (no category in registry)
       // NOTE: This is a fallback for custom hooks not handled by CustomHookProcessor
       // In practice, CustomHookProcessor should handle all custom hooks
@@ -1223,194 +1211,6 @@ export class DefaultDFDBuilder implements DFDBuilder {
         // 'effect' hooks are handled as processes, not as separate nodes
       }
     }
-  }
-
-  /**
-   * Build nodes from library hook with return value mappings
-   * Creates nodes based on the library adapter's DFD element type mappings
-   */
-  private buildNodesFromLibraryHook(hook: HookInfo): void {
-    // Check if this is an enriched hook with library mappings
-    const enrichedHook = hook as any;
-    if (!enrichedHook.libraryName || !enrichedHook.returnValueMappings) {
-      console.log(`🚚 ⚠️ Skipping hook ${hook.hookName} - no library mappings`);
-      console.log(`🚚    libraryName: ${enrichedHook.libraryName}`);
-      console.log(`🚚    returnValueMappings: ${enrichedHook.returnValueMappings}`);
-      return;
-    }
-
-    console.log(`🚚 ========================================`);
-    console.log(`🚚 Building nodes from library hook: ${hook.hookName} (${enrichedHook.libraryName})`);
-    console.log(`🚚 Return value mappings:`, enrichedHook.returnValueMappings);
-    console.log(`🚚 Hook arguments:`, hook.arguments);
-    console.log(`🚚 Hook dependencies:`, hook.dependencies);
-    console.log(`🚚 Hook variables:`, hook.variables);
-
-    // Check if this is a data fetching hook and create Server node
-    const isDataFetchingHook = this.isDataFetchingHook(hook.hookName);
-    console.log(`🚚 Is data fetching hook: ${isDataFetchingHook}`);
-    let serverNodeId: string | null = null;
-    
-    if (isDataFetchingHook) {
-      // Always create a Server node for data fetching hooks
-      let endpoint: string | undefined;
-      
-      if (hook.arguments && hook.arguments.length > 0) {
-        console.log(`🚚 Extracting API endpoint from arguments:`, hook.arguments);
-        endpoint = this.extractAPIEndpoint(hook.arguments);
-      }
-      
-      // Create Server node with endpoint if available, otherwise just "Server"
-      if (endpoint) {
-        console.log(`🚚 ✅ Creating Server node with endpoint: ${endpoint}`);
-        serverNodeId = this.createServerNode(endpoint, hook.line, hook.column);
-      } else {
-        console.log(`🚚 ✅ Creating Server node without specific endpoint (dynamic URL)`);
-        serverNodeId = this.createServerNode(undefined, hook.line, hook.column);
-      }
-    } else {
-      console.log(`🚚 ⚠️ Not a data fetching hook, no Server node needed`);
-    }
-
-    // Check if there's a specialized handler for this library hook
-    const registry = getLibraryHandlerRegistry();
-    const handler = registry.findHandler(hook.hookName, enrichedHook.libraryName);
-    
-    if (handler) {
-      console.log(`🚚 Using specialized handler for ${hook.hookName} from ${enrichedHook.libraryName}`);
-      
-      // Use the handler to create nodes and edges
-      const result = handler.createNodes(
-        hook,
-        enrichedHook,
-        serverNodeId,
-        (prefix: string) => this.generateNodeId(prefix)
-      );
-      
-      // Add the created nodes and edges
-      this.nodes.push(...result.nodes);
-      this.edges.push(...result.edges);
-      
-      // For SWR hooks, check if the first argument is a variable and create edge
-      if (enrichedHook.libraryName === 'swr' && hook.argumentIdentifiers && hook.argumentIdentifiers.length > 0) {
-        const firstArgId = hook.argumentIdentifiers[0];
-        const hookNodeId = result.nodes[0]?.id; // The main hook node
-        
-        if (hookNodeId) {
-          console.log(`🚚 ========================================`);
-          console.log(`🚚 Processing first argument: ${firstArgId}`);
-          console.log(`🚚 Looking for existing node for first argument: ${firstArgId}`);
-          
-          // Find any existing node with this variable name
-          const sourceNode = this.findNodeByVariable(firstArgId, this.nodes);
-          
-          if (sourceNode) {
-            console.log(`🚚 ✅ Found existing node: ${sourceNode.id}: ${sourceNode.label} (${sourceNode.type})`);
-            
-            // Check if edge already exists
-            const existingEdge = this.edges.find(
-              e => e.from === sourceNode.id && e.to === hookNodeId && e.label === 'provides key'
-            );
-            
-            if (!existingEdge) {
-              this.edges.push({
-                from: sourceNode.id,
-                to: hookNodeId,
-                label: 'provides key'
-              });
-              console.log(`🚚 ✅ Created edge from ${sourceNode.label} (${sourceNode.id}) to ${hook.hookName} (${hookNodeId}) - provides key`);
-            } else {
-              console.log(`🚚 ⚠️ Edge already exists, skipping duplicate`);
-            }
-          } else {
-            console.log(`🚚 ⚠️ No existing node found for: ${firstArgId}`);
-          }
-          console.log(`🚚 ========================================`);
-        }
-      }
-      
-      console.log(`🚚 ========================================`);
-      return;
-    }
-
-    // For other library hooks, create individual nodes (existing behavior)
-    for (const [variableName, mapping] of enrichedHook.returnValueMappings.entries()) {
-      const { dfdElementType, metadata } = mapping;
-      
-      console.log(`🚚   Creating ${dfdElementType} node for variable: ${variableName}`);
-      
-      // Generate appropriate node ID prefix based on element type
-      let nodeIdPrefix: string;
-      switch (dfdElementType) {
-        case 'external-entity-input':
-          nodeIdPrefix = 'library_input';
-          break;
-        case 'data-store':
-          nodeIdPrefix = 'library_store';
-          break;
-        case 'process':
-          nodeIdPrefix = 'library_process';
-          break;
-        default:
-          nodeIdPrefix = 'library_node';
-      }
-
-      // Create the node
-      const node: DFDNode = {
-        id: this.generateNodeId(nodeIdPrefix),
-        label: variableName,
-        type: dfdElementType,
-        line: hook.line,
-        column: hook.column,
-        metadata: {
-          category: 'library-hook',
-          hookName: hook.hookName,
-          libraryName: enrichedHook.libraryName,
-          variableName,
-          line: hook.line,
-          column: hook.column,
-          ...this.applyLibraryMetadata(metadata)
-        }
-      };
-
-      this.nodes.push(node);
-      console.log(`🚚   ✅ Created ${dfdElementType} node: ${variableName}`);
-    }
-  }
-
-  /**
-   * Apply library-specific metadata to node metadata
-   * Transforms library adapter metadata into node metadata format
-   */
-  private applyLibraryMetadata(adapterMetadata?: Record<string, any>): Record<string, any> {
-    if (!adapterMetadata) {
-      return {};
-    }
-
-    const nodeMetadata: Record<string, any> = {};
-
-    // Map common metadata fields
-    if (adapterMetadata.isLoading !== undefined) {
-      nodeMetadata.isLoading = adapterMetadata.isLoading;
-    }
-    if (adapterMetadata.isError !== undefined) {
-      nodeMetadata.isError = adapterMetadata.isError;
-    }
-    if (adapterMetadata.isMutation !== undefined) {
-      nodeMetadata.isMutation = adapterMetadata.isMutation;
-    }
-    if (adapterMetadata.isRefetch !== undefined) {
-      nodeMetadata.isRefetch = adapterMetadata.isRefetch;
-    }
-
-    // Copy any other metadata fields
-    for (const [key, value] of Object.entries(adapterMetadata)) {
-      if (!nodeMetadata.hasOwnProperty(key)) {
-        nodeMetadata[key] = value;
-      }
-    }
-
-    return nodeMetadata;
   }
 
   /**

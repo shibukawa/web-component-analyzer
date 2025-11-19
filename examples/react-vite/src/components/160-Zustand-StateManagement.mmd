@@ -1,11 +1,6 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
-  subgraph useBearStore_input["useBearStore - Input"]
-    direction TB
-    custom_hook_data_0[("bears")]
-    custom_hook_data_1[("increasePopulation")]
-    custom_hook_data_2[("removeAllBears")]
-  end
+  library_hook_0[("useBearStore")]
   jsx_element_0["p"]
   jsx_element_1["button"]
   jsx_element_2["button"]
@@ -15,12 +10,12 @@ flowchart LR
       jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
       jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
   end
-  custom_hook_data_0 ecustom_hook_data_0_jsx_element_0@-->|"display"| jsx_element_0
-  ecustom_hook_data_0_jsx_element_0@{ animate: true }
-  custom_hook_data_1 ecustom_hook_data_1_jsx_element_1@-->|"binds"| jsx_element_1
-  ecustom_hook_data_1_jsx_element_1@{ animate: true }
-  custom_hook_data_2 ecustom_hook_data_2_jsx_element_2@-->|"binds"| jsx_element_2
-  ecustom_hook_data_2_jsx_element_2@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_0@-->|"display: bears"| jsx_element_0
+  elibrary_hook_0_jsx_element_0@{ animate: true }
+  jsx_element_1 ejsx_element_1_library_hook_0@-->|"onClick"| library_hook_0
+  ejsx_element_1_library_hook_0@{ animate: true }
+  jsx_element_2 ejsx_element_2_library_hook_0@-->|"onClick"| library_hook_0
+  ejsx_element_2_library_hook_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -31,6 +26,7 @@ flowchart LR
   classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class library_hook_0 dataStore
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement

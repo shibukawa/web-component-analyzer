@@ -294,22 +294,29 @@
     - _Requirements: 5, 14_
 
 - [x] 14. Add Zustand library support
-  - [x] 14.1 Define Zustand adapters in library-adapters.json
-    - Add generic adapter pattern for Zustand store hooks
-    - Support selector-based state access
-    - Handle store actions as processes
+  - [x] 14.1 Update Zustand processor to use single data-store pattern
+    - Create single data-store node for Zustand store (e.g., "useCountStore")
+    - State properties (count, etc.) accessed via data flows (not separate nodes)
+    - Action properties (increment, decrement) create reverse edges: <button> --[onClick: increment]--> useCountStore
+    - Remove subgraph generation for Zustand stores
     - _Requirements: 6_
   
-  - [x] 14.2 Create 111-Zustand-StateManagement.tsx acceptance test
-    - Component using Zustand store hook
-    - Include embedded YAML specification
-    - Verify selected state input and action process nodes
+  - [x] 14.2 Update 160-Zustand-StateManagement.tsx acceptance test
+    - Rename from 111-Zustand-StateManagement.tsx to 160-Zustand-StateManagement.tsx
+    - Update YAML specification to match single data-store pattern
+    - Single "useCountStore" data-store node
+    - Data flows for property access (count)
+    - Reverse edges for actions: jsx-button --[onClick: increment]--> useCountStore
+    - Remove subgraph specifications
     - _Requirements: 6, 14_
   
-  - [x] 14.3 Create 112-Zustand-Selectors.tsx acceptance test
-    - Component using multiple selectors from same store
-    - Include embedded YAML specification
-    - Verify multiple state input nodes
+  - [x] 14.3 Update 161-Zustand-Selectors.tsx acceptance test
+    - Rename from 112-Zustand-Selectors.tsx to 161-Zustand-Selectors.tsx
+    - Update YAML specification to match single data-store pattern
+    - Single "useUserStore" data-store node
+    - Data flows for multiple property access (name, email)
+    - Reverse edges for actions
+    - Remove subgraph specifications
     - _Requirements: 6, 14_
 
 - [x] 17. Add Jotai library support
@@ -331,7 +338,7 @@
     - Verify read-only input and write-only process nodes
     - _Requirements: 7, 14_
 
-- [ ] 17.5 Refactor Jotai to use useState-like structure
+- [x] 17.5 Refactor Jotai to use useState-like structure
   - [x] 17.5.1 Modify Jotai processor to create data-store nodes for atoms
     - Create data-store node named after the atom (e.g., "countAtom")
     - For useAtom: create "reads" edge from atom to value variable, "set" edge from setter to atom
@@ -387,24 +394,37 @@
     - Verify local observable state nodes
     - _Requirements: 8, 14_
 
-- [ ] 16. Add Apollo Client library support
-  - [ ] 16.1 Define Apollo Client adapters in library-adapters.json
-    - Add adapters for useQuery (data, loading, error, refetch, fetchMore)
-    - Add adapters for useMutation (mutation function, data, loading, error)
-    - Add adapters for useSubscription (data, loading, error)
-    - Add adapters for useLazyQuery
+- [x] 16. Add Apollo Client library support
+  - [x] 16.1 Refactor useSWR logic to be reusable
+    - Extract common data fetching hook pattern from SWRLibraryProcessor
+    - Create shared helper functions for:
+      - Creating single consolidated data-store node for hook
+      - Handling data/loading/error properties as data flows (not separate nodes)
+      - Creating edges from JSX elements to hook node for property access
+      - Creating edges from process properties (refetch, mutate) to hook node
+    - Move shared logic to packages/analyzer/src/libraries/helpers.ts
     - _Requirements: 9_
   
-  - [ ] 16.2 Create 160-Apollo-GraphQLQuery.tsx acceptance test
-    - Component using useQuery from Apollo Client
-    - Include embedded YAML specification
-    - Verify query data input and loading/error state nodes
+  - [x] 16.2 Update Apollo Client processor to use useSWR pattern
+    - Modify ApolloClientLibraryProcessor to use shared helper functions
+    - Create single "useQuery" data-store node (not separate nodes for data/loading/error)
+    - Properties (data, loading, error, refetch) are accessed via data flows
+    - Process properties (refetch, fetchMore) create reverse edges: <button> --[onClick: refetch]--> useQuery
+    - Follow same pattern for useMutation, useSubscription, useLazyQuery
+    - _Requirements: 9_
+  
+  - [x] 16.3 Update 190-Apollo-GraphQLQuery.tsx acceptance test
+    - Update YAML specification to match useSWR pattern
+    - Single "useQuery" data-store node
+    - Data flows for property access (data, loading, error)
+    - Reverse edge for refetch: jsx-button-1 --[onClick: refetch]--> useQuery
     - _Requirements: 9, 14_
   
-  - [ ] 16.3 Create 161-Apollo-Mutation.tsx acceptance test
-    - Component using useMutation from Apollo Client
-    - Include embedded YAML specification
-    - Verify mutation process node
+  - [x] 16.4 Update 191-Apollo-Mutation.tsx acceptance test
+    - Update YAML specification to match useSWR pattern
+    - Single "useMutation" data-store node
+    - Data flows for property access (data, loading, error)
+    - Reverse edge for mutate: handleSubmit --[calls: mutate]--> useMutation
     - _Requirements: 9, 14_
 
 - [ ] 18. Add RTK Query library support

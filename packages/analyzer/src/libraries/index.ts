@@ -16,6 +16,8 @@ import { TanStackRouterLibraryProcessor } from './tanstack-router.js';
 import { ReactHookFormLibraryProcessor } from './react-hook-form.js';
 import { JotaiLibraryProcessor } from './jotai.js';
 import { MobXLibraryProcessor } from './mobx.js';
+import { ApolloClientLibraryProcessor } from './apollo.js';
+import { ZustandLibraryProcessor } from './zustand.js';
 import { CustomHookProcessor } from './custom-hook.js';
 
 /**
@@ -64,9 +66,11 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new ReactHookFormLibraryProcessor());
   registry.register(new JotaiLibraryProcessor());
   registry.register(new MobXLibraryProcessor());
+  registry.register(new ApolloClientLibraryProcessor());
+  registry.register(new ZustandLibraryProcessor());
   
   // Register custom hook processor (lowest priority - fallback)
-  // This handles all user-defined hooks including Zustand stores
+  // This handles all user-defined hooks
   registry.register(new CustomHookProcessor());
 }
 
@@ -81,6 +85,8 @@ export { TanStackRouterLibraryProcessor } from './tanstack-router.js';
 export { ReactHookFormLibraryProcessor } from './react-hook-form.js';
 export { JotaiLibraryProcessor } from './jotai.js';
 export { MobXLibraryProcessor } from './mobx.js';
+export { ApolloClientLibraryProcessor } from './apollo.js';
+export { ZustandLibraryProcessor } from './zustand.js';
 export { CustomHookProcessor } from './custom-hook.js';
 export type {
   HookProcessor,

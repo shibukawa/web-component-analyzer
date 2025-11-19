@@ -161,10 +161,180 @@ export function looksLikeAction(name: string): boolean {
   const actionPrefixes = [
     'set', 'update', 'add', 'remove', 'delete', 'create',
     'fetch', 'load', 'save', 'clear', 'reset', 'toggle',
-    'increment', 'decrement', 'push', 'pop', 'shift', 'unshift',
+    'increment', 'decrement', 'increase', 'decrease', 'push', 'pop', 'shift', 'unshift',
     'handle', 'on', 'dispatch'
   ];
 
   const lowerName = name.toLowerCase();
   return actionPrefixes.some(prefix => lowerName.startsWith(prefix));
+}
+
+/**
+ * Return value mapping configuration for data fetching hooks
+ */
+export interface ReturnValueMapping {
+  propertyName: string;
+  dfdElementType: 'external-entity-input' | 'data-store' | 'process';
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Result of mapping variables to types
+ */
+export interface MappedVariables {
+  dataProperties: string[];
+  processProperties: string[];
+  propertyMetadata: Record<string, any>;
+}
+
+/**
+ * Map hook variables to their types using return value mappings
+ * Matches variables from the hook destructuring to the known property mappings
+ * 
+ * @param variables - Variables extracted from hook destructuring
+ * @param mappings - Return value mappings for the hook
+ * @returns Mapped variables categorized by type
+ */
+export function mapVariablesToTypes(
+  variables: string[],
+  mappings: ReturnValueMapping[]
+): MappedVariables {
+  const dataProperties: string[] = [];
+  const processProperties: string[] = [];
+  const propertyMetadata: Record<string, any> = {};
+
+  // For each variable extracted from the hook, find its mapping
+  for (const variable of variables) {
+    // Try to find a mapping for this variable
+    const mapping = mappings.find(m => m.propertyName === variable);
+    
+    if (mapping) {
+      propertyMetadata[variable] = {
+        dfdElementType: mapping.dfdElementType,
+        ...mapping.metadata
+      };
+
+      if (mapping.dfdElementType === 'process') {
+        processProperties.push(variable);
+      } else {
+        dataProperties.push(variable);
+      }
+    } else {
+      // Unknown property - treat as data by default
+      propertyMetadata[variable] = {
+        dfdElementType: 'data-store'
+      };
+      dataProperties.push(variable);
+    }
+  }
+
+  return { dataProperties, processProperties, propertyMetadata };
+}
+
+/**
+ * Create a consolidated library-hook node for data fetching hooks
+ * This pattern is used by SWR, TanStack Query, Apollo Client, etc.
+ * 
+ * @param hook - Hook information
+ * @param context - Processor context
+ * @param options - Configuration options
+ * @returns DFD node representing the library hook
+ */
+export function createConsolidatedLibraryHookNode(
+  hook: HookInfo,
+  context: ProcessorContext,
+  options: {
+    /** Library name (e.g., 'swr', '@apollo/client') */
+    libraryName: string;
+    /** Return value mappings for the hook */
+    mappings: ReturnValueMapping[];
+    /** Server node ID if applicable */
+    serverNodeId?: string | null;
+    /** Additional metadata to include in the node */
+    additionalMetadata?: Record<string, any>;
+  }
+): DFDNode {
+  const { generateNodeId, logger } = context;
+  const { libraryName, mappings, serverNodeId, additionalMetadata = {} } = options;
+
+  // Map hook variables to their types using the return value mappings
+  const { dataProperties, processProperties, propertyMetadata } = 
+    mapVariablesToTypes(hook.variables, mappings);
+
+  // Create consolidated library-hook node
+  const allProperties = [...dataProperties, ...processProperties];
+  const nodeId = generateNodeId('library_hook');
+  
+  const label = hook.hookName;
+
+  const node: DFDNode = {
+    id: nodeId,
+    label,
+    type: 'data-store',
+    line: hook.line,
+    column: hook.column,
+    metadata: {
+      category: 'library-hook',
+      hookName: hook.hookName,
+      libraryName,
+      isLibraryHook: true,
+      properties: allProperties,
+      dataProperties,
+      processProperties,
+      propertyMetadata,
+      serverNodeId,
+      line: hook.line,
+      column: hook.column,
+      ...additionalMetadata
+    }
+  };
+
+  logger.node('created', node);
+  return node;
+}
+
+/**
+ * Create edges for data fetching hooks
+ * Creates appropriate edges between Server node and library hook node
+ * 
+ * @param serverNodeId - Server node ID
+ * @param hookNodeId - Library hook node ID
+ * @param edgeType - Type of edge ('fetch', 'mutate', 'query', 'subscribe')
+ * @param context - Processor context
+ * @returns Array of DFD edges
+ */
+export function createDataFetchingEdges(
+  serverNodeId: string | null,
+  hookNodeId: string,
+  edgeType: 'fetch' | 'mutate' | 'query' | 'subscribe',
+  context: ProcessorContext
+): DFDEdge[] {
+  const { logger } = context;
+  const edges: DFDEdge[] = [];
+
+  if (!serverNodeId) {
+    return edges;
+  }
+
+  // For fetch/query/subscribe, data flows from Server to hook
+  // For mutate, data flows from hook to Server
+  if (edgeType === 'mutate') {
+    const edge: DFDEdge = {
+      from: hookNodeId,
+      to: serverNodeId,
+      label: edgeType
+    };
+    edges.push(edge);
+    logger.edge('created', edge);
+  } else {
+    const edge: DFDEdge = {
+      from: serverNodeId,
+      to: hookNodeId,
+      label: edgeType
+    };
+    edges.push(edge);
+    logger.edge('created', edge);
+  }
+
+  return edges;
 }
