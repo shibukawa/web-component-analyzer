@@ -215,6 +215,7 @@ export interface JSXElementStructure {
 export interface JSXAttributeReference {
   attributeName: string; // e.g., 'onClick', 'onChange', 'onCustomEvent', 'value'
   referencedVariable: string; // Name of the variable being referenced
+  propertyName?: string; // Property name if accessing object property (e.g., 'increment' in store.increment)
   isEventHandler?: boolean; // Determined by type classification (function = true, data = false)
 }
 

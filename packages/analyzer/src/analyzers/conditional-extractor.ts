@@ -464,6 +464,19 @@ export class ConditionalStructureExtractor {
               attributeName: attrName,
               referencedVariable: (expr as swc.Identifier).value,
             });
+          } else if (expr.type === 'MemberExpression') {
+            // Member expression: object.property
+            const memberExpr = expr as swc.MemberExpression;
+            const objectName = this.extractObjectName(memberExpr.object);
+            const propertyName = this.extractPropertyName(memberExpr.property);
+            
+            if (objectName) {
+              references.push({
+                attributeName: attrName,
+                referencedVariable: objectName,
+                propertyName: propertyName || undefined,
+              });
+            }
           } else if (expr.type === 'ArrowFunctionExpression') {
             // Inline arrow function - extract variables from function body
             const arrowFunc = expr as swc.ArrowFunctionExpression;
@@ -562,6 +575,31 @@ export class ConditionalStructureExtractor {
     }
 
     return references;
+  }
+
+  /**
+   * Extract object name from a member expression object
+   */
+  private extractObjectName(obj: swc.Expression | swc.Super): string | null {
+    if (obj.type === 'Identifier') {
+      return (obj as swc.Identifier).value;
+    } else if (obj.type === 'MemberExpression') {
+      // Nested member expression: a.b.c - return the root object name
+      return this.extractObjectName((obj as swc.MemberExpression).object);
+    }
+    return null;
+  }
+
+  /**
+   * Extract property name from a member expression property
+   */
+  private extractPropertyName(prop: any): string | null {
+    if (prop.type === 'Identifier') {
+      return (prop as swc.Identifier).value;
+    } else if (prop.type === 'Computed' && (prop as swc.ComputedPropName).expression.type === 'StringLiteral') {
+      return ((prop as swc.ComputedPropName).expression as swc.StringLiteral).value;
+    }
+    return null;
   }
 
   /**

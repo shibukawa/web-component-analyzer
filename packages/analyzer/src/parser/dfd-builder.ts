@@ -2137,9 +2137,19 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue; // Skip default edge creation
       }
 
-      // Classify the variable type
-      const varType = this.classifyVariable(varName, typeClassifier, sourceNode);
-      console.log(`🚚   Variable ${varName} classified as: ${varType}`);
+      // Classify the variable type (considering property name if available)
+      let varType = this.classifyVariable(varName, typeClassifier, sourceNode);
+      
+      // If property name is provided, check if it's a function property
+      if (attrRef.propertyName) {
+        // Use property name to determine if it's a function
+        const propertyType = this.classifyPropertyType(attrRef.propertyName);
+        if (propertyType) {
+          varType = propertyType;
+        }
+      }
+      
+      console.log(`🚚   Variable ${varName}${attrRef.propertyName ? '.' + attrRef.propertyName : ''} classified as: ${varType}`);
       
       // Create edge based on variable type
       if (varType === 'function') {
@@ -2152,11 +2162,15 @@ export class DefaultDFDBuilder implements DFDBuilder {
           console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName}), skipping duplicate`);
         } else {
           // Function variable: create edge from element to function (element triggers function)
-          console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName})`);
+          // Use property name in label if available
+          const edgeLabel = attrRef.propertyName 
+            ? `${attrRef.attributeName}: ${attrRef.propertyName}`
+            : attrRef.attributeName;
+          console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${sourceNode.id} (${edgeLabel})`);
           edges.push({
             from: elementNode.id,
             to: sourceNode.id,
-            label: attrRef.attributeName
+            label: edgeLabel
           });
         }
       } else {
@@ -2182,6 +2196,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
           if (dataProps.includes(varName)) {
             finalLabel = `binds: ${varName}`;
           }
+        }
+        // If property name is provided, add it to the label
+        if (attrRef.propertyName) {
+          finalLabel = `binds: ${attrRef.propertyName}`;
         }
         
         console.log(`🚚   ✅ Creating edge from ${sourceNode.id} to ${elementNode.id} (${finalLabel})`);
@@ -2549,6 +2567,27 @@ export class DefaultDFDBuilder implements DFDBuilder {
     }
 
     return undefined;
+  }
+
+  /**
+   * Classify a property name as 'data' or 'function' based on naming patterns
+   */
+  private classifyPropertyType(propertyName: string): 'data' | 'function' | null {
+    // Common function/action patterns
+    const functionPatterns = [
+      /^(set|update|add|remove|delete|clear|reset|toggle|increment|decrement)/i,
+      /^(on|handle)/i,
+      /Action$/i,
+      /^(fetch|load|save|submit|send|post|get|put|patch)/i,
+    ];
+    
+    if (functionPatterns.some(pattern => pattern.test(propertyName))) {
+      return 'function';
+    }
+    
+    // If it doesn't match function patterns, assume it's data
+    // (we could add data patterns here if needed)
+    return null; // Return null to use default classification
   }
 
   /**

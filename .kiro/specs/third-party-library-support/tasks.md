@@ -368,20 +368,20 @@
     - Create "reads" edges between dependent atoms in DFD builder
     - _Requirements: 7_
 
-- [ ] 15. Add MobX library support
-  - [ ] 15.1 Define MobX adapters in library-adapters.json
+- [x] 15. Add MobX library support
+  - [x] 15.1 Define MobX adapters in library-adapters.json
     - Add adapters for useObserver
     - Add adapters for useLocalObservable
     - Handle observable state access patterns
     - _Requirements: 8_
   
-  - [ ] 15.2 Create 150-MobX-ObservableState.tsx acceptance test
+  - [x] 15.2 Create 150-MobX-ObservableState.tsx acceptance test
     - Component using observer HOC with observable state
     - Include embedded YAML specification
     - Verify observable state input and action process nodes
     - _Requirements: 8, 14_
   
-  - [ ] 15.3 Create 151-MobX-LocalObservable.tsx acceptance test
+  - [x] 15.3 Create 151-MobX-LocalObservable.tsx acceptance test
     - Component using useLocalObservable
     - Include embedded YAML specification
     - Verify local observable state nodes

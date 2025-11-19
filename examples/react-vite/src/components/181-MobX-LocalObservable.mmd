@@ -1,0 +1,42 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  mobx_observable_0[("user")]
+  jsx_element_0["input"]
+  jsx_element_1["input"]
+  jsx_element_2["p"]
+  jsx_element_3["p"]
+  jsx_element_4["button"]
+  subgraph subgraph_0["JSX Output"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  mobx_observable_0 emobx_observable_0_jsx_element_2@-->|"display"| jsx_element_2
+  emobx_observable_0_jsx_element_2@{ animate: true }
+  mobx_observable_0 emobx_observable_0_jsx_element_3@-->|"display"| jsx_element_3
+  emobx_observable_0_jsx_element_3@{ animate: true }
+  mobx_observable_0 emobx_observable_0_jsx_element_0@-->|"binds: firstName"| jsx_element_0
+  emobx_observable_0_jsx_element_0@{ animate: true }
+  mobx_observable_0 emobx_observable_0_jsx_element_1@-->|"binds: lastName"| jsx_element_1
+  emobx_observable_0_jsx_element_1@{ animate: true }
+  jsx_element_4 ejsx_element_4_mobx_observable_0@-->|"onClick: incrementAge"| mobx_observable_0
+  ejsx_element_4_mobx_observable_0@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class mobx_observable_0 dataStore
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
