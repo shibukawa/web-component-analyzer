@@ -24,6 +24,7 @@ import {
 } from './types';
 import { SubgraphBuilder } from '../analyzers/subgraph-builder';
 import { TypeClassifier } from '../services/type-classifier';
+import { EventHandlerUsageAnalyzer } from '../services/event-handler-usage-analyzer';
 import { getProcessorRegistry } from '../libraries/index.js';
 import { ProcessorContext, ProcessorResult } from '../libraries/types';
 import { createLogger } from '../libraries/logger';
@@ -46,6 +47,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   private currentAnalysis: ComponentAnalysis | null = null;
   private verbose: boolean = false; // Set to true to enable detailed logging
   private customEdgeBuilders: Map<string, any> = new Map(); // Store custom edge builders by variable name
+  private eventHandlerUsageMap: import('../parser/types').EventHandlerUsageMap = {}; // Store event handler usage information
 
   constructor() {
     // Processor registry is initialized globally in libraries/index.ts
@@ -83,6 +85,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
     this.nodeIdCounter = 0;
     this.exportedHandlerSubgroups = [];
     this.customEdgeBuilders.clear();
+    this.eventHandlerUsageMap = {};
 
     // Create nodes for all elements
     this.createPropsNodes(analysis.props);
@@ -102,6 +105,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
       const rootSubgraph = subgraphBuilder.buildRootSubgraph(analysis.jsxOutput.structure);
       analysis.jsxOutput.rootSubgraph = rootSubgraph;
       this.log('🚚 DFD Builder: Built root subgraph with', rootSubgraph.elements.length, 'elements');
+      
+      // Build event handler usage map from JSX attribute references
+      const eventHandlerAnalyzer = new EventHandlerUsageAnalyzer();
+      const allAttributeReferences = this.collectAllAttributeReferences(analysis.jsxOutput.structure);
+      this.eventHandlerUsageMap = eventHandlerAnalyzer.analyze(allAttributeReferences);
+      this.log('🚚 DFD Builder: Built event handler usage map with', Object.keys(this.eventHandlerUsageMap).length, 'variables');
+      console.log('🚚 Event handler usage map:', this.eventHandlerUsageMap);
       
       // Collect all nodes from subgraph structure and add to this.nodes
       const subgraphNodes = this.collectElementNodes(rootSubgraph);
@@ -2528,10 +2538,18 @@ export class DefaultDFDBuilder implements DFDBuilder {
       }
     }
 
-    // Use TypeClassifier if available
-    if (sourceNode.metadata?.typeString) {
-      const isFunction = typeClassifier.isFunction(sourceNode.metadata.typeString as string);
-      return isFunction ? 'function' : 'data';
+    // Use TypeClassifier with event handler usage information
+    const typeString = (sourceNode.metadata?.typeString as string) || '';
+    const eventHandlerUsage = this.eventHandlerUsageMap[variableName];
+    
+    const classification = typeClassifier.classifyWithUsage(
+      typeString,
+      variableName,
+      eventHandlerUsage
+    );
+    
+    if (classification.isFunction) {
+      return 'function';
     }
 
     // Check naming patterns as fallback
@@ -2543,6 +2561,45 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
     // Default to data
     return 'data';
+  }
+
+  /**
+   * Collect all attribute references from JSX structure
+   * Recursively traverses the JSX tree to gather all attribute references
+   */
+  private collectAllAttributeReferences(structure: JSXStructure): JSXAttributeReference[] {
+    const references: JSXAttributeReference[] = [];
+
+    // Check if this structure is an element
+    if ('type' in structure && structure.type === 'element') {
+      const element = structure as JSXElementStructure;
+      
+      // Add this element's attribute references
+      if (element.attributeReferences && element.attributeReferences.length > 0) {
+        references.push(...element.attributeReferences);
+      }
+      
+      // Recursively collect from children
+      for (const child of element.children) {
+        const childRefs = this.collectAllAttributeReferences(child);
+        references.push(...childRefs);
+      }
+    } else {
+      // This is a conditional branch
+      const branch = structure as ConditionalBranch;
+      
+      if (branch.trueBranch) {
+        const trueRefs = this.collectAllAttributeReferences(branch.trueBranch);
+        references.push(...trueRefs);
+      }
+      
+      if (branch.falseBranch) {
+        const falseRefs = this.collectAllAttributeReferences(branch.falseBranch);
+        references.push(...falseRefs);
+      }
+    }
+
+    return references;
   }
 
   /**

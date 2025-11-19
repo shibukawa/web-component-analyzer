@@ -1,3 +1,5 @@
+import type { EventHandlerUsageInfo } from '../parser/types.js';
+
 /**
  * Classification result for a TypeScript type
  */
@@ -30,6 +32,47 @@ export class TypeClassifier {
       unionTypes,
       baseType: normalized
     };
+  }
+
+  /**
+   * Classify a variable with optional event handler usage information
+   * 
+   * This method enhances type classification by considering how a variable is used
+   * in JSX event handlers when TypeScript type inference is unavailable or ambiguous.
+   * 
+   * @param typeString - TypeScript type string from type inference
+   * @param variableName - Name of the variable being classified
+   * @param eventHandlerUsage - Optional usage information from JSX analysis
+   * @returns Classification result
+   */
+  classifyWithUsage(
+    typeString: string,
+    variableName: string,
+    eventHandlerUsage?: EventHandlerUsageInfo
+  ): TypeClassification {
+    const normalized = typeString.trim();
+    
+    console.log(`[TypeClassifier] classifyWithUsage for "${variableName}" with type "${normalized}"`);
+    
+    // First, try type-based classification
+    const typeBasedClassification = this.classify(normalized);
+    
+    // If type information clearly indicates a function, use it
+    if (typeBasedClassification.isFunction) {
+      console.log(`[TypeClassifier] Type-based classification indicates function for "${variableName}"`);
+      return typeBasedClassification;
+    }
+    
+    // Note: Event handler usage heuristic has been removed.
+    // The heuristic was incorrectly classifying data references
+    // (like `count` in `onClick={() => setCount(count + 1)}`) as functions.
+    // Data references used as arguments should remain classified as data.
+    // 
+    // Type-based classification and process analysis are sufficient for accurate
+    // function detection without relying on usage patterns.
+    
+    // Default: return type-based classification
+    return typeBasedClassification;
   }
 
   /**

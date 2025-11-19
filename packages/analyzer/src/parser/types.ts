@@ -220,6 +220,31 @@ export interface JSXAttributeReference {
 }
 
 /**
+ * Map of variable names to their event handler usage information
+ */
+export interface EventHandlerUsageMap {
+  [variableName: string]: EventHandlerUsageInfo;
+}
+
+/**
+ * Information about how a variable is used in event handlers
+ */
+export interface EventHandlerUsageInfo {
+  variableName: string;
+  usageContexts: EventHandlerUsageContext[];
+  isLikelyFunction: boolean; // true if used in event handler context
+}
+
+/**
+ * Context information for a single event handler usage
+ */
+export interface EventHandlerUsageContext {
+  attributeName: string; // e.g., 'onClick', 'onChange'
+  usageType: 'direct' | 'arrow-function-call'; // onClick={f} vs onClick={() => f()}
+  jsxElement?: string; // Tag name of the JSX element
+}
+
+/**
  * Represents JSX structure (element or conditional)
  */
 export type JSXStructure = JSXElementStructure | ConditionalBranch;

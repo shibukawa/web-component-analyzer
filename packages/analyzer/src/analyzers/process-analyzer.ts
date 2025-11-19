@@ -441,17 +441,18 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     const functionExpr = declaration.init as swc.ArrowFunctionExpression | swc.FunctionExpression;
     const { references, externalCalls } = this.analyzeFunctionBody(functionExpr);
 
-    // Determine if it's an event handler or custom function
-    const isEventHandler = this.isEventHandlerName(name);
+    // All functions are classified as 'custom-function'
+    // Event handler detection is now handled by EventHandlerUsageAnalyzer
+    // which analyzes JSX attribute usage patterns instead of relying on naming conventions
 
     const line = declaration.span?.start ? this.getLineNumber(declaration.span.start) : undefined;
     const column = declaration.span?.start ? this.getColumnNumber(declaration.span.start) : undefined;
 
-    console.log(`[ProcessAnalyzer] Extracted function (var): ${name}, type: ${isEventHandler ? 'event-handler' : 'custom-function'}, line: ${line}, column: ${column}`);
+    console.log(`[ProcessAnalyzer] Extracted function (var): ${name}, type: custom-function, line: ${line}, column: ${column}`);
 
     return {
       name,
-      type: isEventHandler ? 'event-handler' : 'custom-function',
+      type: 'custom-function',
       references,
       externalCalls,
       line,
@@ -470,17 +471,18 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
 
     const { references, externalCalls } = this.analyzeFunctionBody(funcDecl);
 
-    // Determine if it's an event handler or custom function
-    const isEventHandler = this.isEventHandlerName(name);
+    // All functions are classified as 'custom-function'
+    // Event handler detection is now handled by EventHandlerUsageAnalyzer
+    // which analyzes JSX attribute usage patterns instead of relying on naming conventions
 
     const line = funcDecl.span?.start ? this.getLineNumber(funcDecl.span.start) : undefined;
     const column = funcDecl.span?.start ? this.getColumnNumber(funcDecl.span.start) : undefined;
 
-    console.log(`[ProcessAnalyzer] Extracted function (decl): ${name}, type: ${isEventHandler ? 'event-handler' : 'custom-function'}, line: ${line}, column: ${column}`);
+    console.log(`[ProcessAnalyzer] Extracted function (decl): ${name}, type: custom-function, line: ${line}, column: ${column}`);
 
     return {
       name,
-      type: isEventHandler ? 'event-handler' : 'custom-function',
+      type: 'custom-function',
       references,
       externalCalls,
       line,
@@ -1074,21 +1076,13 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
   }
 
   /**
-   * Check if a function name suggests it's an event handler
-   */
-  private isEventHandlerName(name: string): boolean {
-    const eventHandlerPatterns = [
-      /^on[A-Z]/,      // onClick, onChange
-      /^handle[A-Z]/,  // handleClick, handleChange
-    ];
-    
-    return eventHandlerPatterns.some(pattern => pattern.test(name));
-  }
-
-  /**
    * Extract inline callbacks from JSX attributes
    * @param jsxNode - The JSX element or fragment to analyze
    * @returns Array of ProcessInfo objects for inline callbacks
+   * 
+   * Note: Name-based event handler detection (isEventHandlerName) has been removed.
+   * Event handler detection is now handled by EventHandlerUsageAnalyzer which analyzes
+   * JSX attribute usage patterns instead of relying on naming conventions.
    */
   extractInlineCallbacks(jsxNode: swc.JSXElement | swc.JSXFragment): ProcessInfo[] {
     const processes: ProcessInfo[] = [];
