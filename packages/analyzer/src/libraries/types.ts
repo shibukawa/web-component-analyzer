@@ -36,6 +36,13 @@ export interface ProcessorMetadata {
   
   /** Human-readable description */
   description?: string;
+  
+  /** 
+   * Whether multiple calls to the same hook should be merged into a single node
+   * (e.g., Zustand selector pattern: multiple useStore() calls should be merged)
+   * Default: false
+   */
+  mergeable?: boolean;
 }
 
 /**

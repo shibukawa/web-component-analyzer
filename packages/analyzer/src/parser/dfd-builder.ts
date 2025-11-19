@@ -86,7 +86,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
     // Create nodes for all elements
     this.createPropsNodes(analysis.props);
-    this.createHookNodes(analysis.hooks);
+    
+    // Merge library hooks before creating nodes
+    const mergedHooks = this.mergeLibraryHooks(analysis.hooks);
+    this.createHookNodes(mergedHooks);
     this.log('🚚 DFD Builder: Nodes after hooks:', this.nodes.length);
     this.createProcessNodes(analysis.processes);
     
@@ -1175,6 +1178,79 @@ export class DefaultDFDBuilder implements DFDBuilder {
   /**
    * Create nodes for hooks based on their category
    */
+  /**
+   * Merge multiple calls to the same library hook into a single hook
+   * For example, multiple useUserStore() calls should be merged into one
+   */
+  /**
+   * Merge multiple calls to the same library hook into a single hook
+   * For example, multiple useUserStore() calls should be merged into one
+   * 
+   * Note: React built-in hooks (useState, useReducer, useRef, etc.) are NOT merged
+   * because each call creates an independent state/ref instance.
+   */
+  /**
+   * Merge multiple calls to the same library hook into a single hook
+   * Only merges hooks where the processor has mergeable: true
+   * (e.g., Zustand selector pattern: multiple useStore() calls)
+   */
+  private mergeLibraryHooks(hooks: HookInfo[]): HookInfo[] {
+    const libraryHookMap = new Map<string, HookInfo>();
+    const nonMergeableHooks: HookInfo[] = [];
+
+    // Get processor registry to check mergeable flag
+    const processorRegistry = getProcessorRegistry();
+
+    for (const hook of hooks) {
+      // Check if this is a library hook (has libraryName metadata)
+      const isLibraryHook = (hook as any).libraryName;
+      
+      if (!isLibraryHook) {
+        // Not a library hook, keep as-is
+        nonMergeableHooks.push(hook);
+        continue;
+      }
+
+      // Find the processor for this hook to check if it's mergeable
+      const context = this.createProcessorContext('merge-check');
+      const processor = processorRegistry.findProcessor(hook, context);
+      
+      const isMergeable = processor?.metadata.mergeable === true;
+      
+      if (!isMergeable) {
+        // Not mergeable, keep as-is
+        nonMergeableHooks.push(hook);
+        continue;
+      }
+
+      // This hook is mergeable, try to merge it
+      const key = `${(hook as any).libraryName}:${hook.hookName}`;
+      
+      if (libraryHookMap.has(key)) {
+        // Merge variables into existing hook
+        const existingHook = libraryHookMap.get(key)!;
+        const mergedVariables = [...new Set([...existingHook.variables, ...hook.variables])];
+        existingHook.variables = mergedVariables;
+        
+        console.log(`🔄 Merged ${hook.hookName} variables:`, hook.variables, '→', mergedVariables);
+      } else {
+        // First occurrence of this library hook
+        libraryHookMap.set(key, { ...hook });
+        console.log(`✅ First occurrence of ${hook.hookName} with variables:`, hook.variables);
+      }
+    }
+
+    // Combine merged library hooks with non-mergeable hooks
+    const mergedHooks = [...libraryHookMap.values(), ...nonMergeableHooks];
+    
+    if (libraryHookMap.size > 0) {
+      console.log(`🔄 Merged ${hooks.length} hooks into ${mergedHooks.length} hooks`);
+      console.log(`🔄 Library hooks merged:`, Array.from(libraryHookMap.keys()));
+    }
+    
+    return mergedHooks;
+  }
+
   private createHookNodes(hooks: HookInfo[]): void {
     for (const hook of hooks) {
       // Check if this hook should be processed by a registered processor
@@ -1953,19 +2029,27 @@ export class DefaultDFDBuilder implements DFDBuilder {
       
       // Create edge based on variable type
       if (varType === 'function') {
+        // Create label with variable name for library hook process properties
+        let edgeLabel = attrRef.attributeName;
+        
+        // If property name is provided, use it
+        if (attrRef.propertyName) {
+          edgeLabel = `${attrRef.attributeName}: ${attrRef.propertyName}`;
+        }
+        // If this is a library hook process property, include the variable name
+        else if (sourceNode.metadata?.isLibraryHook && sourceNode.metadata?.processProperties?.includes(varName)) {
+          edgeLabel = `${attrRef.attributeName}: ${varName}`;
+        }
+        
         // Check if edge already exists
         const existingEdge = edges.find(
-          e => e.from === elementNode.id && e.to === sourceNode.id && e.label === attrRef.attributeName
+          e => e.from === elementNode.id && e.to === sourceNode.id && e.label === edgeLabel
         );
         
         if (existingEdge) {
-          console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${sourceNode.id} (${attrRef.attributeName}), skipping duplicate`);
+          console.log(`🚚   ⚠️ Edge already exists from ${elementNode.id} to ${sourceNode.id} (${edgeLabel}), skipping duplicate`);
         } else {
           // Function variable: create edge from element to function (element triggers function)
-          // Use property name in label if available
-          const edgeLabel = attrRef.propertyName 
-            ? `${attrRef.attributeName}: ${attrRef.propertyName}`
-            : attrRef.attributeName;
           console.log(`🚚   ✅ Creating edge from ${elementNode.id} to ${sourceNode.id} (${edgeLabel})`);
           edges.push({
             from: elementNode.id,

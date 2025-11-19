@@ -1,11 +1,6 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
   library_hook_0[("useUserStore")]
-  library_hook_1[("useUserStore")]
-  library_hook_2[("useUserStore")]
-  library_hook_3[("useUserStore")]
-  library_hook_4[("useUserStore")]
-  library_hook_5[("useUserStore")]
   jsx_element_0["input"]
   jsx_element_1["input"]
   jsx_element_2["input"]
@@ -19,20 +14,18 @@ flowchart LR
   end
   library_hook_0 elibrary_hook_0_jsx_element_3@-->|"display: firstName"| jsx_element_3
   elibrary_hook_0_jsx_element_3@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_3@-->|"display: lastName"| jsx_element_3
-  elibrary_hook_1_jsx_element_3@{ animate: true }
   library_hook_0 elibrary_hook_0_jsx_element_0@-->|"binds: firstName"| jsx_element_0
   elibrary_hook_0_jsx_element_0@{ animate: true }
-  jsx_element_0 ejsx_element_0_library_hook_3@-->|"onChange: setFirstName"| library_hook_3
-  ejsx_element_0_library_hook_3@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_1@-->|"binds: lastName"| jsx_element_1
-  elibrary_hook_1_jsx_element_1@{ animate: true }
-  jsx_element_1 ejsx_element_1_library_hook_4@-->|"onChange: setLastName"| library_hook_4
-  ejsx_element_1_library_hook_4@{ animate: true }
-  library_hook_2 elibrary_hook_2_jsx_element_2@-->|"binds: email"| jsx_element_2
-  elibrary_hook_2_jsx_element_2@{ animate: true }
-  jsx_element_2 ejsx_element_2_library_hook_5@-->|"onChange: setEmail"| library_hook_5
-  ejsx_element_2_library_hook_5@{ animate: true }
+  jsx_element_0 ejsx_element_0_library_hook_0@-->|"onChange: setFirstName"| library_hook_0
+  ejsx_element_0_library_hook_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_1@-->|"binds: lastName"| jsx_element_1
+  elibrary_hook_0_jsx_element_1@{ animate: true }
+  jsx_element_1 ejsx_element_1_library_hook_0@-->|"onChange: setLastName"| library_hook_0
+  ejsx_element_1_library_hook_0@{ animate: true }
+  library_hook_0 elibrary_hook_0_jsx_element_2@-->|"binds: email"| jsx_element_2
+  elibrary_hook_0_jsx_element_2@{ animate: true }
+  jsx_element_2 ejsx_element_2_library_hook_0@-->|"onChange: setEmail"| library_hook_0
+  ejsx_element_2_library_hook_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -44,11 +37,6 @@ flowchart LR
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
   class library_hook_0 dataStore
-  class library_hook_1 dataStore
-  class library_hook_2 dataStore
-  class library_hook_3 dataStore
-  class library_hook_4 dataStore
-  class library_hook_5 dataStore
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_2 jsxElement

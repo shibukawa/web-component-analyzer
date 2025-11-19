@@ -47,7 +47,8 @@ export class ZustandLibraryProcessor implements HookProcessor {
     packagePatterns: ['zustand'],
     hookNames: [/^use\w*Store$/], // Matches useXxxStore pattern
     priority: 80, // Higher than custom hooks, lower than specific libraries
-    description: 'Zustand state management library processor'
+    description: 'Zustand state management library processor',
+    mergeable: true // Multiple selector calls should be merged into one node
   };
 
   /**
