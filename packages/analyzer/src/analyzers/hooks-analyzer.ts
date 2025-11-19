@@ -1055,13 +1055,48 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     }
 
     if (callee.type === 'MemberExpression') {
-      const property = callee.property;
-      if (property.type === 'Identifier') {
-        return property.value;
+      // Build the full member expression path for hooks like trpc.user.getById.useQuery
+      const path = this.buildMemberExpressionPath(callee);
+      
+      // Special handling for React.* hooks - return just the hook name
+      // This ensures React.useState, React.useEffect, etc. are recognized as standard hooks
+      if (path.startsWith('React.use')) {
+        const hookName = path.substring('React.'.length);
+        return hookName;
       }
+      
+      return path;
     }
 
     return null;
+  }
+
+  /**
+   * Build the full path of a member expression
+   * Examples:
+   * - trpc.user.getById.useQuery -> "trpc.user.getById.useQuery"
+   * - router.push -> "router.push"
+   * - useQuery -> "useQuery"
+   */
+  private buildMemberExpressionPath(expr: swc.MemberExpression): string {
+    const parts: string[] = [];
+    
+    // Recursively traverse the member expression
+    const traverse = (node: swc.Expression): void => {
+      if (node.type === 'Identifier') {
+        parts.unshift(node.value);
+      } else if (node.type === 'MemberExpression') {
+        // Get the property first
+        if (node.property.type === 'Identifier') {
+          parts.unshift(node.property.value);
+        }
+        // Then traverse the object
+        traverse(node.object);
+      }
+    };
+    
+    traverse(expr);
+    return parts.join('.');
   }
 
   /**

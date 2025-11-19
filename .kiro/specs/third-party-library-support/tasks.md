@@ -446,20 +446,20 @@
     - Verify mutation trigger process node
     - _Requirements: 10, 14_
 
-- [ ] 19. Add tRPC library support
-  - [ ] 19.1 Define tRPC adapters in library-adapters.json
+- [x] 19. Add tRPC library support
+  - [x] 19.1 Define tRPC adapters in library-adapters.json
     - Add pattern for trpc.*.useQuery hooks
     - Add pattern for trpc.*.useMutation hooks
     - Support nested procedure paths
     - _Requirements: 11_
   
-  - [ ] 19.2 Create 190-tRPC-TypeSafeProcedure.tsx acceptance test
+  - [x] 19.2 Create 190-tRPC-TypeSafeProcedure.tsx acceptance test
     - Component using trpc.procedure.useQuery
     - Include embedded YAML specification
     - Verify procedure data input and loading state nodes
     - _Requirements: 11, 14_
   
-  - [ ] 19.3 Create 191-tRPC-Mutation.tsx acceptance test
+  - [x] 19.3 Create 191-tRPC-Mutation.tsx acceptance test
     - Component using trpc.procedure.useMutation
     - Include embedded YAML specification
     - Verify mutation process node
