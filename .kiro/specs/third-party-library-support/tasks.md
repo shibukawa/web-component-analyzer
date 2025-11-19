@@ -427,20 +427,20 @@
     - Reverse edge for mutate: handleSubmit --[calls: mutate]--> useMutation
     - _Requirements: 9, 14_
 
-- [ ] 18. Add RTK Query library support
-  - [ ] 18.1 Define RTK Query adapters in library-adapters.json
+- [x] 18. Add RTK Query library support
+  - [x] 18.1 Define RTK Query adapters in library-adapters.json
     - Add pattern for generated query hooks (use*Query)
     - Add pattern for generated mutation hooks (use*Mutation)
     - Support data, isLoading, isFetching, isError states
     - _Requirements: 10_
   
-  - [ ] 18.2 Create 180-RTKQuery-APIEndpoint.tsx acceptance test
+  - [x] 18.2 Create 180-RTKQuery-APIEndpoint.tsx acceptance test
     - Component using generated query hook (e.g., useGetUserQuery)
     - Include embedded YAML specification
     - Verify query data input and loading state nodes
     - _Requirements: 10, 14_
   
-  - [ ] 18.3 Create 181-RTKQuery-Mutation.tsx acceptance test
+  - [x] 18.3 Create 181-RTKQuery-Mutation.tsx acceptance test
     - Component using generated mutation hook (e.g., useUpdateUserMutation)
     - Include embedded YAML specification
     - Verify mutation trigger process node

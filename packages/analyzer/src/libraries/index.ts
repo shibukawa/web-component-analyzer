@@ -18,6 +18,7 @@ import { JotaiLibraryProcessor } from './jotai.js';
 import { MobXLibraryProcessor } from './mobx.js';
 import { ApolloClientLibraryProcessor } from './apollo.js';
 import { ZustandLibraryProcessor } from './zustand.js';
+import { RTKQueryLibraryProcessor } from './rtk-query.js';
 import { CustomHookProcessor } from './custom-hook.js';
 
 /**
@@ -68,6 +69,7 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new MobXLibraryProcessor());
   registry.register(new ApolloClientLibraryProcessor());
   registry.register(new ZustandLibraryProcessor());
+  registry.register(new RTKQueryLibraryProcessor());
   
   // Register custom hook processor (lowest priority - fallback)
   // This handles all user-defined hooks
@@ -87,6 +89,7 @@ export { JotaiLibraryProcessor } from './jotai.js';
 export { MobXLibraryProcessor } from './mobx.js';
 export { ApolloClientLibraryProcessor } from './apollo.js';
 export { ZustandLibraryProcessor } from './zustand.js';
+export { RTKQueryLibraryProcessor } from './rtk-query.js';
 export { CustomHookProcessor } from './custom-hook.js';
 export type {
   HookProcessor,
