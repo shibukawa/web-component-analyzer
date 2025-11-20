@@ -1,7 +1,7 @@
 {
   "name": "web-component-analyzer",
-  "displayName": "web-component-analyzer",
-  "description": "Draw DFD for your component",
+  "displayName": "Web Component Analyzer",
+  "description": "Visualize React and Vue 3 component structure through Data Flow Diagrams (DFD)",
   "version": "0.0.1",
   "publisher": "your-publisher-name",
   "type": "commonjs",
@@ -9,7 +9,20 @@
     "vscode": "^1.105.0"
   },
   "categories": [
-    "Other"
+    "Visualization",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "react",
+    "vue",
+    "vue3",
+    "component",
+    "visualization",
+    "dfd",
+    "data flow diagram",
+    "composition api",
+    "hooks",
+    "composables"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",

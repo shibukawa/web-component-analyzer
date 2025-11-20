@@ -28,5 +28,7 @@
 		"titleBar.inactiveBackground": "#a7ddb399",
 		"titleBar.inactiveForeground": "#15202b99"
 	},
-	"peacock.color": "#a7ddb3"
+	"peacock.color": "#a7ddb3",
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"volar.takeOverMode.enabled": true
 }

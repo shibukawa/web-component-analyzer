@@ -5,6 +5,7 @@
 import { SWCASTAnalyzer, DefaultDFDBuilder } from '@web-component-analyzer/analyzer';
 import { parseComponent as parseBrowser, initializeSWC } from './browser-parser';
 import type { DFDSourceData } from './types';
+import { detectFramework, type Framework } from '../utils/framework-detector';
 
 // Initialize SWC WASM on module load
 let swcInitPromise: Promise<void> | null = null;
@@ -23,12 +24,14 @@ export interface AnalysisResult {
   success: boolean;
   dfdData?: DFDSourceData;
   error?: string;
+  detectedFramework?: Framework;
+  detectionConfidence?: number;
 }
 
 /**
- * Supported framework types
+ * Re-export Framework type for convenience
  */
-export type Framework = 'react' | 'vue' | 'svelte';
+export type { Framework };
 
 
 
@@ -36,26 +39,17 @@ export type Framework = 'react' | 'vue' | 'svelte';
  * Analyze a component and generate DFD data using browser-compatible parser
  * 
  * @param code - The component source code
- * @param framework - The framework type (react, vue, svelte)
+ * @param framework - The framework type (react, vue, svelte). If not provided, will be auto-detected.
  * @returns Promise resolving to AnalysisResult
  */
 export async function analyzeComponent(
   code: string,
-  framework: Framework
+  framework?: Framework
 ): Promise<AnalysisResult> {
   try {
     console.log('=== ANALYZER SERVICE (BROWSER) ===');
-    console.log('Framework:', framework);
     console.log('Code length:', code.length);
     
-    // Currently only React is supported
-    if (framework !== 'react') {
-      return {
-        success: false,
-        error: `Framework "${framework}" is not yet supported. Only React components are currently supported.`
-      };
-    }
-
     // Validate input
     if (!code || code.trim().length === 0) {
       return {
@@ -64,50 +58,129 @@ export async function analyzeComponent(
       };
     }
 
+    // Auto-detect framework if not explicitly provided
+    let detectedFramework: Framework | undefined;
+    let detectionConfidence: number | undefined;
+    let effectiveFramework: Framework;
+
+    if (framework) {
+      // Manual override takes precedence
+      console.log('Framework manually specified:', framework);
+      effectiveFramework = framework;
+    } else {
+      // Auto-detect framework
+      console.log('Auto-detecting framework...');
+      const detection = detectFramework(code);
+      detectedFramework = detection.framework;
+      detectionConfidence = detection.confidence;
+      effectiveFramework = detection.framework;
+      
+      console.log('Framework auto-detected:', effectiveFramework);
+      console.log('Detection confidence:', detectionConfidence.toFixed(2));
+      console.log('Detection reasons:', detection.reasons);
+    }
+
+    console.log('Effective framework:', effectiveFramework);
+
     // Ensure SWC WASM is initialized
     console.log('Ensuring SWC WASM is initialized...');
     await ensureSWCInitialized();
     console.log('SWC WASM ready');
 
-    // Parse the component using browser-compatible parser
-    console.log('Parsing component with SWC WASM...');
-    const parseResult = parseBrowser(code, 'component.tsx');
-    
-    if (parseResult.error || !parseResult.module) {
-      console.log('Parse failed:', parseResult.error);
+    // Handle Vue components
+    if (effectiveFramework === 'vue') {
+      console.log('Analyzing Vue component...');
+      
+      // Import Vue analyzer dynamically
+      const { VueASTAnalyzer } = await import('@web-component-analyzer/analyzer');
+      
+      // Analyze Vue component (analyzer will parse the SFC internally)
+      const vueAnalyzer = new VueASTAnalyzer();
+      const analysis = await vueAnalyzer.analyze(code, 'component.vue');
+      
+      if (!analysis) {
+        console.log('Analysis failed: no component found');
+        return {
+          success: false,
+          error: 'No Vue component found in the code. Ensure the component has a <script setup> section.',
+          detectedFramework,
+          detectionConfidence
+        };
+      }
+      
+      console.log('Vue analysis successful, building DFD...');
+      
+      // Build DFD from analysis
+      const builder = new DefaultDFDBuilder();
+      const dfdData = builder.build(analysis);
+      
+      console.log('DFD built successfully');
+      console.log('Nodes:', dfdData.nodes.length);
+      console.log('Edges:', dfdData.edges.length);
+
       return {
-        success: false,
-        error: parseResult.error?.message || 'Failed to parse component'
+        success: true,
+        dfdData,
+        detectedFramework,
+        detectionConfidence
       };
     }
 
-    console.log('Parse successful, analyzing AST...');
-    
-    // Analyze AST to extract component information
-    const analyzer = new SWCASTAnalyzer();
-    const analysis = await analyzer.analyze(parseResult.module, 'component.tsx', code);
-    
-    if (!analysis) {
-      console.log('Analysis failed: no component found');
+    // Handle React components
+    if (effectiveFramework === 'react') {
+      console.log('Parsing React component with SWC WASM...');
+      const parseResult = parseBrowser(code, 'component.tsx');
+      
+      if (parseResult.error || !parseResult.module) {
+        console.log('Parse failed:', parseResult.error);
+        return {
+          success: false,
+          error: parseResult.error?.message || 'Failed to parse component',
+          detectedFramework,
+          detectionConfidence
+        };
+      }
+
+      console.log('Parse successful, analyzing AST...');
+      
+      // Analyze AST to extract component information
+      const analyzer = new SWCASTAnalyzer();
+      const analysis = await analyzer.analyze(parseResult.module, 'component.tsx', code);
+      
+      if (!analysis) {
+        console.log('Analysis failed: no component found');
+        return {
+          success: false,
+          error: 'No React component found in the code',
+          detectedFramework,
+          detectionConfidence
+        };
+      }
+
+      console.log('Analysis successful, building DFD...');
+      
+      // Build DFD from analysis
+      const builder = new DefaultDFDBuilder();
+      const dfdData = builder.build(analysis);
+      
+      console.log('DFD built successfully');
+      console.log('Nodes:', dfdData.nodes.length);
+      console.log('Edges:', dfdData.edges.length);
+
       return {
-        success: false,
-        error: 'No React component found in the code'
+        success: true,
+        dfdData,
+        detectedFramework,
+        detectionConfidence
       };
     }
 
-    console.log('Analysis successful, building DFD...');
-    
-    // Build DFD from analysis
-    const builder = new DefaultDFDBuilder();
-    const dfdData = builder.build(analysis);
-    
-    console.log('DFD built successfully');
-    console.log('Nodes:', dfdData.nodes.length);
-    console.log('Edges:', dfdData.edges.length);
-
+    // Svelte not yet supported
     return {
-      success: true,
-      dfdData
+      success: false,
+      error: `Framework "${effectiveFramework}" is not yet supported. Currently supported: React, Vue.`,
+      detectedFramework,
+      detectionConfidence
     };
   } catch (error) {
     console.error('Analysis exception:', error);

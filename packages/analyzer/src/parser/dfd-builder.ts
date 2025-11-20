@@ -43,6 +43,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
   private nodes: DFDNode[] = [];
   private edges: DFDEdge[] = [];
   private nodeIdCounter = 0;
+  private rootSubgraph: any = null;
   private exportedHandlerSubgroups: DFDSubgraph[] = [];
   private currentAnalysis: ComponentAnalysis | null = null;
   private verbose: boolean = false; // Set to true to enable detailed logging
@@ -90,11 +91,57 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // Create nodes for all elements
     this.createPropsNodes(analysis.props);
     
+    // Create nodes for Vue state (if present)
+    if ((analysis as any).vueState && (analysis as any).vueState.length > 0) {
+      this.createVueStateNodes((analysis as any).vueState);
+      this.log('🚚 DFD Builder: Created', (analysis as any).vueState.length, 'Vue state nodes');
+      
+      // Build edges for computed property dependencies
+      this.buildVueComputedDependencyEdges((analysis as any).vueState);
+      this.log('🚚 DFD Builder: Built Vue computed dependency edges');
+    }
+    
+    // Create nodes for Vue emits (if present)
+    if (analysis.vueEmits && analysis.vueEmits.length > 0) {
+      this.createVueEmitsNodes(analysis.vueEmits);
+      this.log('🚚 DFD Builder: Created', analysis.vueEmits.length, 'Vue emit nodes');
+    }
+    
+    // Create element nodes for Vue elements with event handlers (if present)
+    if (analysis.vueElementsWithEventHandlers && analysis.vueElementsWithEventHandlers.length > 0) {
+      this.createVueElementNodesWithEventHandlers(analysis.vueElementsWithEventHandlers);
+      // Set the rootSubgraph to jsxOutput.rootSubgraph so other methods can access it
+      if (this.rootSubgraph && !analysis.jsxOutput.rootSubgraph) {
+        analysis.jsxOutput.rootSubgraph = this.rootSubgraph;
+      }
+      this.log('🚚 DFD Builder: Created Vue element nodes for', analysis.vueElementsWithEventHandlers.length, 'elements with event handlers');
+    }
+    
     // Merge library hooks before creating nodes
     const mergedHooks = this.mergeLibraryHooks(analysis.hooks);
     this.createHookNodes(mergedHooks);
     this.log('🚚 DFD Builder: Nodes after hooks:', this.nodes.length);
     this.createProcessNodes(analysis.processes);
+    
+    // Create lifecycle hooks subgraph for Vue components (if present)
+    this.createLifecycleHooksSubgraph(analysis);
+    this.log('🚚 DFD Builder: Created lifecycle hooks subgraph');
+    
+    // Create watcher edges for Vue components (if present)
+    this.createWatcherEdges(analysis);
+    this.log('🚚 DFD Builder: Created watcher edges');
+    
+    // Create emits subgraph for Vue components (if present)
+    this.createEmitsSubgraph(analysis);
+    this.log('🚚 DFD Builder: Created emits subgraph');
+    
+    // Create router call edges for Vue Router (if present)
+    this.createRouterCallEdges(analysis);
+    this.log('🚚 DFD Builder: Created router call edges');
+    
+    // Create Pinia store edges (if present)
+    this.createPiniaStoreEdges(analysis);
+    this.log('🚚 DFD Builder: Created Pinia store edges');
     
     // Create exported handlers subgroups for imperative handle calls
     this.createImperativeHandlerSubgroups(analysis.processes);
@@ -202,6 +249,45 @@ export class DefaultDFDBuilder implements DFDBuilder {
       // Build edges from JSX elements with ref to exported handlers subgroups
       this.buildJSXToExportedHandlersEdges(rootSubgraph);
       this.log('🚚 DFD Builder: Created JSX to exported handlers edges');
+      
+      // Build edges from processes to Vue emits (if present)
+      if (analysis.vueEmitCalls && analysis.vueEmitCalls.length > 0) {
+        this.buildProcessToVueEmitsEdges(analysis);
+        this.log('🚚 DFD Builder: Created process to Vue emit edges');
+      }
+    }
+    
+    // Build edges for Vue event handlers (if present)
+    if (analysis.vueElementsWithEventHandlers && analysis.vueElementsWithEventHandlers.length > 0) {
+      this.buildVueEventHandlerDataFlows(analysis);
+      this.log('🚚 DFD Builder: Created Vue event handler data flow edges');
+    }
+
+    // Build root-level JSX elements for Vue template bindings (before conditionals/loops)
+    if (analysis.vueTemplateBindings && analysis.vueTemplateBindings.length > 0) {
+      this.buildVueRootLevelElements(analysis);
+      this.log('🚚 DFD Builder: Created Vue root-level elements');
+    }
+
+    // Build subgraphs for Vue conditional structures (v-if)
+    if (analysis.vueConditionalStructures && analysis.vueConditionalStructures.length > 0) {
+      this.buildVueConditionalSubgraphs(analysis);
+      this.log('🚚 DFD Builder: Created Vue conditional subgraphs');
+    }
+
+    // Build subgraphs for Vue loop structures (v-for)
+    if (analysis.vueLoopStructures && analysis.vueLoopStructures.length > 0) {
+      this.buildVueLoopSubgraphs(analysis);
+      this.log('🚚 DFD Builder: Created Vue loop subgraphs');
+    }
+
+    // Build display edges for Vue components (after subgraphs are created)
+    // This handles both conditional/loop structures and simple template elements
+    if (analysis.jsxOutput.rootSubgraph && 
+        (analysis.vueConditionalStructures || analysis.vueLoopStructures || analysis.vueTemplateBindings)) {
+      const vueDisplayEdges = this.buildVueDisplayEdges(analysis.jsxOutput.rootSubgraph, this.nodes);
+      this.edges.push(...vueDisplayEdges);
+      this.log('🚚 DFD Builder: Created', vueDisplayEdges.length, 'Vue display edges');
     }
 
     // Merge duplicate edges with different sub-labels
@@ -979,6 +1065,35 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
+   * Extract variable names from a Vue expression
+   * Used for extracting variables from v-if conditions
+   */
+  private extractVariablesFromExpression(expression: string): string[] {
+    const variables: string[] = [];
+    
+    // Match all identifiers in the expression
+    const identifierRegex = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g;
+    
+    let match: RegExpExecArray | null;
+    while ((match = identifierRegex.exec(expression)) !== null) {
+      const identifier = match[1];
+      
+      // Filter out JavaScript keywords and common operators
+      const keywords = new Set([
+        'true', 'false', 'null', 'undefined', 'this',
+        'if', 'else', 'for', 'while', 'return', 'function',
+        'const', 'let', 'var', 'new', 'typeof', 'instanceof',
+      ]);
+      
+      if (!keywords.has(identifier) && !variables.includes(identifier)) {
+        variables.push(identifier);
+      }
+    }
+    
+    return variables;
+  }
+
+  /**
    * Create ProcessorContext for hook processing
    * Provides utilities and state access to processors
    */
@@ -1183,6 +1298,938 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
+   * Create nodes for Vue emits
+   * Vue emits are classified as external-entity-output (events leaving the component)
+   */
+  private createVueEmitsNodes(emits: any[]): void {
+    for (const emit of emits) {
+      console.log(`[DFDBuilder] Creating Vue emit node: ${emit.name}, dataType: ${emit.dataType}`);
+      
+      this.nodes.push({
+        id: this.generateNodeId('vue_emit'),
+        label: emit.name,
+        type: 'external-entity-output',
+        line: emit.line,
+        column: emit.column,
+        metadata: {
+          category: 'vue-emit',
+          dataType: emit.dataType,
+          line: emit.line,
+          column: emit.column
+        }
+      });
+    }
+  }
+
+  /**
+   * Create nodes for Vue template bindings
+   * Creates external entity output nodes for template rendering
+   */
+  // DEPRECATED: Replaced by buildVueDisplayEdges which creates direct edges
+  // This method created intermediate _display nodes which are no longer needed
+  /*
+  private createVueTemplateOutputNodes(templateBindings: any[]): void {
+    // Group bindings by variable to avoid duplicates
+    const bindingsByVariable = new Map<string, any[]>();
+    
+    for (const binding of templateBindings) {
+      if (!bindingsByVariable.has(binding.variable)) {
+        bindingsByVariable.set(binding.variable, []);
+      }
+      bindingsByVariable.get(binding.variable)!.push(binding);
+    }
+
+    // Create one output node per unique variable used in template
+    // BUT only for variables that are actually displayed (not just used in control structures)
+    for (const [variable, bindings] of bindingsByVariable.entries()) {
+      // Check if this variable is used for display (mustache, v-bind, v-model)
+      // vs only for control structures (v-if, v-show, v-for)
+      const hasDisplayUsage = bindings.some(b => 
+        b.type === 'mustache' || 
+        b.type === 'v-bind' || 
+        b.type === 'v-model' ||
+        b.type === 'v-on'  // Event handlers also need output nodes
+      );
+      
+      // Skip creating display nodes for variables only used in control structures
+      if (!hasDisplayUsage) {
+        continue;
+      }
+      
+      const firstBinding = bindings[0];
+      const bindingTypes = bindings.map(b => b.type).join(', ');
+      
+      console.log(`[DFDBuilder] Creating Vue template output node: ${variable}, types: ${bindingTypes}`);
+      
+      this.nodes.push({
+        id: this.generateNodeId('vue_template_output'),
+        label: `${variable}_display`,
+        type: 'external-entity-output',
+        line: firstBinding.line,
+        column: firstBinding.column,
+        metadata: {
+          category: 'vue-template',
+          sourceVariable: variable,
+          bindingTypes: bindings.map(b => b.type),
+          line: firstBinding.line,
+          column: firstBinding.column
+        }
+      });
+    }
+  }
+  */
+
+  /**
+   * Create JSX element nodes for Vue elements with event handlers
+   * These represent interactive UI elements like buttons
+   */
+  private createVueElementNodesWithEventHandlers(elementsWithEventHandlers: Array<{
+    tagName: string;
+    event: string;
+    handler: string;
+    line?: number;
+    column?: number;
+  }>): void {
+    console.log(`[DFDBuilder] createVueElementNodesWithEventHandlers: Creating ${elementsWithEventHandlers.length} element nodes`);
+    
+    // Create a root template subgraph if it doesn't exist
+    // This ensures event handler elements are placed in the same subgraph as other template elements
+    if (!this.rootSubgraph) {
+      this.rootSubgraph = {
+        id: 'subgraph-0',
+        label: '<template>',
+        type: 'jsx-output',
+        elements: [],
+      };
+    }
+    
+    for (const element of elementsWithEventHandlers) {
+      console.log(`[DFDBuilder] Creating element node: <${element.tagName}> with @${element.event}="${element.handler}"`);
+      
+      const elementNode: any = {
+        id: this.generateNodeId('jsx_element'),
+        label: `<${element.tagName}>`,
+        type: 'external-entity-output',
+        line: element.line,
+        column: element.column,
+        metadata: {
+          category: 'vue-element',
+          tagName: element.tagName,
+          event: element.event,
+          handler: element.handler,
+          line: element.line,
+          column: element.column,
+        }
+      };
+      
+      // Add to both nodes array (for edge creation) and subgraph elements
+      this.nodes.push(elementNode);
+      this.rootSubgraph.elements.push(elementNode);
+    }
+  }
+
+  /**
+   * Create nodes for Vue state (ref, reactive, computed)
+   * Vue state is classified as data-store nodes with appropriate metadata
+   */
+  private createVueStateNodes(vueState: any[]): void {
+    for (const state of vueState) {
+      console.log(`[DFDBuilder] Creating Vue state node: ${state.name}, type: ${state.type}, dataType: ${state.dataType}`);
+      
+      this.nodes.push({
+        id: this.generateNodeId('vue_state'),
+        label: state.name,
+        type: 'data-store',
+        line: state.line,
+        column: state.column,
+        metadata: {
+          category: `vue-${state.type}`, // 'vue-ref', 'vue-reactive', or 'vue-computed'
+          dataType: state.dataType,
+          vueStateType: state.type,
+          line: state.line,
+          column: state.column
+        }
+      });
+    }
+  }
+
+  /**
+   * Build data flow edges for Vue computed property dependencies
+   * Creates edges from source state to computed state
+   */
+  private buildVueComputedDependencyEdges(vueState: any[]): void {
+    console.log(`[DFDBuilder] buildVueComputedDependencyEdges: Processing ${vueState.length} state declarations`);
+    
+    for (const state of vueState) {
+      // Only process computed properties with dependencies
+      if (state.type !== 'computed' || !state.dependencies || state.dependencies.length === 0) {
+        continue;
+      }
+      
+      console.log(`[DFDBuilder] Processing computed property: ${state.name} with dependencies:`, state.dependencies);
+      
+      // Find the computed state node
+      const computedNode = this.nodes.find(node =>
+        node.label === state.name &&
+        node.metadata?.category === 'vue-computed'
+      );
+      
+      if (!computedNode) {
+        console.log(`[DFDBuilder] Warning: Computed node not found for: ${state.name}`);
+        continue;
+      }
+      
+      // Create edges from each dependency to the computed property
+      for (const dep of state.dependencies) {
+        // Find the source state node (could be ref, reactive, or another computed)
+        const sourceNode = this.nodes.find(node =>
+          node.label === dep &&
+          node.type === 'data-store' &&
+          (node.metadata?.category === 'vue-ref' ||
+           node.metadata?.category === 'vue-reactive' ||
+           node.metadata?.category === 'vue-computed')
+        );
+        
+        if (sourceNode) {
+          console.log(`[DFDBuilder] Creating edge from ${dep} to computed ${state.name}`);
+          
+          // Check if edge already exists
+          const edgeExists = this.edges.some(edge =>
+            edge.from === sourceNode.id &&
+            edge.to === computedNode.id
+          );
+          
+          if (!edgeExists) {
+            this.edges.push({
+              from: sourceNode.id,
+              to: computedNode.id,
+              label: 'computes'
+            });
+          }
+        } else {
+          console.log(`[DFDBuilder] Warning: Source node not found for dependency: ${dep}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Build edges from script variables to Vue template outputs
+   * Creates data flows from state/props/computed to template rendering
+   */
+  // DEPRECATED: Replaced by buildVueDisplayEdges which creates direct edges
+  // This method created edges to intermediate _display nodes which are no longer needed
+  /*
+  private buildVueTemplateDataFlows(analysis: ComponentAnalysis, templateBindings: any[]): void {
+    console.log(`[DFDBuilder] buildVueTemplateDataFlows: Processing ${templateBindings.length} bindings`);
+    
+    // Group bindings by variable
+    const bindingsByVariable = new Map<string, any[]>();
+    
+    for (const binding of templateBindings) {
+      if (!bindingsByVariable.has(binding.variable)) {
+        bindingsByVariable.set(binding.variable, []);
+      }
+      bindingsByVariable.get(binding.variable)!.push(binding);
+    }
+    
+    console.log(`[DFDBuilder] buildVueTemplateDataFlows: Grouped into ${bindingsByVariable.size} unique variables`);
+    console.log(`[DFDBuilder] buildVueTemplateDataFlows: Variables:`, Array.from(bindingsByVariable.keys()));
+
+    // Create edges from source nodes to template output nodes
+    for (const [variable, bindings] of bindingsByVariable.entries()) {
+      // Check if this variable is used for display (mustache, v-bind, v-model)
+      // vs only for control structures (v-if, v-show, v-for)
+      const displayBindings = bindings.filter(b => 
+        b.type === 'mustache' || 
+        b.type === 'v-bind' || 
+        b.type === 'v-model'
+      );
+      
+      const controlOnlyBindings = bindings.filter(b =>
+        b.type === 'v-if' ||
+        b.type === 'v-show' ||
+        b.type === 'v-for'
+      );
+      
+      // Only create display edges for variables that are actually displayed
+      if (displayBindings.length > 0) {
+        // Find the source node (could be prop, state, computed, etc.)
+        const sourceNode = this.nodes.find(node => 
+          node.label === variable && 
+          (node.type === 'external-entity-input' || 
+           node.type === 'data-store' ||
+           node.metadata?.category === 'state-management' ||
+           node.metadata?.category === 'vue-state' ||
+           node.metadata?.category === 'vue-computed')
+        );
+
+        // Find the template output node
+        const outputNode = this.nodes.find(node =>
+          node.metadata?.category === 'vue-template' &&
+          node.metadata?.sourceVariable === variable
+        );
+
+        if (sourceNode && outputNode) {
+          const bindingTypes = displayBindings.map(b => b.type).join(', ');
+          console.log(`[DFDBuilder] Creating edge from ${variable} to template output (${bindingTypes})`);
+          
+          this.edges.push({
+            from: sourceNode.id,
+            to: outputNode.id,
+            label: 'display'
+          });
+        } else {
+          if (!sourceNode) {
+            console.log(`[DFDBuilder] Warning: No source node found for template variable: ${variable}`);
+          }
+          if (!outputNode) {
+            console.log(`[DFDBuilder] Warning: No output node found for template variable: ${variable}`);
+          }
+        }
+      }
+    }
+
+    // Create edges from event handlers (v-on bindings) to processes
+    for (const binding of templateBindings) {
+      if (binding.type === 'v-on') {
+        // Find the process node for the event handler
+        const processNode = this.nodes.find(node =>
+          node.type === 'process' &&
+          node.label === binding.variable
+        );
+
+        // Find the template output node
+        const outputNode = this.nodes.find(node =>
+          node.metadata?.category === 'vue-template' &&
+          node.metadata?.sourceVariable === binding.variable
+        );
+
+        if (processNode && outputNode) {
+          console.log(`[DFDBuilder] Creating edge from template to event handler: ${binding.variable}`);
+          
+          this.edges.push({
+            from: outputNode.id,
+            to: processNode.id,
+            label: binding.target || 'event'
+          });
+        }
+      }
+    }
+  }
+  */
+
+  /**
+   * Build data flows for Vue event handlers
+   * Creates edges from element nodes to process nodes and from process nodes to state nodes
+   */
+  private buildVueEventHandlerDataFlows(analysis: ComponentAnalysis): void {
+    if (!analysis.vueElementsWithEventHandlers || analysis.vueElementsWithEventHandlers.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildVueEventHandlerDataFlows: Processing ${analysis.vueElementsWithEventHandlers.length} elements with event handlers`);
+
+    for (const element of analysis.vueElementsWithEventHandlers) {
+      // Find the element node
+      const elementNode = this.nodes.find(node =>
+        node.metadata?.category === 'vue-element' &&
+        node.metadata?.tagName === element.tagName &&
+        node.metadata?.handler === element.handler &&
+        node.line === element.line
+      );
+
+      if (!elementNode) {
+        console.log(`[DFDBuilder] Warning: Element node not found for <${element.tagName}> with @${element.event}="${element.handler}"`);
+        continue;
+      }
+
+      // Extract the function name from the handler (support "functionName", functionName(), etc.)
+      const functionName = element.handler.replace(/\(.*\)$/, '').trim();
+      
+      // Check if this is a composable function call
+      const composableNode = this.nodes.find(node =>
+        node.metadata?.isCustomComposable &&
+        node.metadata?.functionProperties &&
+        (node.metadata.functionProperties as string[]).includes(functionName)
+      );
+
+      if (composableNode) {
+        // Create edge from element to composable with "calls: functionName" as label
+        console.log(`[DFDBuilder] Creating edge from <${element.tagName}> to composable ${composableNode.label} with label "calls: ${functionName}"`);
+        
+        this.edges.push({
+          from: elementNode.id,
+          to: composableNode.id,
+          label: `calls: ${functionName}`
+        });
+        continue;
+      }
+
+      // Find the process node for the event handler
+      const processNode = this.nodes.find(node =>
+        node.type === 'process' &&
+        node.label === element.handler
+      );
+
+      if (!processNode) {
+        console.log(`[DFDBuilder] Warning: Process node not found for handler: ${element.handler}`);
+        continue;
+      }
+
+      // Create edge from element to process with event label
+      const eventLabel = `@${element.event}`;
+      console.log(`[DFDBuilder] Creating edge from <${element.tagName}> to ${element.handler} with label "${eventLabel}"`);
+      
+      this.edges.push({
+        from: elementNode.id,
+        to: processNode.id,
+        label: eventLabel
+      });
+
+      // Find state nodes that this process modifies
+      // Look for processes that reference state variables
+      const processInfo = analysis.processes.find(p => p.name === element.handler);
+      if (processInfo && processInfo.references) {
+        console.log(`[DFDBuilder] Process ${element.handler} references:`, processInfo.references);
+        
+        for (const ref of processInfo.references) {
+          // Extract the base variable name (e.g., "user" from "user.name")
+          const baseRef = ref.split('.')[0];
+          
+          // Check if this reference is a composable function call
+          const referencedComposable = this.nodes.find(node =>
+            node.metadata?.isCustomComposable &&
+            node.metadata?.functionProperties &&
+            (node.metadata.functionProperties as string[]).includes(baseRef)
+          );
+
+          if (referencedComposable) {
+            console.log(`[DFDBuilder] Creating edge from ${element.handler} to composable ${referencedComposable.label} with label "calls: ${baseRef}"`);
+            
+            // Check if edge already exists
+            const edgeExists = this.edges.some(edge =>
+              edge.from === processNode.id &&
+              edge.to === referencedComposable.id &&
+              edge.label === `calls: ${baseRef}`
+            );
+
+            if (!edgeExists) {
+              this.edges.push({
+                from: processNode.id,
+                to: referencedComposable.id,
+                label: `calls: ${baseRef}`
+              });
+            }
+            continue;
+          }
+          
+          // Find the state node - check both the full reference and the base reference
+          const stateNode = this.nodes.find(node =>
+            node.type === 'data-store' &&
+            (node.label === ref || node.label === baseRef || node.label === `${ref}.value` || node.label === `${baseRef}.value`) &&
+            (node.metadata?.category === 'vue-ref' || 
+             node.metadata?.category === 'vue-reactive' ||
+             node.metadata?.category === 'vue-computed')
+          );
+
+          if (stateNode) {
+            console.log(`[DFDBuilder] Creating edge from ${element.handler} to state ${stateNode.label} with label "writes"`);
+            
+            // Check if edge already exists
+            const edgeExists = this.edges.some(edge =>
+              edge.from === processNode.id &&
+              edge.to === stateNode.id &&
+              edge.label === 'writes'
+            );
+
+            if (!edgeExists) {
+              this.edges.push({
+                from: processNode.id,
+                to: stateNode.id,
+                label: 'writes'
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Build subgraphs for Vue conditional structures (v-if)
+   * Creates subgraph structures similar to React's conditional rendering
+   */
+  private buildVueConditionalSubgraphs(analysis: ComponentAnalysis): void {
+    if (!analysis.vueConditionalStructures || analysis.vueConditionalStructures.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildVueConditionalSubgraphs: Processing ${analysis.vueConditionalStructures.length} conditional structures`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!analysis.jsxOutput.rootSubgraph) {
+      analysis.jsxOutput.rootSubgraph = {
+        id: 'subgraph-0',
+        label: '<template>',
+        type: 'jsx-output',
+        elements: [],
+      };
+    }
+
+    const rootSubgraph = analysis.jsxOutput.rootSubgraph;
+
+    // Process each conditional structure
+    for (const conditionalStructure of analysis.vueConditionalStructures) {
+      const { condition, variables, element } = conditionalStructure;
+
+      console.log(`[DFDBuilder] Creating conditional subgraph for: ${condition}`);
+
+      // Create a conditional subgraph
+      const subgraphId = this.generateNodeId('subgraph');
+      const conditionalSubgraph: any = {
+        id: subgraphId,
+        label: `{${condition}}`,
+        type: 'conditional',
+        condition: {
+          expression: condition,
+          variables: variables,
+        },
+        elements: [],
+      };
+
+      // Extract display dependencies from the element
+      // This includes mustache bindings and v-bind bindings within the element
+      const displayDependencies: string[] = [];
+      
+      // Extract bindings from element's bindings array
+      if (element.bindings) {
+        for (const binding of element.bindings) {
+          if (binding.type === 'mustache' || binding.type === 'v-bind') {
+            if (!displayDependencies.includes(binding.variable)) {
+              displayDependencies.push(binding.variable);
+            }
+          }
+        }
+      }
+
+      // Create a template output node for the element inside the conditional
+      const elementNodeId = this.generateNodeId('jsx_element');
+      const elementNode: any = {
+        id: elementNodeId,
+        label: element.tagName,
+        type: 'external-entity-output',
+        line: element.line,
+        column: element.column,
+        metadata: {
+          category: 'vue-template',
+          displayDependencies: displayDependencies,
+          attributeReferences: [],
+        },
+      };
+
+      // Add the element node to the conditional subgraph
+      conditionalSubgraph.elements.push(elementNode);
+
+      // Add the conditional subgraph to the root subgraph
+      rootSubgraph.elements.push(conditionalSubgraph);
+
+      // Create data flow edges from condition variables to the subgraph
+      for (const variable of variables) {
+        // Find the source node (prop, state, computed, etc.)
+        const sourceNode = this.nodes.find(node =>
+          node.label === variable &&
+          (node.type === 'external-entity-input' ||
+           node.type === 'data-store' ||
+           node.metadata?.category === 'vue-state' ||
+           node.metadata?.category === 'vue-computed')
+        );
+
+        if (sourceNode) {
+          console.log(`[DFDBuilder] Creating edge from ${variable} to conditional subgraph`);
+          
+          // Create edge from source to subgraph (control visibility)
+          this.edges.push({
+            from: sourceNode.id,
+            to: subgraphId,
+            label: 'control visibility',
+          });
+        } else {
+          console.log(`[DFDBuilder] Warning: No source node found for conditional variable: ${variable}`);
+        }
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${analysis.vueConditionalStructures.length} conditional subgraphs`);
+  }
+
+  /**
+   * Build subgraphs for Vue loop structures (v-for)
+   * Creates subgraph structures for list rendering
+   */
+  private buildVueLoopSubgraphs(analysis: ComponentAnalysis): void {
+    if (!analysis.vueLoopStructures || analysis.vueLoopStructures.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildVueLoopSubgraphs: Processing ${analysis.vueLoopStructures.length} loop structures`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!analysis.jsxOutput.rootSubgraph) {
+      analysis.jsxOutput.rootSubgraph = {
+        id: 'subgraph-0',
+        label: '<template>',
+        type: 'jsx-output',
+        elements: [],
+      };
+    }
+
+    const rootSubgraph = analysis.jsxOutput.rootSubgraph;
+
+    // Process each loop structure
+    for (const loopStructure of analysis.vueLoopStructures) {
+      const { source, element } = loopStructure;
+
+      console.log(`[DFDBuilder] Creating loop subgraph for: ${source}`);
+
+      // Create a loop subgraph
+      // If the element has both v-for and v-if, create a combined label
+      const subgraphId = this.generateNodeId('subgraph');
+      let subgraphLabel = `{v-for: ${source}}`;
+      let subgraphType = 'loop';
+      
+      if (element.vIf) {
+        // Combined v-for and v-if: create a single subgraph with both conditions
+        subgraphLabel = `{v-for: ${source}, v-if: ${element.vIf}}`;
+        subgraphType = 'loop-conditional';
+      }
+      
+      const loopSubgraph: any = {
+        id: subgraphId,
+        label: subgraphLabel,
+        type: subgraphType,
+        source: source,
+        condition: element.vIf, // Store v-if condition if present
+        elements: [],
+      };
+
+      // Extract display dependencies from the element
+      // This includes mustache bindings and v-bind bindings within the element
+      const displayDependencies: string[] = [];
+      
+      // Extract bindings from element's bindings array
+      if (element.bindings) {
+        for (const binding of element.bindings) {
+          if (binding.type === 'mustache' || binding.type === 'v-bind') {
+            // Skip 'key' bindings - they're not display dependencies
+            if (binding.target !== 'key' && !displayDependencies.includes(binding.variable)) {
+              displayDependencies.push(binding.variable);
+            }
+          }
+        }
+      }
+
+      // Create a template output node for the element inside the loop
+      // This is the element that has the v-for directive (e.g., <li>, <span>)
+      const elementNodeId = this.generateNodeId('jsx_element');
+      const elementNode: any = {
+        id: elementNodeId,
+        label: `<${element.tagName}>`,
+        type: 'external-entity-output',
+        line: element.line,
+        column: element.column,
+        metadata: {
+          category: 'vue-template',
+          displayDependencies: displayDependencies,
+          attributeReferences: [],
+        },
+      };
+
+      // Add the element node to the loop subgraph
+      loopSubgraph.elements.push(elementNode);
+
+      // Add the loop subgraph to the root subgraph
+      rootSubgraph.elements.push(loopSubgraph);
+
+      // Create data flow edge from source array to the subgraph
+      // Find the source node (prop, state, computed, etc.)
+      const sourceNode = this.nodes.find(node =>
+        node.label === source &&
+        (node.type === 'external-entity-input' ||
+         node.type === 'data-store' ||
+         node.metadata?.category === 'vue-state' ||
+         node.metadata?.category === 'vue-computed')
+      );
+
+      if (sourceNode) {
+        console.log(`[DFDBuilder] Creating edge from ${source} to loop subgraph`);
+        
+        // Create edge from source to subgraph (provides data for iteration)
+        this.edges.push({
+          from: sourceNode.id,
+          to: subgraphId,
+          label: 'iterates over',
+        });
+      } else {
+        console.log(`[DFDBuilder] Warning: No source node found for loop source: ${source}`);
+      }
+      
+      // If there's a v-if condition, create an edge from the condition variable to the subgraph
+      if (element.vIf) {
+        // Extract the variable from the v-if condition (e.g., "item.active" -> "item")
+        const conditionVariables = this.extractVariablesFromExpression(element.vIf);
+        
+        for (const conditionVar of conditionVariables) {
+          // Find the condition variable node
+          const conditionNode = this.nodes.find(node =>
+            node.label === conditionVar &&
+            (node.type === 'external-entity-input' ||
+             node.type === 'data-store' ||
+             node.metadata?.category === 'vue-state' ||
+             node.metadata?.category === 'vue-computed')
+          );
+          
+          if (conditionNode) {
+            console.log(`[DFDBuilder] Creating edge from ${conditionVar} to combined loop-conditional subgraph`);
+            
+            // Create edge from condition variable to subgraph (controls visibility)
+            this.edges.push({
+              from: conditionNode.id,
+              to: subgraphId,
+              label: 'control visibility',
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${analysis.vueLoopStructures.length} loop subgraphs`);
+  }
+
+  /**
+   * Build root-level JSX elements for Vue template bindings
+   * This handles mustache bindings that are not inside conditionals or loops
+   */
+  private buildVueRootLevelElements(analysis: ComponentAnalysis): void {
+    console.log(`[DFDBuilder] buildVueRootLevelElements: Starting`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!analysis.jsxOutput.rootSubgraph) {
+      analysis.jsxOutput.rootSubgraph = {
+        id: 'subgraph-0',
+        label: '<template>',
+        type: 'jsx-output',
+        elements: [],
+      };
+    }
+
+    const rootSubgraph = analysis.jsxOutput.rootSubgraph;
+
+    // Collect all bindings that are already handled by conditional/loop structures
+    const handledBindings = new Set<string>();
+    
+    // Add bindings from conditional structures
+    if (analysis.vueConditionalStructures) {
+      for (const cs of analysis.vueConditionalStructures) {
+        if (cs.element.bindings) {
+          for (const binding of cs.element.bindings) {
+            const key = `${binding.type}:${binding.variable}:${binding.line}:${binding.column}`;
+            handledBindings.add(key);
+          }
+        }
+      }
+    }
+    
+    // Add bindings from loop structures
+    if (analysis.vueLoopStructures) {
+      for (const ls of analysis.vueLoopStructures) {
+        if (ls.element.bindings) {
+          for (const binding of ls.element.bindings) {
+            const key = `${binding.type}:${binding.variable}:${binding.line}:${binding.column}`;
+            handledBindings.add(key);
+          }
+        }
+      }
+    }
+
+    console.log(`[DFDBuilder] buildVueRootLevelElements: ${handledBindings.size} bindings already handled by conditional/loop structures`);
+
+    // Track created elements by line to avoid duplicates
+    const createdElements = new Map<number, any>();
+
+    // 1. Create elements for v-bind attributes (with correct tag names)
+    if (analysis.vueElementsWithVBind) {
+      console.log(`[DFDBuilder] Processing ${analysis.vueElementsWithVBind.length} elements with v-bind`);
+      
+      for (const element of analysis.vueElementsWithVBind) {
+        // Skip if this is a :key binding (should not create element nodes)
+        if (element.attribute === 'key') {
+          console.log(`[DFDBuilder] Skipping :key binding on ${element.tagName}`);
+          continue;
+        }
+
+        const line = element.line || 0;
+        
+        // Check if we already created an element for this line
+        if (!createdElements.has(line)) {
+          const elementNodeId = this.generateNodeId('jsx_element');
+          const elementNode: any = {
+            id: elementNodeId,
+            label: `<${element.tagName}>`,
+            type: 'external-entity-output',
+            line: element.line,
+            column: element.column,
+            metadata: {
+              category: 'vue-template',
+              displayDependencies: [],
+              attributeReferences: [],
+              vBindAttributes: [],
+            },
+          };
+          
+          createdElements.set(line, elementNode);
+          rootSubgraph.elements.push(elementNode);
+          console.log(`[DFDBuilder] Created element ${elementNodeId} for <${element.tagName}>`);
+        }
+        
+        // Add this v-bind to the element's metadata
+        const elementNode = createdElements.get(line);
+        if (!elementNode.metadata.vBindAttributes) {
+          elementNode.metadata.vBindAttributes = [];
+        }
+        elementNode.metadata.vBindAttributes.push({
+          attribute: element.attribute,
+          variable: element.variable,
+        });
+        
+        // Add to display dependencies (for "binds" edges)
+        if (!elementNode.metadata.displayDependencies.includes(element.variable)) {
+          elementNode.metadata.displayDependencies.push(element.variable);
+        }
+      }
+    }
+
+    // 2. Create elements for v-model (with bidirectional data flows)
+    if (analysis.vueElementsWithVModel) {
+      console.log(`[DFDBuilder] Processing ${analysis.vueElementsWithVModel.length} elements with v-model`);
+      
+      for (const element of analysis.vueElementsWithVModel) {
+        const line = element.line || 0;
+        
+        // Check if we already created an element for this line
+        if (!createdElements.has(line)) {
+          const elementNodeId = this.generateNodeId('jsx_element');
+          const elementNode: any = {
+            id: elementNodeId,
+            label: `<${element.tagName}>`,
+            type: 'external-entity-output',
+            line: element.line,
+            column: element.column,
+            metadata: {
+              category: 'vue-template',
+              displayDependencies: [],
+              attributeReferences: [],
+              vModelVariable: element.variable,
+            },
+          };
+          
+          createdElements.set(line, elementNode);
+          rootSubgraph.elements.push(elementNode);
+          console.log(`[DFDBuilder] Created element ${elementNodeId} for <${element.tagName}> with v-model`);
+        } else {
+          // Add v-model to existing element
+          const elementNode = createdElements.get(line);
+          elementNode.metadata.vModelVariable = element.variable;
+        }
+      }
+    }
+
+    // 3. Create elements for mustache bindings (if not already created)
+    if (analysis.vueTemplateBindings) {
+      for (const binding of analysis.vueTemplateBindings) {
+        if (binding.type === 'mustache') {
+          // Skip bindings that are already handled by conditional/loop structures
+          const bindingKey = `${binding.type}:${binding.variable}:${binding.line}:${binding.column}`;
+          if (handledBindings.has(bindingKey)) {
+            continue;
+          }
+
+          const line = binding.line || 0;
+          
+          // Check if we already created an element for this line
+          if (!createdElements.has(line)) {
+            const elementNodeId = this.generateNodeId('jsx_element');
+            const elementNode: any = {
+              id: elementNodeId,
+              label: binding.target || '<element>',
+              type: 'external-entity-output',
+              line: binding.line,
+              column: binding.column,
+              metadata: {
+                category: 'vue-template',
+                displayDependencies: [binding.variable],
+                attributeReferences: [],
+              },
+            };
+            
+            createdElements.set(line, elementNode);
+            rootSubgraph.elements.push(elementNode);
+            console.log(`[DFDBuilder] Created element ${elementNodeId} for mustache binding`);
+          } else {
+            // Add to display dependencies of existing element
+            const elementNode = createdElements.get(line);
+            if (!elementNode.metadata.displayDependencies.includes(binding.variable)) {
+              elementNode.metadata.displayDependencies.push(binding.variable);
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Handle v-show elements (create conditional subgraphs)
+    if (analysis.vueElementsWithVShow) {
+      console.log(`[DFDBuilder] Processing ${analysis.vueElementsWithVShow.length} elements with v-show`);
+      
+      for (const element of analysis.vueElementsWithVShow) {
+        // Create a conditional subgraph for v-show (similar to v-if)
+        const subgraphId = this.generateNodeId('subgraph');
+        const conditionalSubgraph: any = {
+          id: subgraphId,
+          label: `{v-show: ${element.condition}}`,
+          type: 'conditional',
+          condition: {
+            expression: element.condition,
+            variables: element.variables,
+          },
+          elements: [],
+        };
+
+        // Create element node inside the subgraph
+        const elementNodeId = this.generateNodeId('jsx_element');
+        const elementNode: any = {
+          id: elementNodeId,
+          label: `<${element.tagName}>`,
+          type: 'external-entity-output',
+          line: element.line,
+          column: element.column,
+          metadata: {
+            category: 'vue-template',
+            displayDependencies: [],
+            attributeReferences: [],
+          },
+        };
+
+        conditionalSubgraph.elements.push(elementNode);
+        rootSubgraph.elements.push(conditionalSubgraph);
+        
+        console.log(`[DFDBuilder] Created v-show conditional subgraph ${subgraphId} for <${element.tagName}>`);
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${createdElements.size} root-level element nodes`);
+  }
+
+  /**
    * Create nodes for hooks based on their category
    */
   /**
@@ -1263,6 +2310,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
   private createHookNodes(hooks: HookInfo[]): void {
     for (const hook of hooks) {
+      // Skip Vue state hooks (ref, reactive, computed) - they're handled by createVueStateNodes
+      if (hook.category === 'state-management' && 
+          (hook.hookName === 'ref' || hook.hookName === 'reactive' || hook.hookName === 'computed')) {
+        console.log(`[DFDBuilder] Skipping Vue state hook ${hook.hookName} (handled by createVueStateNodes)`);
+        continue;
+      }
+      
       // Check if this hook should be processed by a registered processor
       const handled = this.processHookWithRegistry(hook);
       if (handled) {
@@ -1637,6 +2691,528 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
         // Create nodes for external function calls in cleanup
         this.createExternalCallNodes(process.cleanupProcess, cleanupNodeId);
+      }
+    }
+  }
+
+  /**
+   * Create lifecycle hooks subgraph for Vue components
+   * Groups lifecycle hook nodes (onMounted, onUpdated, etc.) into a "Lifecycles" subgraph
+   * and creates write edges from lifecycle hooks to state variables they modify
+   */
+  private createLifecycleHooksSubgraph(analysis: ComponentAnalysis): void {
+    // Find all lifecycle hook nodes (they were created as process nodes)
+    const lifecycleHookNodes = this.nodes.filter(node => 
+      node.type === 'process' && 
+      node.metadata?.processType === 'lifecycle' &&
+      node.label && (
+        node.label.startsWith('on') || 
+        ['onMounted', 'onUpdated', 'onBeforeMount', 'onBeforeUpdate', 'onUnmounted', 'onBeforeUnmount'].includes(node.label)
+      )
+    );
+    
+    if (lifecycleHookNodes.length === 0) {
+      console.log('[DFDBuilder] No lifecycle hooks found, skipping subgraph creation');
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Creating lifecycle subgraph with ${lifecycleHookNodes.length} hooks:`, lifecycleHookNodes.map(n => n.label));
+    
+    // Create the Lifecycles subgraph
+    const lifecycleSubgraph: DFDSubgraph = {
+      id: this.generateNodeId('lifecycle_subgraph'),
+      label: 'Lifecycles',
+      type: 'lifecycle-hooks',
+      elements: lifecycleHookNodes
+    };
+    
+    // Add the subgraph to exportedHandlerSubgroups (reusing existing infrastructure)
+    this.exportedHandlerSubgroups.push(lifecycleSubgraph);
+    
+    console.log(`[DFDBuilder] Created lifecycle subgraph: ${lifecycleSubgraph.id}`);
+    
+    // Create edges from URL: Input to navigation guard hooks
+    this.createNavigationGuardEdges(lifecycleHookNodes);
+    
+    // Create write edges from lifecycle hooks to state variables they modify
+    // Find lifecycle processes that have stateModifications
+    const lifecycleProcesses = analysis.processes.filter(process => 
+      process.type === 'lifecycle' && 
+      (process as any).stateModifications && 
+      (process as any).stateModifications.length > 0
+    );
+    
+    console.log(`[DFDBuilder] Found ${lifecycleProcesses.length} lifecycle processes with state modifications`);
+    
+    for (const process of lifecycleProcesses) {
+      const stateModifications = (process as any).stateModifications as string[];
+      const hookNode = lifecycleHookNodes.find(n => n.label === process.name);
+      
+      if (!hookNode) {
+        console.log(`[DFDBuilder] Warning: Hook node not found for ${process.name}`);
+        continue;
+      }
+      
+      console.log(`[DFDBuilder] Processing ${process.name} with modifications:`, stateModifications);
+      
+      // Create edges from lifecycle hook to each modified state variable
+      for (const stateName of stateModifications) {
+        // Find the state node
+        const stateNode = this.nodes.find(node => 
+          node.type === 'data-store' && 
+          node.label === stateName &&
+          (node.metadata?.category === 'vue-ref' || 
+           node.metadata?.category === 'vue-reactive' ||
+           node.metadata?.category === 'vue-computed')
+        );
+        
+        if (stateNode) {
+          console.log(`[DFDBuilder] Creating write edge from ${process.name} to ${stateName}`);
+          this.edges.push({
+            from: hookNode.id,
+            to: stateNode.id,
+            label: 'writes'
+          });
+        } else {
+          console.log(`[DFDBuilder] Warning: State node not found for ${stateName}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Create edges from URL: Input to navigation guard hooks
+   * Navigation guards (onBeforeRouteUpdate, onBeforeRouteLeave) receive route information
+   */
+  private createNavigationGuardEdges(lifecycleHookNodes: DFDNode[]): void {
+    // Find navigation guard hooks
+    const navigationGuards = lifecycleHookNodes.filter(node => 
+      node.label === 'onBeforeRouteUpdate' || node.label === 'onBeforeRouteLeave'
+    );
+    
+    if (navigationGuards.length === 0) {
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Creating navigation guard edges for ${navigationGuards.length} guards`);
+    
+    // Find or create URL: Input node
+    let urlInputNode = this.nodes.find(node => 
+      node.type === 'external-entity-input' && 
+      node.label === 'URL: Input'
+    );
+    
+    if (!urlInputNode) {
+      // Create URL: Input node if it doesn't exist
+      urlInputNode = {
+        id: this.generateNodeId('url_input'),
+        label: 'URL: Input',
+        type: 'external-entity-input',
+        metadata: {
+          category: 'url-input',
+          description: 'Browser URL input'
+        }
+      };
+      this.nodes.push(urlInputNode);
+      console.log(`[DFDBuilder] Created URL: Input node for navigation guards`);
+    }
+    
+    // Create edges from URL: Input to each navigation guard
+    for (const guard of navigationGuards) {
+      const label = guard.label === 'onBeforeRouteUpdate' ? 'on update' : 'on leave';
+      
+      this.edges.push({
+        from: urlInputNode.id,
+        to: guard.id,
+        label: label
+      });
+      
+      console.log(`[DFDBuilder] Created edge from URL: Input to ${guard.label} with label "${label}"`);
+    }
+  }
+
+  /**
+   * Create watcher edges for Vue components
+   * Creates edges from watched variables to watcher process nodes,
+   * and from watcher process nodes to state variables they modify
+   */
+  private createWatcherEdges(analysis: ComponentAnalysis): void {
+    // Find all watcher process nodes
+    const watcherNodes = this.nodes.filter(node => 
+      node.type === 'process' && 
+      node.metadata?.processType === 'watcher' &&
+      (node.label === 'watch' || node.label === 'watchEffect')
+    );
+    
+    if (watcherNodes.length === 0) {
+      console.log('[DFDBuilder] No watchers found, skipping watcher edges creation');
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Creating watcher edges for ${watcherNodes.length} watchers:`, watcherNodes.map(n => n.label));
+    
+    // Find watcher processes that have dependencies and/or state modifications
+    const watcherProcesses = analysis.processes.filter(process => 
+      process.type === 'watcher' && 
+      (process.name === 'watch' || process.name === 'watchEffect')
+    );
+    
+    console.log(`[DFDBuilder] Found ${watcherProcesses.length} watcher processes`);
+    
+    for (const process of watcherProcesses) {
+      const watcherNode = watcherNodes.find(n => 
+        n.label === process.name && 
+        n.line === process.line && 
+        n.column === process.column
+      );
+      
+      if (!watcherNode) {
+        console.log(`[DFDBuilder] Warning: Watcher node not found for ${process.name} at line ${process.line}`);
+        continue;
+      }
+      
+      console.log(`[DFDBuilder] Processing watcher ${process.name} at line ${process.line}`);
+      console.log(`[DFDBuilder]   Dependencies:`, process.dependencies);
+      console.log(`[DFDBuilder]   State modifications:`, (process as any).stateModifications);
+      console.log(`[DFDBuilder]   Has cleanup:`, (process as any).hasCleanup);
+      
+      // Create edges from watched variables (dependencies) to watcher process
+      if (process.dependencies && process.dependencies.length > 0) {
+        for (const depName of process.dependencies) {
+          // Find the state node for this dependency
+          const stateNode = this.nodes.find(node => 
+            node.type === 'data-store' && 
+            node.label === depName &&
+            (node.metadata?.category === 'vue-ref' || 
+             node.metadata?.category === 'vue-reactive' ||
+             node.metadata?.category === 'vue-computed')
+          );
+          
+          if (stateNode) {
+            console.log(`[DFDBuilder] Creating edge from ${depName} to watcher ${process.name}`);
+            this.edges.push({
+              from: stateNode.id,
+              to: watcherNode.id,
+              label: 'watches'
+            });
+          } else {
+            console.log(`[DFDBuilder] Warning: State node not found for dependency ${depName}`);
+          }
+        }
+      }
+      
+      // Create edges from watcher process to state variables it modifies
+      const stateModifications = (process as any).stateModifications as string[] | undefined;
+      if (stateModifications && stateModifications.length > 0) {
+        for (const stateName of stateModifications) {
+          // Find the state node
+          const stateNode = this.nodes.find(node => 
+            node.type === 'data-store' && 
+            node.label === stateName &&
+            (node.metadata?.category === 'vue-ref' || 
+             node.metadata?.category === 'vue-reactive' ||
+             node.metadata?.category === 'vue-computed')
+          );
+          
+          if (stateNode) {
+            console.log(`[DFDBuilder] Creating write edge from watcher ${process.name} to ${stateName}`);
+            this.edges.push({
+              from: watcherNode.id,
+              to: stateNode.id,
+              label: 'writes'
+            });
+          } else {
+            console.log(`[DFDBuilder] Warning: State node not found for ${stateName}`);
+          }
+        }
+      }
+      
+      // Create cleanup process node if watchEffect has cleanup function
+      const hasCleanup = (process as any).hasCleanup as boolean | undefined;
+      if (hasCleanup && process.name === 'watchEffect') {
+        console.log(`[DFDBuilder] Creating cleanup process node for watchEffect at line ${process.line}`);
+        
+        // Create cleanup process node
+        const cleanupNode: DFDNode = {
+          id: this.generateNodeId('process'),
+          label: 'cleanup',
+          type: 'process',
+          metadata: {
+            processType: 'cleanup',
+            category: 'vue-watcher-cleanup',
+          },
+          line: process.line,
+          column: process.column,
+        };
+        
+        this.nodes.push(cleanupNode);
+        
+        // Create edge from watchEffect to cleanup
+        console.log(`[DFDBuilder] Creating edge from watchEffect to cleanup`);
+        this.edges.push({
+          from: watcherNode.id,
+          to: cleanupNode.id,
+          label: 'cleanup'
+        });
+      }
+    }
+  }
+
+  /**
+   * Create emits subgraph for Vue components
+   * Groups emit nodes into an "Emits" subgraph and creates data flows from emit calls to emit definitions
+   */
+  private createEmitsSubgraph(analysis: ComponentAnalysis): void {
+    // Find all emit nodes (they were created as external-entity-output nodes)
+    const emitNodes = this.nodes.filter(node => 
+      node.type === 'external-entity-output' && 
+      node.metadata?.category === 'vue-emit'
+    );
+    
+    if (emitNodes.length === 0) {
+      console.log('[DFDBuilder] No emits found, skipping subgraph creation');
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Creating emits subgraph with ${emitNodes.length} emits:`, emitNodes.map(n => n.label));
+    
+    // Create the Emits subgraph
+    const emitsSubgraph: DFDSubgraph = {
+      id: this.generateNodeId('emits_subgraph'),
+      label: 'Emits',
+      type: 'emits',
+      elements: emitNodes
+    };
+    
+    // Add the subgraph to exportedHandlerSubgroups (reusing existing infrastructure)
+    this.exportedHandlerSubgroups.push(emitsSubgraph);
+    
+    console.log(`[DFDBuilder] Created emits subgraph: ${emitsSubgraph.id}`);
+    
+    // Create data flows from emit calls to emit definitions
+    // Get emit calls from analysis
+    const emitCalls = (analysis as any).vueEmitCalls || [];
+    
+    console.log(`[DFDBuilder] Found ${emitCalls.length} emit calls`);
+    
+    for (const emitCall of emitCalls) {
+      const { eventName, callerProcess } = emitCall;
+      
+      // Find the emit node for this event
+      const emitNode = emitNodes.find(n => n.label === eventName);
+      
+      if (!emitNode) {
+        console.log(`[DFDBuilder] Warning: Emit node not found for ${eventName}`);
+        continue;
+      }
+      
+      // Find the process node that calls this emit
+      const processNode = this.nodes.find(node => 
+        node.type === 'process' && 
+        node.label === callerProcess
+      );
+      
+      if (processNode) {
+        console.log(`[DFDBuilder] Creating emit edge from ${callerProcess} to ${eventName}`);
+        this.edges.push({
+          from: processNode.id,
+          to: emitNode.id,
+          label: 'emits'
+        });
+      } else {
+        console.log(`[DFDBuilder] Warning: Process node not found for ${callerProcess}`);
+      }
+    }
+  }
+
+  /**
+   * Create edges from processes that call router methods to the useRouter node
+   * Handles router.push(), router.replace(), router.back(), etc.
+   */
+  private createRouterCallEdges(analysis: ComponentAnalysis): void {
+    // Find the useRouter node
+    const useRouterNode = this.nodes.find(node => 
+      node.type === 'process' && 
+      node.metadata?.hookName === 'useRouter' &&
+      node.metadata?.libraryName === 'vue-router'
+    );
+    
+    if (!useRouterNode) {
+      console.log('[DFDBuilder] No useRouter node found, skipping router call edges');
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Found useRouter node: ${useRouterNode.id}`);
+    
+    // Find all processes that reference 'router'
+    const routerVariableName = analysis.hooks.find(h => h.hookName === 'useRouter')?.variables[0] || 'router';
+    
+    console.log(`[DFDBuilder] Looking for processes that reference: ${routerVariableName}`);
+    
+    for (const process of analysis.processes) {
+      // Check if this process references the router variable
+      const references = (process as any).references || [];
+      
+      if (references.includes(routerVariableName)) {
+        // Find the process node
+        const processNode = this.nodes.find(node => 
+          node.type === 'process' && 
+          node.label === process.name
+        );
+        
+        if (processNode) {
+          console.log(`[DFDBuilder] Creating router call edge from ${process.name} to useRouter`);
+          this.edges.push({
+            from: processNode.id,
+            to: useRouterNode.id,
+            label: 'calls'
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Create edges from processes that call Pinia store actions to the store nodes
+   * Also create display edges from store properties to template elements
+   */
+  private createPiniaStoreEdges(analysis: ComponentAnalysis): void {
+    // Find all Pinia store nodes
+    const storeNodes = this.nodes.filter(node => 
+      node.metadata?.libraryName === 'pinia' &&
+      node.metadata?.isPiniaStore === true
+    );
+    
+    console.log('[DFDBuilder] Looking for Pinia store nodes...');
+    console.log('[DFDBuilder] Total nodes:', this.nodes.length);
+    console.log('[DFDBuilder] Nodes with pinia library:', this.nodes.filter(n => n.metadata?.libraryName === 'pinia').length);
+    console.log('[DFDBuilder] Nodes with isPiniaStore:', this.nodes.filter(n => n.metadata?.isPiniaStore).length);
+    
+    if (storeNodes.length === 0) {
+      console.log('[DFDBuilder] No Pinia store nodes found, skipping store edges');
+      return;
+    }
+    
+    console.log(`[DFDBuilder] Found ${storeNodes.length} Pinia store nodes`);
+    
+    // Find all storeToRefs hooks and add their extracted properties to the corresponding store nodes
+    const storeToRefsHooks = analysis.hooks.filter(h => h.hookName === 'storeToRefs');
+    console.log(`[DFDBuilder] Found ${storeToRefsHooks.length} storeToRefs hooks`);
+    
+    for (const storeToRefsHook of storeToRefsHooks) {
+      // Get the store variable name from argumentIdentifiers (the first argument to storeToRefs)
+      const argumentIdentifiers = (storeToRefsHook as any).argumentIdentifiers || [];
+      if (argumentIdentifiers.length === 0) {
+        console.log(`[DFDBuilder] Warning: storeToRefs hook has no argumentIdentifiers`);
+        continue;
+      }
+      
+      const storeVariableName = argumentIdentifiers[0];
+      console.log(`[DFDBuilder] storeToRefs extracts from store: ${storeVariableName}, variables:`, storeToRefsHook.variables);
+      
+      // Find the store node that matches this store variable
+      // The store node's hook should have this variable in its variables array
+      const storeNode = storeNodes.find(node => {
+        const storeHook = analysis.hooks.find(h => 
+          h.hookName === node.label &&
+          h.variables.includes(storeVariableName)
+        );
+        return !!storeHook;
+      });
+      
+      if (storeNode) {
+        // Add the extracted properties to the store's dataProperties
+        const currentDataProperties = storeNode.metadata?.dataProperties || [];
+        const newDataProperties = [...new Set([...currentDataProperties, ...storeToRefsHook.variables])];
+        
+        if (storeNode.metadata) {
+          storeNode.metadata.dataProperties = newDataProperties;
+        }
+        
+        console.log(`[DFDBuilder] Updated ${storeNode.label} dataProperties from`, currentDataProperties, 'to', newDataProperties);
+      } else {
+        console.log(`[DFDBuilder] Warning: Could not find store node for storeToRefs argument: ${storeVariableName}`);
+      }
+    }
+    
+    // Create call edges from processes to stores
+    for (const storeNode of storeNodes) {
+      // Get the store variable name from the hook
+      const storeHook = analysis.hooks.find(h => 
+        h.hookName === storeNode.label &&
+        h.variables.length > 0
+      );
+      
+      if (!storeHook) {
+        console.log(`[DFDBuilder] Warning: No hook found for store ${storeNode.label}`);
+        continue;
+      }
+      
+      const storeVariableName = storeHook.variables[0];
+      console.log(`[DFDBuilder] Looking for processes that reference store: ${storeVariableName}`);
+      
+      // Find all processes that reference this store
+      for (const process of analysis.processes) {
+        const references = (process as any).references || [];
+        
+        if (references.includes(storeVariableName)) {
+          // Find the process node
+          const processNode = this.nodes.find(node => 
+            node.type === 'process' && 
+            node.label === process.name
+          );
+          
+          if (processNode) {
+            // Get the action properties from the store node metadata
+            const actionProperties = storeNode.metadata?.processProperties || [];
+            
+            // Try to determine which action is being called
+            // For now, use the process name as a heuristic
+            const actionName = process.name;
+            
+            console.log(`[DFDBuilder] Creating store action call edge from ${process.name} to ${storeNode.label}`);
+            this.edges.push({
+              from: processNode.id,
+              to: storeNode.id,
+              label: `calls: ${actionName}`
+            });
+          }
+        }
+      }
+    }
+    
+    // Create display edges from store properties to template elements
+    // Find storeToRefs nodes or use store nodes directly
+    const storeToRefsNodes = this.nodes.filter(node => 
+      node.metadata?.isStoreToRefs === true
+    );
+    
+    console.log(`[DFDBuilder] Found ${storeToRefsNodes.length} storeToRefs nodes`);
+    
+    // For each store node, create display edges for its data properties
+    for (const storeNode of storeNodes) {
+      const dataProperties = storeNode.metadata?.dataProperties || [];
+      
+      console.log(`[DFDBuilder] Store ${storeNode.label} has data properties:`, dataProperties);
+      
+      // Find template elements that display these properties
+      for (const property of dataProperties) {
+        // Find JSX elements that have this property in their display dependencies
+        const displayElements = this.nodes.filter(node => 
+          node.type === 'external-entity-output' &&
+          node.metadata?.category === 'vue-template' &&
+          node.metadata?.displayDependencies &&
+          node.metadata.displayDependencies.includes(property)
+        );
+        
+        for (const element of displayElements) {
+          console.log(`[DFDBuilder] Creating display edge from ${storeNode.label} to ${element.label} for property ${property}`);
+          this.edges.push({
+            from: storeNode.id,
+            to: element.id,
+            label: `displays: ${property}`
+          });
+        }
       }
     }
   }
@@ -2220,6 +3796,184 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
+   * Build display edges for Vue components
+   * Creates direct edges from props/state to JSX elements (no intermediate _display nodes)
+   */
+  private buildVueDisplayEdges(subgraph: DFDSubgraph, nodes: DFDNode[]): DFDEdge[] {
+    const edges: DFDEdge[] = [];
+
+    console.log('🚚 buildVueDisplayEdges: Starting');
+
+    // First, create control visibility/iterates over edges for conditional subgraphs
+    const conditionalSubgraphs = this.collectConditionalSubgraphs(subgraph);
+    console.log(`🚚 buildVueDisplayEdges: Found ${conditionalSubgraphs.length} conditional subgraphs`);
+    
+    for (const conditionalSubgraph of conditionalSubgraphs) {
+      if (conditionalSubgraph.condition) {
+        // Determine edge label based on subgraph type
+        const isLoop = conditionalSubgraph.type === 'loop' || conditionalSubgraph.label?.includes('v-for');
+        const edgeLabel = isLoop ? 'iterates over' : 'control visibility';
+        
+        console.log(`🚚 buildVueDisplayEdges: Processing ${isLoop ? 'loop' : 'conditional'} subgraph ${conditionalSubgraph.id}, variables:`, conditionalSubgraph.condition.variables);
+        
+        for (const varName of conditionalSubgraph.condition.variables) {
+          // Find the source node for this variable
+          const sourceNode = this.findVueNodeByVariable(varName, nodes);
+          
+          if (sourceNode) {
+            console.log(`🚚   ✅ Creating ${edgeLabel} edge from ${sourceNode.id} to ${conditionalSubgraph.id}`);
+            edges.push({
+              from: sourceNode.id,
+              to: conditionalSubgraph.id,
+              label: edgeLabel
+            });
+          } else {
+            console.log(`🚚   ⚠️ Source node not found for variable: ${varName}`);
+          }
+        }
+      }
+    }
+
+    // Then, create display/binds edges for ALL elements (including those in conditionals)
+    const allElementNodes = this.collectElementNodes(subgraph);
+    console.log(`🚚 buildVueDisplayEdges: Found ${allElementNodes.length} total element nodes`);
+
+    for (const elementNode of allElementNodes) {
+      // Handle v-bind attributes with "binds" label
+      const vBindAttributes = elementNode.metadata?.vBindAttributes || [];
+      
+      for (const vBind of vBindAttributes) {
+        const sourceNode = this.findVueNodeByVariable(vBind.variable, nodes);
+        
+        if (sourceNode) {
+          console.log(`🚚   Creating binds edge from ${sourceNode.id} to ${elementNode.id} for :${vBind.attribute}`);
+          edges.push({
+            from: sourceNode.id,
+            to: elementNode.id,
+            label: 'binds'
+          });
+        } else {
+          console.log(`🚚   ⚠️ Source node not found for v-bind variable: ${vBind.variable}`);
+        }
+      }
+
+      // Handle v-model with bidirectional data flows
+      const vModelVariable = elementNode.metadata?.vModelVariable;
+      
+      if (vModelVariable) {
+        const sourceNode = this.findVueNodeByVariable(vModelVariable, nodes);
+        
+        if (sourceNode) {
+          console.log(`🚚   Creating bidirectional v-model edges for ${vModelVariable}`);
+          
+          // Data to element (binds)
+          edges.push({
+            from: sourceNode.id,
+            to: elementNode.id,
+            label: 'binds'
+          });
+          
+          // Element to data (updates)
+          edges.push({
+            from: elementNode.id,
+            to: sourceNode.id,
+            label: 'updates'
+          });
+        } else {
+          console.log(`🚚   ⚠️ Source node not found for v-model variable: ${vModelVariable}`);
+        }
+      }
+
+      // Handle regular display dependencies (mustache bindings)
+      const displayDependencies = elementNode.metadata?.displayDependencies || [];
+      
+      for (const varName of displayDependencies) {
+        // Skip if this variable is already handled by v-bind or v-model
+        const isHandledByVBind = vBindAttributes.some((vb: any) => vb.variable === varName);
+        const isHandledByVModel = vModelVariable === varName;
+        
+        if (isHandledByVBind || isHandledByVModel) {
+          continue;
+        }
+
+        // Find the source node for this variable
+        const sourceNode = this.findVueNodeByVariable(varName, nodes);
+        
+        if (sourceNode) {
+          // Determine edge label based on source node type
+          let edgeLabel = 'display';
+          
+          // If source is a composable, use "display: propertyName" as the label
+          if (sourceNode.metadata?.isCustomComposable && sourceNode.metadata?.dataProperties) {
+            const dataProperties = sourceNode.metadata.dataProperties as string[];
+            if (dataProperties.includes(varName)) {
+              edgeLabel = `display: ${varName}`;
+            }
+          }
+          
+          console.log(`🚚   Creating display edge from ${sourceNode.id} (${sourceNode.label}) to ${elementNode.id} (${elementNode.label}) with label "${edgeLabel}"`);
+          edges.push({
+            from: sourceNode.id,
+            to: elementNode.id,
+            label: edgeLabel
+          });
+        } else {
+          console.log(`🚚   ⚠️ Source node not found for display variable: ${varName}`);
+        }
+      }
+    }
+
+    console.log(`🚚 buildVueDisplayEdges: Created ${edges.length} edges`);
+    return edges;
+  }
+
+  /**
+   * Find a Vue node by variable name
+   * Searches for props, state, computed, and other Vue-specific nodes
+   */
+  private findVueNodeByVariable(varName: string, nodes: DFDNode[]): DFDNode | undefined {
+    // Search for the variable in various node types
+    return nodes.find(node => {
+      // Match by label for simple cases
+      if (node.label === varName) {
+        return (
+          node.type === 'external-entity-input' ||
+          node.type === 'data-store' ||
+          node.metadata?.category === 'vue-state' ||
+          node.metadata?.category === 'vue-computed' ||
+          node.metadata?.category === 'state-management'
+        );
+      }
+      
+      // For library hooks, check if the variable is in properties
+      if (node.metadata?.isLibraryHook && node.metadata?.properties) {
+        const properties = node.metadata.properties as string[];
+        if (properties.includes(varName)) {
+          return true;
+        }
+      }
+      
+      // For library hooks (including Pinia stores), check if the variable is in dataProperties
+      if (node.metadata?.isLibraryHook && node.metadata?.dataProperties) {
+        const dataProperties = node.metadata.dataProperties as string[];
+        if (dataProperties.includes(varName)) {
+          return true;
+        }
+      }
+      
+      // For composables, check if the variable is in dataProperties
+      if (node.metadata?.isCustomComposable && node.metadata?.dataProperties) {
+        const dataProperties = node.metadata.dataProperties as string[];
+        if (dataProperties.includes(varName)) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
+  }
+
+  /**
    * Recursively collect all element nodes from subgraph tree
    */
   private collectElementNodes(subgraph: DFDSubgraph): DFDNode[] {
@@ -2800,6 +4554,59 @@ export class DefaultDFDBuilder implements DFDBuilder {
             }
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Build edges from processes to Vue emits
+   * Creates edges when a process calls emit()
+   */
+  private buildProcessToVueEmitsEdges(analysis: ComponentAnalysis): void {
+    if (!analysis.vueEmitCalls || analysis.vueEmitCalls.length === 0) {
+      return;
+    }
+    
+    this.log('🚚 buildProcessToVueEmitsEdges: Starting');
+    this.log('🚚 buildProcessToVueEmitsEdges: Emit calls:', analysis.vueEmitCalls.length);
+    
+    // Find all Vue emit nodes
+    const emitNodes = this.nodes.filter(
+      node => node.type === 'external-entity-output' && node.metadata?.category === 'vue-emit'
+    );
+    
+    this.log('🚚 buildProcessToVueEmitsEdges: Emit nodes:', emitNodes.map(n => n.label));
+    
+    // Process each emit call
+    for (const emitCall of analysis.vueEmitCalls) {
+      // Find the emit node for this event
+      const emitNode = emitNodes.find(node => node.label === emitCall.eventName);
+      
+      if (!emitNode) {
+        console.log(`🚚 ⚠️ No emit node found for event: ${emitCall.eventName}`);
+        continue;
+      }
+      
+      // If the emit call has a caller process, create edge from process to emit
+      if (emitCall.callerProcess) {
+        const processNode = this.nodes.find(
+          node => node.type === 'process' && node.label === emitCall.callerProcess
+        );
+        
+        if (processNode) {
+          console.log(`🚚 ✅ Creating emit edge from ${emitCall.callerProcess} to ${emitCall.eventName}`);
+          this.edges.push({
+            from: processNode.id,
+            to: emitNode.id,
+            label: 'emits'
+          });
+        } else {
+          console.log(`🚚 ⚠️ No process node found for: ${emitCall.callerProcess}`);
+        }
+      } else {
+        // Top-level emit call (not in a function) - could create edge from component itself
+        // For now, we'll skip these as they're less common
+        console.log(`🚚 ℹ️ Top-level emit call for event: ${emitCall.eventName}`);
       }
     }
   }

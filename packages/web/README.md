@@ -4,14 +4,16 @@ A browser-based web application for analyzing and visualizing React, Vue.js, and
 
 ## Features
 
-- **Multi-Framework Support**: Analyze React, Vue.js, and Svelte components
+- **Multi-Framework Support**: Analyze React and Vue 3 components
+  - React: Functional components with hooks
+  - Vue 3: Composition API with `<script setup>` syntax
 - **Real-Time Visualization**: See DFD updates as you type with 300ms debouncing
 - **Interactive Code Editor**: Monaco Editor with syntax highlighting and IntelliSense
 - **Mermaid Diagrams**: Professional flowchart visualization with theme-aware styling
 - **URL-Based Sharing**: Share component code via compressed URLs
 - **Themed Interface**: Light mode (Easter theme) and dark mode (Halloween theme) with seasonal decorations
 - **No Installation Required**: Run entirely in the browser, no backend needed
-- **Sample Components**: 10+ example components demonstrating different patterns
+- **Sample Components**: 15+ example components demonstrating different patterns (React hooks, Vue composables, etc.)
 
 ## Live Demo
 
@@ -84,17 +86,31 @@ The DFD visualization shows:
 
 ## Supported Component Patterns
 
-The analyzer recognizes and visualizes:
+### React
+- **Props**: Component inputs with TypeScript types
+- **State**: `useState`, `useReducer`
+- **Computed Values**: `useMemo`, `useCallback`
+- **Effects**: `useEffect`, `useLayoutEffect`, `useInsertionEffect`
+- **Context**: `useContext`, `createContext`
+- **Refs**: `useRef`, `useImperativeHandle`
+- **Event Handlers**: `onClick`, `onChange`, etc.
+- **Conditional Rendering**: Ternary operators, logical AND
+- **Loops**: `map()`, `filter()`
+- **Third-Party Libraries**: React Router, SWR, TanStack Query, Zustand, Jotai, MobX, Apollo, RTK Query, tRPC
 
-- **Props/Properties**: Component inputs and their types
-- **State Management**: useState, reactive, writable stores
-- **Computed Values**: useMemo, computed properties, derived stores
-- **Effects**: useEffect, watchEffect, onMount
-- **Event Handlers**: onClick, @click, on:click
-- **Context**: useContext, provide/inject, context API
-- **Refs**: useRef, ref, bind:this
-- **Conditional Rendering**: if/else, ternary operators, v-if, {#if}
-- **Loops**: map, v-for, {#each}
+### Vue 3
+- **Props**: `defineProps()` with TypeScript generics or object syntax
+- **State**: `ref()`, `reactive()`, `computed()`
+- **Composables**: Custom composables and built-in Vue composables
+- **Lifecycle**: `onMounted`, `onUpdated`, `onUnmounted`, etc.
+- **Watchers**: `watch()`, `watchEffect()`
+- **Emits**: `defineEmits()` with event definitions
+- **Template Directives**: `v-bind`/`:`, `v-on`/`@`, `v-model`, `v-if`, `v-show`, `v-for`
+- **Provide/Inject**: Dependency injection pattern
+- **Vue Router**: `useRoute()`, `useRouter()`, navigation guards
+- **Pinia**: `useStore()`, `storeToRefs()`, store actions
+
+For comprehensive Vue 3 documentation, see [Vue 3 Support Guide](../../docs/vue-support.md).
 
 ## Development
 

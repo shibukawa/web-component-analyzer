@@ -71,4 +71,42 @@ suite('Mermaid Acceptance Tests', () => {
       }
     }
   });
+  
+  test('Run Vue acceptance tests only', async function() {
+    // Increase timeout for acceptance tests
+    this.timeout(60000);
+    
+    // Try to run Vue tests only
+    const result = await runAcceptanceTestsMultiFramework(examplesDir, undefined, false, 'vue');
+    
+    // If tests were found, verify they are all Vue tests
+    if (result.totalTests > 0) {
+      for (const testResult of result.results) {
+        // Vue test files should have .vue extension
+        assert.ok(
+          testResult.componentPath.endsWith('.vue'),
+          `Vue test should have .vue extension: ${testResult.componentPath}`
+        );
+      }
+    }
+  });
+  
+  test('Run React acceptance tests only', async function() {
+    // Increase timeout for acceptance tests
+    this.timeout(60000);
+    
+    // Try to run React tests only
+    const result = await runAcceptanceTestsMultiFramework(examplesDir, undefined, false, 'react');
+    
+    // If tests were found, verify they are all React tests
+    if (result.totalTests > 0) {
+      for (const testResult of result.results) {
+        // React test files should have .tsx or .jsx extension
+        assert.ok(
+          testResult.componentPath.endsWith('.tsx') || testResult.componentPath.endsWith('.jsx'),
+          `React test should have .tsx or .jsx extension: ${testResult.componentPath}`
+        );
+      }
+    }
+  });
 });

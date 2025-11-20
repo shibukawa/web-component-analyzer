@@ -1,9 +1,20 @@
 {
   "name": "@web-component-analyzer/analyzer",
   "version": "0.0.1",
+  "description": "Core analysis engine for React and Vue 3 components - generates Data Flow Diagrams",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "keywords": [
+    "react",
+    "vue",
+    "vue3",
+    "ast",
+    "parser",
+    "analyzer",
+    "dfd",
+    "component-analysis"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

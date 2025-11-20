@@ -67,6 +67,73 @@ export interface ComponentAnalysis {
   processes: ProcessInfo[];
   jsxOutput: JSXInfo;
   atomDefinitions?: AtomDefinition[]; // Jotai atom definitions
+  
+  // Vue-specific fields
+  vueState?: any[]; // Vue state (ref, reactive, computed) - VueStateInfo[]
+  vueEmits?: VueEmitInfo[]; // Vue emit definitions
+  vueEmitCalls?: EmitCallInfo[]; // Vue emit calls
+  vueTemplateBindings?: any[]; // Vue template bindings (TemplateBinding[])
+  vueConditionalStructures?: any[]; // Vue conditional structures (v-if, v-for)
+  vueLoopStructures?: any[]; // Vue loop structures (v-for)
+  vueElementsWithEventHandlers?: Array<{
+    tagName: string;
+    event: string;
+    handler: string;
+    line?: number;
+    column?: number;
+  }>; // Vue elements with event handlers (@click, @submit, etc.)
+  vueElementsWithVBind?: Array<{
+    tagName: string;
+    attribute: string;
+    variable: string;
+    line?: number;
+    column?: number;
+  }>; // Vue elements with v-bind attributes (:value, :placeholder, etc.)
+  vueElementsWithVModel?: Array<{
+    tagName: string;
+    variable: string;
+    line?: number;
+    column?: number;
+  }>; // Vue elements with v-model directive
+  vueElementsWithVShow?: Array<{
+    tagName: string;
+    condition: string;
+    variables: string[];
+    line?: number;
+    column?: number;
+  }>; // Vue elements with v-show directive
+  
+  // Metadata for error recovery and partial analysis
+  metadata?: {
+    partialAnalysis?: boolean;
+    error?: {
+      code: string;
+      message: string;
+      line?: number;
+      column?: number;
+    };
+    [key: string]: any;
+  };
+}
+
+/**
+ * Information about Vue emit events
+ */
+export interface VueEmitInfo {
+  name: string;
+  dataType?: string;
+  line?: number;
+  column?: number;
+}
+
+/**
+ * Information about emit calls in Vue components
+ */
+export interface EmitCallInfo {
+  eventName: string;
+  callerProcess?: string; // Name of the function/process that calls emit
+  line?: number;
+  column?: number;
 }
 
 /**
@@ -123,6 +190,10 @@ export interface HookInfo {
   arguments?: Array<{ type: string; value?: string | number | boolean }>; // Extracted argument values
   // Argument identifiers (variable names used as arguments)
   argumentIdentifiers?: string[]; // Variable names passed as arguments (e.g., ['url', 'fetcher'])
+  // Vue lifecycle hooks: state modifications
+  stateModifications?: string[]; // State variable names modified by lifecycle hooks (e.g., ['mountCount', 'updateCount'])
+  // Vue watchEffect: cleanup function detection
+  hasCleanup?: boolean; // True if watchEffect has a cleanup function (onCleanup parameter)
 }
 
 /**
@@ -130,7 +201,7 @@ export interface HookInfo {
  */
 export interface ProcessInfo {
   name: string;
-  type: 'useEffect' | 'useLayoutEffect' | 'useInsertionEffect' | 'useCallback' | 'useMemo' | 'useImperativeHandle' | 'event-handler' | 'custom-function' | 'cleanup' | 'exported-handler';
+  type: 'useEffect' | 'useLayoutEffect' | 'useInsertionEffect' | 'useCallback' | 'useMemo' | 'useImperativeHandle' | 'event-handler' | 'custom-function' | 'cleanup' | 'exported-handler' | 'watcher' | 'lifecycle';
   dependencies?: string[];
   references: string[]; // Variables referenced in the function
   externalCalls: ExternalCallInfo[]; // External function calls made by this process
@@ -255,8 +326,9 @@ export type JSXStructure = JSXElementStructure | ConditionalBranch;
 export interface DFDSubgraph {
   id: string;
   label: string;
-  type: 'jsx-output' | 'conditional' | 'exported-handlers';
+  type: 'jsx-output' | 'conditional' | 'exported-handlers' | 'loop' | 'loop-conditional' | 'lifecycle-hooks' | 'emits';
   condition?: ConditionExpression; // For conditional subgraphs
+  source?: string; // For loop subgraphs (v-for source)
   elements: (DFDNode | DFDSubgraph)[]; // Can contain nodes or nested subgraphs
   parentProcessId?: string; // Reference to parent useImperativeHandle process
 }

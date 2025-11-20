@@ -786,6 +786,11 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
         break;
       
       case 'AssignmentExpression':
+        // Extract from both left (what's being assigned to) and right (the value)
+        // Left side can be a Pattern or Expression
+        if ('type' in expression.left && expression.left.type !== 'ArrayPattern' && expression.left.type !== 'ObjectPattern') {
+          this.extractReferencesFromExpression(expression.left as swc.Expression, references, externalCalls);
+        }
         this.extractReferencesFromExpression(expression.right, references, externalCalls);
         break;
       

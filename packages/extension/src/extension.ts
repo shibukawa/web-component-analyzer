@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { createReactParser } from '@web-component-analyzer/analyzer';
+import { createReactParser, createVueParser, createParser } from '@web-component-analyzer/analyzer';
 import { TypeResolver } from './services/type-resolver';
 import { DFDVisualizerService } from './visualization/dfd-visualizer-service';
 import { WebviewPanelManager } from './visualization/webview-panel-manager';
@@ -16,14 +16,16 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create TypeResolver for accurate type-based classification
 	const typeResolver = new TypeResolver();
 	
-	// Create parser instance with Node.js parser and TypeResolver
-	const reactParser = createReactParser(parseComponent, typeResolver);
+	// Create parser factory function that detects framework based on file extension
+	const parserFactory = (filePath: string) => {
+		return createParser(filePath, parseComponent, typeResolver);
+	};
 	
 	// Create Webview Panel Manager
 	const webviewPanelManager = new WebviewPanelManager(context);
 	
-	// Create DFD Visualizer Service
-	const dfdVisualizerService = new DFDVisualizerService(reactParser, webviewPanelManager);
+	// Create DFD Visualizer Service with parser factory
+	const dfdVisualizerService = new DFDVisualizerService(parserFactory, webviewPanelManager);
 	
 	// Create and register DFD Command Handler
 	const dfdCommandHandler = new DFDCommandHandler(dfdVisualizerService);
@@ -37,7 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const editor = vscode.window.activeTextEditor;
 		
 		if (!editor) {
-			vscode.window.showErrorMessage('No active editor found. Please open a React component file.');
+			vscode.window.showErrorMessage('No active editor found. Please open a component file.');
 			return;
 		}
 
@@ -45,9 +47,9 @@ export function activate(context: vscode.ExtensionContext) {
 		const filePath = document.fileName;
 		const sourceCode = document.getText();
 
-		// Check if file is a supported React file
-		if (!filePath.match(/\.(tsx|jsx|ts|js)$/)) {
-			vscode.window.showWarningMessage('Please open a React component file (.tsx, .jsx, .ts, or .js)');
+		// Check if file is a supported file type
+		if (!filePath.match(/\.(tsx|jsx|ts|js|vue)$/)) {
+			vscode.window.showWarningMessage('Please open a component file (.tsx, .jsx, .ts, .js, or .vue)');
 			return;
 		}
 
@@ -58,9 +60,10 @@ export function activate(context: vscode.ExtensionContext) {
 			cancellable: false
 		}, async (progress) => {
 			try {
-				// Parse the component
+				// Parse the component using appropriate parser
 				progress.report({ message: 'Parsing source code...' });
-				const dfdData = await reactParser.parse(sourceCode, filePath);
+				const parser = parserFactory(filePath);
+				const dfdData = await parser.parse(sourceCode, filePath);
 
 				// Check for errors
 				if (dfdData.errors && dfdData.errors.length > 0) {
@@ -79,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Check if component was found
 				if (dfdData.nodes.length === 0 && dfdData.edges.length === 0) {
-					vscode.window.showInformationMessage('No React component found in the current file.');
+					vscode.window.showInformationMessage('No component found in the current file.');
 					return;
 				}
 

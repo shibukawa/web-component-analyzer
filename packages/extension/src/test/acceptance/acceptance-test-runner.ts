@@ -1,6 +1,19 @@
 /**
  * Acceptance test runner entry point
  * Runs Mermaid-based acceptance tests and reports results
+ * 
+ * Command line options:
+ * - --filter=<pattern>: Filter tests by name pattern
+ * - --framework=<framework>: Filter tests by framework (react, vue, svelte, etc.)
+ * - --update-refs: Update reference .mmd files with generated output
+ * - --list: List discovered tests without running them
+ * 
+ * Examples:
+ * - Run all tests: node acceptance-test-runner.js
+ * - Run Vue tests only: node acceptance-test-runner.js --framework=vue
+ * - Run React tests matching "001": node acceptance-test-runner.js --framework=react --filter=001
+ * - Update Vue reference files: node acceptance-test-runner.js --framework=vue --update-refs
+ * - List all Vue tests: node acceptance-test-runner.js --framework=vue --list
  */
 
 import * as path from 'path';
@@ -27,18 +40,54 @@ export async function runAcceptanceTestSuite(): Promise<number> {
     const args = process.argv.slice(2);
     const filterArg = args.find(arg => arg.startsWith('--filter='));
     const filter = filterArg ? filterArg.substring('--filter='.length) : undefined;
+    const frameworkArg = args.find(arg => arg.startsWith('--framework='));
+    const frameworkFilter = frameworkArg ? frameworkArg.substring('--framework='.length) : undefined;
     const updateRefs = args.includes('--update-refs');
+    const listOnly = args.includes('--list');
     
     if (filter) {
       console.log(`Filtering tests: ${filter}`);
+    }
+    
+    if (frameworkFilter) {
+      console.log(`Framework filter: ${frameworkFilter}`);
     }
     
     if (updateRefs) {
       console.log('⚠️  Reference update mode enabled - .mmd files will be overwritten');
     }
     
+    if (listOnly) {
+      console.log('📋 List mode - showing discovered tests without running them');
+    }
+    
+    // If list mode, just show discovered tests
+    if (listOnly) {
+      const { discoverTestsMultiFramework } = await import('./test-discovery');
+      const discovery = discoverTestsMultiFramework(examplesDir);
+      let testCases = discovery.testCases;
+      
+      // Apply filters
+      if (frameworkFilter) {
+        testCases = testCases.filter(tc => tc.framework === frameworkFilter);
+      }
+      if (filter) {
+        testCases = testCases.filter(tc =>
+          tc.testName.includes(filter) || tc.testName.match(new RegExp(filter))
+        );
+      }
+      
+      console.log(`\nDiscovered ${testCases.length} test(s):\n`);
+      for (const testCase of testCases) {
+        console.log(`  [${testCase.framework}] ${testCase.testName}`);
+      }
+      console.log('');
+      
+      return 0;
+    }
+    
     // Run tests
-    const result = await runAcceptanceTestsMultiFramework(examplesDir, filter, updateRefs);
+    const result = await runAcceptanceTestsMultiFramework(examplesDir, filter, updateRefs, frameworkFilter);
     
     // Print report
     console.log(formatTestReport(result));

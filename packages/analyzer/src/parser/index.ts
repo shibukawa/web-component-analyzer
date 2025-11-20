@@ -1,15 +1,18 @@
 /**
- * Main React Parser for DFD Generation
+ * Main Parser for DFD Generation
  * 
  * Coordinates AST parsing, analysis, and DFD building to extract
- * structured information from React component source code.
+ * structured information from React and Vue component source code.
  */
 
 import { DFDSourceData, ParseError } from './types';
 import type { ParseResult } from './ast-parser';
 import { SWCASTAnalyzer } from './ast-analyzer';
+import { VueASTAnalyzer } from './vue-ast-analyzer';
 import { DefaultDFDBuilder } from './dfd-builder';
 import { ParserErrorHandler, ParsingContext } from '../utils/error-handler';
+import { VueErrorHandler, VueParsingContext, VueAnalysisError } from '../utils/vue-error-handler';
+import { VueSFCParseError } from './vue-sfc-parser';
 import { TypeResolver } from '../services/type-resolver';
 
 /**
@@ -18,11 +21,19 @@ import { TypeResolver } from '../services/type-resolver';
 export type ParserFunction = (sourceCode: string, filePath: string) => Promise<ParseResult>;
 
 /**
- * React Parser interface
+ * Component Parser interface
+ * 
+ * Supports both React and Vue components
  */
-export interface ReactParser {
+export interface ComponentParser {
   parse(sourceCode: string, filePath: string): Promise<DFDSourceData>;
 }
+
+/**
+ * React Parser interface (legacy, use ComponentParser instead)
+ * @deprecated Use ComponentParser instead
+ */
+export interface ReactParser extends ComponentParser {}
 
 /**
  * Default implementation of React Parser
@@ -145,6 +156,155 @@ export class DefaultReactParser implements ReactParser {
 }
 
 /**
+ * Default implementation of Vue Parser
+ * 
+ * Orchestrates the Vue parsing pipeline:
+ * 1. Parse Vue SFC to extract script setup and template
+ * 2. Parse script setup using SWC
+ * 3. Analyze script and template to extract component information
+ * 4. Build DFD source data from analysis
+ * 5. Handle errors and timeouts gracefully
+ */
+export class DefaultVueParser implements ComponentParser {
+  private astAnalyzer: VueASTAnalyzer;
+  private dfdBuilder: DefaultDFDBuilder;
+  private errorHandler: VueErrorHandler;
+
+  constructor(typeResolver?: TypeResolver) {
+    this.astAnalyzer = new VueASTAnalyzer(typeResolver);
+    this.dfdBuilder = new DefaultDFDBuilder();
+    this.errorHandler = new VueErrorHandler();
+  }
+
+  /**
+   * Parse Vue component source code and generate DFD source data
+   * 
+   * @param sourceCode - The Vue component source code
+   * @param filePath - The file path (used for error reporting)
+   * @returns Promise resolving to DFDSourceData with nodes, edges, and any errors
+   */
+  async parse(sourceCode: string, filePath: string): Promise<DFDSourceData> {
+    const context: VueParsingContext = {
+      filePath,
+      sourceCode,
+      startTime: Date.now(),
+    };
+
+    try {
+      // Validate SFC structure first
+      const validationErrors = this.errorHandler.validateSFCStructure(sourceCode, context);
+      if (validationErrors.length > 0) {
+        // Return empty DFD with validation errors
+        return this.errorHandler.createEmptyDFDData(validationErrors);
+      }
+
+      // Wrap the entire parsing operation with timeout protection
+      return await this.errorHandler.withTimeout(
+        () => this.parseInternal(sourceCode, filePath, context),
+        context
+      );
+    } catch (error) {
+      // Handle Vue-specific errors
+      if (error instanceof VueAnalysisError) {
+        const parseError = {
+          message: error.getUserFriendlyMessage(),
+          line: error.line,
+          column: error.column,
+        };
+        return this.errorHandler.createEmptyDFDData([parseError]);
+      }
+
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'VueAnalysisError' && (error as VueAnalysisError).code === 'TIMEOUT') {
+        return this.errorHandler.handleTimeout(null, context);
+      }
+
+      // Handle SFC parse errors
+      if (error instanceof VueSFCParseError) {
+        const parseError = this.errorHandler.handleSFCError(error, context);
+        return this.errorHandler.createEmptyDFDData([parseError]);
+      }
+
+      // Handle other unexpected errors
+      const parseError = this.errorHandler.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        context
+      );
+
+      return this.errorHandler.createEmptyDFDData([parseError]);
+    }
+  }
+
+  /**
+   * Internal parsing implementation
+   */
+  private async parseInternal(
+    sourceCode: string,
+    filePath: string,
+    context: VueParsingContext
+  ): Promise<DFDSourceData> {
+    const errors: ParseError[] = [];
+    let partialAnalysis = null;
+
+    try {
+      // Step 1: Analyze Vue SFC (parsing is done internally by VueASTAnalyzer)
+      const analysis = await this.astAnalyzer.analyze(sourceCode, filePath);
+
+      if (!analysis) {
+        // No Vue component found
+        const componentNotFoundError = this.errorHandler.handleMissingScriptSetup(context);
+        return this.errorHandler.createEmptyDFDData([componentNotFoundError]);
+      }
+
+      partialAnalysis = analysis;
+
+      // Check timeout after analysis
+      if (this.errorHandler.isTimeoutExceeded(context.startTime)) {
+        return this.errorHandler.handleTimeout(analysis, context);
+      }
+
+      // Step 2: Build DFD source data from analysis
+      const dfdData = this.dfdBuilder.build(analysis);
+
+      // Add any accumulated errors
+      if (errors.length > 0) {
+        dfdData.errors = errors;
+      }
+
+      return dfdData;
+    } catch (error) {
+      // Attempt partial analysis recovery
+      const recoveredAnalysis = this.errorHandler.recoverPartialAnalysis(
+        error instanceof Error ? error : new Error(String(error)),
+        partialAnalysis,
+        context
+      );
+
+      if (recoveredAnalysis) {
+        // Build DFD from partial analysis
+        const dfdData = this.dfdBuilder.build(recoveredAnalysis);
+        
+        // Add error information
+        if (recoveredAnalysis.metadata?.error) {
+          dfdData.errors = [
+            {
+              message: recoveredAnalysis.metadata.error.message,
+              line: recoveredAnalysis.metadata.error.line,
+              column: recoveredAnalysis.metadata.error.column,
+            },
+          ];
+        }
+
+        return dfdData;
+      }
+
+      // No recovery possible, re-throw
+      throw error;
+    }
+  }
+}
+
+/**
  * Create a new React Parser instance
  * 
  * @param parserFn - Parser function (Node or Browser implementation)
@@ -153,5 +313,37 @@ export class DefaultReactParser implements ReactParser {
  */
 export function createReactParser(parserFn: ParserFunction, typeResolver?: TypeResolver): ReactParser {
   return new DefaultReactParser(parserFn, typeResolver);
+}
+
+/**
+ * Create a new Vue Parser instance
+ * 
+ * @param typeResolver - Optional TypeResolver for type information
+ * @returns ComponentParser instance
+ */
+export function createVueParser(typeResolver?: TypeResolver): ComponentParser {
+  return new DefaultVueParser(typeResolver);
+}
+
+/**
+ * Create a parser based on file extension
+ * 
+ * @param filePath - File path to determine parser type
+ * @param parserFn - Parser function for React (Node or Browser implementation)
+ * @param typeResolver - Optional TypeResolver for type information
+ * @returns ComponentParser instance
+ */
+export function createParser(
+  filePath: string,
+  parserFn: ParserFunction,
+  typeResolver?: TypeResolver
+): ComponentParser {
+  // Detect framework based on file extension
+  if (filePath.endsWith('.vue')) {
+    return createVueParser(typeResolver);
+  }
+  
+  // Default to React parser for .tsx, .jsx, .ts, .js files
+  return createReactParser(parserFn, typeResolver);
 }
 

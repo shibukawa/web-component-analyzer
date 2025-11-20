@@ -1,0 +1,525 @@
+# Implementation Plan
+
+- [x] 1. Set up Vue SFC parser infrastructure
+  - Create `packages/analyzer/src/parser/vue-sfc-parser.ts` with methods to extract script setup and template sections from Vue SFC files
+  - Implement regex-based extraction for `<script setup>`, `<template>`, and handle lang attributes (ts/js)
+  - Add line/column tracking for error reporting
+  - _Requirements: 1.1, 1.3, 1.4_
+
+- [x] 2. Create Vue AST analyzer
+  - Create `packages/analyzer/src/parser/vue-ast-analyzer.ts` implementing the ASTAnalyzer interface
+  - Add framework detection logic to recognize .vue files and route to Vue analyzer
+  - Integrate with existing SWC parser for script setup content
+  - Set up analyzer coordination structure for Vue-specific analyzers
+  - _Requirements: 1.2, 1.5, 7.1, 7.3_
+
+- [x] 3. Implement Vue props analyzer
+  - Create `packages/analyzer/src/analyzers/vue-props-analyzer.ts`
+  - Detect `defineProps()` calls in script setup
+  - Extract props from TypeScript generic syntax: `defineProps<{ name: string }>()`
+  - Extract props from object syntax: `defineProps({ name: String })`
+  - Map Vue prop types to DFD data types
+  - Create External Entity Input nodes for each prop
+  - _Requirements: 2.1, 2.2_
+
+- [x] 4. Implement Vue state analyzer
+  - Create `packages/analyzer/src/analyzers/vue-state-analyzer.ts`
+  - Detect `ref()` calls and create Data Store nodes with type "ref"
+  - Detect `reactive()` calls and create Data Store nodes with type "reactive"
+  - Detect `computed()` calls and create Data Store nodes with type "computed"
+  - Extract variable names and infer data types
+  - _Requirements: 2.3, 2.4_
+
+- [x] 5. Implement Vue composables and lifecycle analyzer
+  - Create `packages/analyzer/src/analyzers/vue-composables-analyzer.ts`
+  - Detect composable calls (functions starting with "use")
+  - Create Process nodes for composable invocations
+  - Detect lifecycle hooks (onMounted, onUpdated, onUnmounted, etc.)
+  - Create Process nodes for lifecycle hooks
+  - Track dependencies between lifecycle hooks and reactive data
+  - _Requirements: 2.5, 3.1, 3.2, 3.5_
+
+- [x] 6. Implement Vue emits analyzer
+  - Create `packages/analyzer/src/analyzers/vue-emits-analyzer.ts`
+  - Detect `defineEmits()` calls
+  - Extract emit event names from TypeScript generic or array syntax
+  - Create External Entity Output nodes for each emit
+  - Track emit calls in functions and create data flows
+  - _Requirements: 4.2, 4.3_
+
+- [x] 7. Implement Vue watchers analyzer
+  - Add watcher detection to composables analyzer or create separate analyzer
+  - Detect `watch()` and `watchEffect()` calls
+  - Create Process nodes with type "watcher"
+  - Extract watched dependencies and create data flows from data stores to watchers
+  - _Requirements: 4.1, 4.5_
+
+- [x] 8. Implement Vue template analyzer
+  - Create `packages/analyzer/src/analyzers/vue-template-analyzer.ts`
+  - Parse template HTML and extract mustache bindings `{{ variable }}`
+  - Extract v-bind (`:`) directive bindings
+  - Extract v-on (`@`) directive bindings
+  - Extract v-model bindings
+  - Create External Entity Output nodes for template rendering
+  - Create data flows from script variables to template outputs
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+
+- [x] 9. Implement Vue Router library adapter
+  - Create `packages/analyzer/src/libraries/vue-router.ts`
+  - Implement HookProcessor for `useRoute()` composable
+  - Create External Entity Input nodes for route.params and route.query
+  - Implement HookProcessor for `useRouter()` composable
+  - Create library hook nodes for router access
+  - Detect router navigation calls (push, replace) and create data flows
+  - Handle navigation guards (onBeforeRouteUpdate, onBeforeRouteLeave)
+  - Register processor in the processor registry
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
+- [x] 10. Implement Pinia library adapter
+  - Create `packages/analyzer/src/libraries/pinia.ts`
+  - Implement HookProcessor for `useStore()` pattern (useXxxStore)
+  - Create library hook nodes for store access
+  - Create External Entity Input nodes for store state properties
+  - Create External Entity Input nodes for store getters with type "computed"
+  - Create Process nodes for store action calls
+  - Handle `storeToRefs()` and create data flows to local refs
+  - Register processor in the processor registry
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
+- [x] 11. Implement Vue core library adapter
+  - Create `packages/analyzer/src/libraries/vue.ts`
+  - Implement processors for provide/inject pattern
+  - Create External Entity Input nodes for inject
+  - Create External Entity Output nodes for provide
+  - Handle custom composables that return reactive values
+  - Register processor in the processor registry
+  - _Requirements: 4.4, 3.3, 3.4_
+
+- [x] 12. Integrate Vue analyzer with DFD builder
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` to handle Vue component analysis
+  - Map Vue state types (ref, reactive, computed) to DFD data store nodes
+  - Map Vue emits to DFD external entity output nodes
+  - Map composables to DFD process nodes
+  - Ensure Vue-specific node types are properly handled
+  - Create edges for data flows between Vue-specific elements
+  - _Requirements: 7.2, 7.4, 7.5_
+
+- [x] 13. Create Vue example project structure
+  - Create `examples/vue-vite/` directory
+  - Initialize Vite + Vue 3 + TypeScript project
+  - Add Vue Router and Pinia dependencies
+  - Create `src/components/` directory for test components
+  - Set up basic project configuration (vite.config.ts, tsconfig.json)
+  - _Requirements: 6.1_
+
+- [x] 14. Create basic Vue acceptance test components
+  - Create `001-SimpleProps.vue` with basic props and corresponding `.mmd` file
+  - Create `002-ReactiveState.vue` with ref/reactive and corresponding `.mmd` file
+  - Create `003-ComputedValues.vue` with computed properties and corresponding `.mmd` file
+  - Create `004-Composables.vue` with custom composables and corresponding `.mmd` file
+  - Create `005-Lifecycle.vue` with lifecycle hooks and corresponding `.mmd` file
+  - Generate initial `.mmd` reference files based on expected DFD output
+  - _Requirements: 6.2, 6.3, 6.4_
+
+- [x] 15. Create advanced Vue acceptance test components
+  - Create `006-Emits.vue` with defineEmits and corresponding `.mmd` file
+  - Create `007-VueRouter.vue` with useRoute/useRouter and corresponding `.mmd` file
+  - Create `008-Pinia.vue` with Pinia store usage and corresponding `.mmd` file
+  - Create `009-TemplateBindings.vue` with template directives and corresponding `.mmd` file
+  - Create `010-Watchers.vue` with watch/watchEffect and corresponding `.mmd` file
+  - Generate initial `.mmd` reference files based on expected DFD output
+  - _Requirements: 6.2, 6.5_
+
+- [x] 16. Update acceptance test runner for Vue
+  - Update `packages/extension/src/test/acceptance/test-discovery.ts` to discover `.vue` files
+  - Update test runner to handle Vue SFC parsing
+  - Ensure Mermaid normalization works for Vue-generated diagrams
+  - Add Vue-specific test filtering options
+  - _Requirements: 6.2_
+
+- [x] 17. Update extension framework detection
+  - Update `packages/extension/src/extension.ts` to detect `.vue` files
+  - Route `.vue` files to Vue analyzer instead of React analyzer
+  - Ensure command palette commands work with Vue files
+  - Update file type activation events to include `.vue`
+  - _Requirements: 7.3_
+
+- [x] 18. Update web package for Vue support
+  - Update `packages/web/src/services/analyzer.ts` to handle Vue files
+  - Add Vue file upload support in web playground
+  - Update sample selector to include Vue examples
+  - Ensure Monaco editor supports Vue syntax highlighting
+  - _Requirements: 7.3_
+
+- [x] 19. Add error handling for Vue analysis
+  - Implement `VueAnalysisError` class with error codes
+  - Add try-catch blocks in Vue SFC parser for malformed SFC
+  - Add error handling in Vue AST analyzer for parse failures
+  - Display user-friendly error messages in VS Code diagnostics
+  - Add error recovery strategies (partial analysis on errors)
+  - _Requirements: 7.4_
+
+- [x] 20. Run and validate acceptance tests
+  - Run acceptance tests: `pnpm run test`
+  - Analyze test failures and identify missing patterns
+  - Iterate on analyzer implementations to fix failures
+  - Update `.mmd` reference files when output is correct: `pnpm run test -- --update-refs`
+  - Ensure all Vue acceptance tests pass
+  - _Requirements: 6.2, 6.3, 6.4, 6.5_
+
+- [x] 21. Update documentation
+  - Update README.md to mention Vue support
+  - Create Vue-specific usage guide in `docs/vue-support.md`
+  - Document supported Vue patterns and limitations
+  - Add Vue examples to documentation
+  - Update CHANGELOG.md with Vue support feature
+  - _Requirements: 7.5_
+
+- [x] 22. Implement automatic framework detection for web playground
+  - Create `packages/web/src/utils/framework-detector.ts` utility
+  - Implement import statement analysis to detect framework
+  - Check for Vue-specific imports: `vue`, `@vue/`, `pinia`, `vue-router`
+  - Check for React-specific imports: `react`, `react-dom`, `@tanstack/react-query`, etc.
+  - Check for Svelte-specific imports: `svelte`, `svelte/store`, etc.
+  - Detect Vue SFC structure: presence of `<template>`, `<script setup>`, `<style>` tags
+  - Return detected framework with confidence score
+  - Fallback to 'react' if detection is ambiguous
+  - _Requirements: 7.3_
+
+- [x] 23. Integrate framework detector in web analyzer service
+  - Update `packages/web/src/services/analyzer.ts` to use framework detector
+  - Call `detectFramework(code)` before analysis if framework is not explicitly provided
+  - Update `analyzeComponent` function signature to make framework parameter optional
+  - Log detected framework for debugging
+  - Allow manual framework override to take precedence over auto-detection
+  - _Requirements: 7.3_
+
+- [x] 24. Update web UI for automatic framework detection
+  - Update `packages/web/src/App.tsx` to use auto-detected framework
+  - Show detected framework in UI (e.g., badge or indicator)
+  - Allow users to manually override detected framework
+  - Update framework selector to show "Auto-detected: Vue" or "Auto-detected: React"
+  - Ensure sample loading still sets framework explicitly
+  - _Requirements: 7.3_
+
+- [x] 25. Add tests for framework detector
+  - Create test file `packages/web/src/utils/framework-detector.test.ts`
+  - Test Vue detection with various import patterns
+  - Test React detection with various import patterns
+  - Test Svelte detection with various import patterns
+  - Test Vue SFC structure detection
+  - Test ambiguous cases and fallback behavior
+  - Test edge cases (no imports, mixed imports, etc.)
+  - _Requirements: 7.3_
+
+- [x] 26. Enhance Vue conditional rendering with subgraphs (v-if)
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` to detect v-if directives
+  - Create subgraph structures for conditional rendering similar to React's conditional rendering
+  - Reference React implementation: `examples/react-vite/src/components/001-React-ConditionalRendering.tsx`
+  - Generate subgraph nodes for elements within v-if blocks
+  - Create data flows from condition variables to subgraph
+  - Update `examples/vue-vite/src/components/001-SimpleProps.vue` to demonstrate v-if subgraph
+  - Generate corresponding `.mmd` file with subgraph notation
+  - _Requirements: 5.1, 5.5_
+
+- [x] 27. Add event handler data flows for Vue click events (@click)
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` to create data flows from button nodes to event handlers
+  - Add "@click" label to data flow edges from UI elements to handler functions
+  - Create data flows from event handlers to state variables they modify (ref/reactive)
+  - Update `examples/vue-vite/src/components/002-ReactiveState.vue` to demonstrate @click flows
+  - Show data flows: button → handler function → state variables (value, user)
+  - Generate corresponding `.mmd` file with labeled event flows
+  - _Requirements: 5.3, 5.5_
+
+- [x] 28. Add Vue control structure examples (v-for, v-else, v-else-if)
+  - Create `examples/vue-vite/src/components/011-ControlStructures.vue` with v-for loops
+  - Add v-else and v-else-if conditional rendering examples
+  - Create subgraphs for v-for iterations showing list rendering
+  - Create subgraphs for v-else/v-else-if branches
+  - Show data flows from array/list variables to v-for subgraphs
+  - Show data flows from condition variables to v-if/v-else-if/v-else subgraphs
+  - Generate corresponding `.mmd` file with control structure subgraphs
+  - _Requirements: 5.1, 5.5, 6.2_
+
+- [x] 29. Update Vue template analyzer for control structures
+  - Enhance `packages/analyzer/src/analyzers/vue-template-analyzer.ts` to detect v-for directives
+  - Extract v-for loop variables and source arrays
+  - Create subgraph structures for v-for iterations
+  - Detect v-else and v-else-if directives
+  - Create linked subgraphs for if-else-if-else chains
+  - Create data flows from source data to control structure subgraphs
+  - _Requirements: 5.1, 5.5_
+
+- [x] 30. Run acceptance tests for enhanced Vue features
+  - Run acceptance tests for updated components
+  - Validate subgraph generation for v-if, v-for, v-else
+  - Validate event handler data flows with labels
+  - Update `.mmd` reference files if needed: `pnpm run test -- --update-refs`
+  - Ensure all enhanced Vue acceptance tests pass
+  - _Requirements: 6.2, 6.3, 6.4, 6.5_
+
+- [x] 31. Refactor Vue display edges to match React architecture
+  - Remove `createVueTemplateOutputNodes` method (eliminates `_display` node creation)
+  - Remove `buildVueTemplateDataFlows` method (replaced by direct edge approach)
+  - Update `buildVueConditionalSubgraphs` to add `displayDependencies` metadata to JSX element nodes
+  - Update `buildVueLoopSubgraphs` to add `displayDependencies` metadata to JSX element nodes
+  - Extract mustache bindings ({{ variable }}) and map to JSX elements with displayDependencies
+  - Implement Vue-specific `buildDisplayEdges` logic similar to React's implementation
+  - Create direct edges from props/state to JSX elements (no intermediate `_display` nodes)
+  - Ensure data flows: `prop` → `<h2>` element (direct connection)
+  - Update acceptance tests and regenerate `.mmd` reference files
+  - _Requirements: 5.1, 5.2, 5.5, 7.2_
+- [x] 31.1 Update Vue conditional/loop subgraph builders with displayDependencies
+  - Modify `buildVueConditionalSubgraphs` to track which variables are displayed in each JSX element
+  - Modify `buildVueLoopSubgraphs` to track which variables are displayed in each JSX element
+  - Add `displayDependencies` array to element node metadata
+  - Parse mustache bindings within conditional/loop structures
+  - Map bindings to their containing JSX elements
+  - _Requirements: 5.1, 5.5_
+- [x] 31.2 Implement Vue buildDisplayEdges method
+  - Create `buildVueDisplayEdges` method in DFD builder
+  - Iterate through all JSX element nodes in subgraphs
+  - For each element's `displayDependencies`, find source node (prop/state/computed)
+  - Create direct edge from source to JSX element with label "display"
+  - Handle control visibility edges for v-if conditions (separate from display)
+  - Handle iteration edges for v-for loops (separate from display)
+  - _Requirements: 5.2, 5.5, 7.2_
+- [x] 31.3 Remove Vue _display node infrastructure
+  - Delete `createVueTemplateOutputNodes` method call from Vue analysis flow
+  - Delete `buildVueTemplateDataFlows` method call from Vue analysis flow
+  - Remove any references to `vue-template` category nodes with `_display` suffix
+  - Clean up unused code related to template output node creation
+  - _Requirements: 7.2_
+- [x] 31.4 Update and validate Vue acceptance tests
+  - Run acceptance tests: `pnpm run test`
+  - Verify `_display` nodes are removed from all Vue test outputs
+  - Verify direct edges from props to JSX elements are created
+  - Verify multiple display edges for variables used in multiple places (e.g., count in 001-SimpleProps)
+  - Update `.mmd` reference files: `pnpm run test -- --update-refs`
+  - Ensure all Vue acceptance tests pass with new architecture
+  - _Requirements: 6.2, 6.3, 6.4, 6.5_
+
+
+- [x] 32. Refactor Vue composables to match React custom hooks pattern
+  - Update Vue composables analyzer to treat composables as single nodes (like React's useSWR)
+  - Create single composable node (e.g., `useCounter`, `useLocalStorage`) instead of individual variable nodes
+  - Extract returned properties from composable destructuring
+  - Classify returned properties as data or function based on type inference or usage
+  - Create edges from composable node to display elements with property name as label (e.g., "count", "doubled")
+  - Create edges from button elements to composable node for function calls with function name as label (e.g., "increment", "decrement")
+  - Detect function calls in @click handlers (support "functionName", functionName(), etc.)
+  - Update `examples/vue-vite/src/components/004-Composables.vue` test expectations
+  - _Requirements: 3.1, 3.3, 3.4, 5.3_
+- [x] 32.1 Update Vue composables analyzer to extract returned properties
+  - Modify `packages/analyzer/src/analyzers/vue-composables-analyzer.ts`
+  - Parse destructuring patterns from composable calls: `const { count, increment } = useCounter()`
+  - Store returned property names with each composable
+  - Attempt type inference for each property (data vs function)
+  - Add `returnedProperties` field to composable info structure
+  - _Requirements: 3.1, 3.3_
+- [x] 32.2 Update DFD builder to create composable nodes
+  - Modify `packages/analyzer/src/parser/dfd-builder.ts`
+  - Create single node for each composable (not individual properties)
+  - Use composable name as node label (e.g., "useCounter")
+  - Set node type to "library-hook" or "process" based on composable type
+  - Store returned properties in node metadata
+  - _Requirements: 3.1, 7.2_
+- [x] 32.3 Create display edges from composables to template elements
+  - For each returned property that is data (not function)
+  - Find template elements that display this property
+  - Create edge from composable node to template element
+  - Use property name as edge label (e.g., "count", "doubled")
+  - _Requirements: 3.3, 5.2, 7.2_
+- [x] 32.4 Create function call edges from buttons to composables
+  - For each @click handler that calls a composable function
+  - Find the composable node that provides this function
+  - Create edge from button element to composable node
+  - Use function name as edge label (e.g., "increment", "decrement")
+  - Support various call patterns: "functionName", functionName(), functionName(args)
+  - _Requirements: 3.4, 5.3, 7.2_
+- [x] 32.5 Update acceptance tests for composables
+  - Run tests: `pnpm run test`
+  - Verify single composable nodes are created (useCounter, useLocalStorage)
+  - Verify display edges with property labels (count, doubled, storedValue)
+  - Verify function call edges with function labels (increment, decrement)
+  - Update `.mmd` reference files: `pnpm run test -- --update-refs`
+  - Ensure 004-Composables test passes
+  - _Requirements: 6.2, 6.3_
+
+
+- [x] 33. Implement lifecycle hooks subgraph for Vue components
+  - Create "Lifecycles" subgraph to group lifecycle hook nodes (onMounted, onUpdated, onBeforeMount, onBeforeUpdate, onUnmounted)
+  - Update `packages/analyzer/src/analyzers/vue-composables-analyzer.ts` to mark lifecycle hooks for subgraph grouping
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` to create lifecycle subgraph structure
+  - Add write data flows from lifecycle hooks to state variables they modify
+  - For `005-Lifecycle.vue`: create edges from `onMounted` → `mountCount` and `onUpdated` → `updateCount`
+  - Label edges with "write" or "update" to indicate state modification
+  - Update `examples/vue-vite/src/components/005-Lifecycle.mmd` reference file
+  - Run acceptance tests to validate: `pnpm run test -- --filter=005`
+  - _Requirements: 3.2, 3.5, 7.2_
+
+- [x] 34. Debug and fix Vue component visualizations (006-011)
+  - Fix visualization issues in advanced Vue test components
+  - Implement missing subgraph structures and data flow patterns
+  - Ensure consistency with React visualization patterns
+  - Update all affected `.mmd` reference files
+  - Run acceptance tests to validate all fixes
+  - _Requirements: 4.1, 4.2, 4.3, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 7.2, 8.1, 8.2, 8.3, 9.1, 9.2, 9.3, 9.4_
+- [x] 34.1 Fix 006-Emits.vue - Emits subgraph and data flows
+  - Group all emit-related nodes in an "Emits" subgraph
+  - Create data flows from emit calls to emit definitions with label "emits: {eventName}"
+  - Example: `handleSubmit` → `submit` with label "emits: submit"
+  - Update `packages/analyzer/src/analyzers/vue-emits-analyzer.ts` to mark emits for subgraph grouping
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` to create emits subgraph structure
+  - Update `examples/vue-vite/src/components/006-Emits.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=006`
+  - _Requirements: 4.2, 4.3, 7.2_
+- [x] 34.2 Fix 007-VueRouter.vue - URL input and router calls
+  - Create "URL: Input" node before useRoute composable
+  - Add data flow from "URL: Input" → `useRoute` with appropriate label
+  - Create data flows from router navigation functions to useRouter with "calls" label
+  - Example: `goToHome` --[calls]--> `useRouter`
+  - Example: `goToUser` --[calls]--> `useRouter`
+  - Example: `goBack` --[calls]--> `router.back` (or similar pattern)
+  - Update `packages/analyzer/src/libraries/vue-router.ts` to handle URL input node
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` for router call data flows
+  - Update `examples/vue-vite/src/components/007-VueRouter.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=007`
+  - _Requirements: 8.1, 8.2, 8.3, 7.2_
+- [x] 34.3 Fix 008-Pinia.vue - Store property displays and action calls
+  - Create data flows from store properties to template elements with "displays: {propertyName}" label
+  - Example: `useCounterStore` → `<div>` with label "displays: count"
+  - Handle `storeToRefs()` extracted properties correctly
+  - Create data flows from event handlers to store actions with "calls: {actionName}" label
+  - Example: `increment` button → `useCounterStore` with label "calls: increment"
+  - Update `packages/analyzer/src/libraries/pinia.ts` to create proper data flows
+  - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_
+- [x] 34.4 Fix 009-TemplateBindings.vue - v-model, bindings, and events
+  - Remove `<key>` tag nodes (these should not be created)
+  - Handle `v-model` with two data flows: "binds" and "updates" between data and input element
+  - Example: `inputValue` --[binds]--> `<input>` and `<input>` --[updates]--> `inputValue`
+  - Fix `:value` binding to use actual tag name (e.g., `<input>`) instead of `<value>`
+  - Use "binds" label for `:value`, `:placeholder`, `:style` data flows (not "displays")
+  - Handle `v-show` similar to `v-if` with conditional rendering visualization
+  - Create data flows for `@focus` events with "@focus" label connecting element to handler
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` for all binding types
+  - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - _Requirements: 5.2, 5.3, 5.4, 5.5, 7.2_
+- [x] 34.5 Fix 010-Watchers.vue - Watcher process nodes and data flows
+  - Create process nodes for watchers with label "watch"
+  - Create data flows: watched variable → watcher process → output/side-effect
+  - Example: `count` → `watch(count)` → `doubledCount`
+  - Example: `user.name` → `watch(user)` → side effect or state update
+  - Update `packages/analyzer/src/analyzers/vue-composables-analyzer.ts` for watcher visualization
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` to create watcher data flows
+  - Update `examples/vue-vite/src/components/010-Watchers.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=010`
+  - _Requirements: 4.1, 4.5, 7.2_
+- [x] 34.6 Fix 011-ControlStructures.vue - v-for subgraphs and parent-child relationships
+  - Remove `<key>` tag nodes (same issue as 009)
+  - Implement template parent-child relationship visualization
+  - Create subgraphs for `v-for` loops containing the iterated elements
+  - Place loop element tags inside the v-for subgraph (similar to React pattern)
+  - Example: v-for subgraph contains `<li>` elements that are rendered in the loop
+  - Show data flows from array variables to v-for subgraphs
+  - Ensure proper nesting of template elements within control structure subgraphs
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` for parent-child relationships
+  - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - _Requirements: 5.1, 5.5, 7.2_
+
+- [x] 35. Refine Vue component visualizations - node shapes and data flows
+  - Fix node shapes and data flow patterns across Vue test components
+  - Ensure consistency with DFD conventions (rounded for external entities, cylinder for data stores, etc.)
+  - Update visualization logic and reference files
+  - Run acceptance tests to validate all fixes
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 7.2, 8.1, 8.2, 8.3, 9.1, 9.2, 9.3, 9.4_
+- [x] 35.1 Fix 006-Emits.vue - Change emit node shape from stadium to rounded
+  - Update emit node shape from `stadium` to `rounded` (rounded rectangle)
+  - Emit nodes should use `(` `)` shape prefix/suffix in Mermaid
+  - Update `packages/extension/src/visualization/mermaid-transformer.ts`
+  - Update `examples/vue-vite/src/components/006-Emits.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=006`
+  - _Requirements: 4.2, 4.3, 7.2_
+- [x] 35.2 Fix 007-VueRouter.vue - URL nodes and useRoute shape
+  - Change `URL: Input` and `URL: Output` node shapes to `rounded` (rounded rectangle)
+  - Change `useRoute` node shape to `cylinder` (data store shape)
+  - Create data flows from `useRoute` to `onBeforeRouteUpdate` and `onBeforeRouteLeave` processes
+  - `onBeforeRouteUpdate` and `onBeforeRouteLeave` should be process nodes
+  - Update `packages/analyzer/src/libraries/vue-router.ts`
+  - Update `examples/vue-vite/src/components/007-VueRouter.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=007`
+  - _Requirements: 8.1, 8.2, 8.3, 7.2_
+- [x] 35.3 Fix 008-Pinia.vue - Store node shapes and data flows
+  - Change `useCounterStore` and `useUserStore` node shapes to `cylinder` (data store shape)
+  - Remove "converts to refs" data flow
+  - Remove `storeToRefs` node (not needed)
+  - Fix duplicate data flows - one should be from `useUserStore` instead of `useCounterStore`
+  - Update `packages/analyzer/src/libraries/pinia.ts`
+  - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_
+- [x] 35.4 Fix 009-TemplateBindings.vue - v-for subgraphs and data flows
+  - Create subgraphs for `v-for` loops (similar to `v-if`)
+  - Place `<li>` and other v-for elements inside the v-for subgraph
+  - Create data flows from `items` array to `<li>` elements inside v-for subgraph
+  - Create data flows from `placeholderText` to input element with "binds" label
+  - Create data flows from `dynamicStyle` to element with "binds" label
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts`
+  - Update `packages/analyzer/src/parser/dfd-builder.ts`
+  - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - _Requirements: 5.2, 5.3, 5.4, 5.5, 7.2_
+- [x] 35.5 Fix 010-Watchers.vue - watchEffect data flows and cleanup
+  - Fix `watchEffect` for `doubled` - should only write to `doubled`, not watch it
+  - Create data flows from `watchEffect` to `cleanup` process nodes where cleanup functions exist
+  - Update `packages/analyzer/src/analyzers/vue-composables-analyzer.ts`
+  - Update `packages/analyzer/src/parser/dfd-builder.ts`
+  - Update `examples/vue-vite/src/components/010-Watchers.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=010`
+  - _Requirements: 4.1, 4.5, 7.2_
+- [x] 35.6 Fix 011-ControlStructures.vue - Combined v-for and v-if subgraphs
+  - When a single tag has both `v-for` and `v-if` directives, create a single combined subgraph
+  - The subgraph label should show both conditions (e.g., `{v-for: items, v-if: item.active}`)
+  - Ensure proper nesting: combined subgraph contains the element with both directives
+  - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts`
+  - Update `packages/analyzer/src/parser/dfd-builder.ts`
+  - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - _Requirements: 5.1, 5.5, 7.2_
+
+- [-] 36. Fix remaining Vue component visualization issues
+  - Address specific issues found in acceptance tests
+  - Ensure all Vue components have correct DFD structure
+  - Update reference files as needed
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 7.2, 8.1, 8.2, 8.3, 9.1, 9.2, 9.3, 9.4_
+- [x] 36.1 Fix 011-ControlStructures.vue - Add <li> element inside combined v-for/v-if subgraph
+  - The combined `{v-for: items, v-if: item.active}` subgraph should contain the `<li>` element
+  - Currently the subgraph is empty (no child elements shown)
+  - Update `packages/analyzer/src/parser/dfd-builder.ts` to add the element node to the combined subgraph
+  - The structure should be: `subgraph_14["{v-for: items, v-if: item.active}"]` contains `jsx_element_X["<li>"]`
+  - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - _Requirements: 5.1, 5.5, 7.2_
+- [x] 36.2 Fix 009-TemplateBindings.vue - Add computed property dependency edges
+  - Create "computes" edge from `showContent` → `dynamicClass`
+  - Create "computes" edge from `isVisible` → `dynamicStyle`
+  - Currently computed properties have empty dependencies array: `dependencies: []`
+  - Update `packages/analyzer/src/analyzers/vue-state-analyzer.ts` to properly detect computed dependencies
+  - The analyzer should parse the computed function body to find referenced reactive variables
+  - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - _Requirements: 2.4, 7.2_
+- [x] 36.3 Fix 008-Pinia.vue - Add display edges from store properties to template elements
+  - Create display edges from Pinia store properties to `<p>` elements
+  - Missing 3 display edges: `count` → `<p>`, `doubleCount` → `<p>`, `userName` → `<p>`
+  - Currently shows: "Source node not found for display variable: count/doubleCount/userName"
+  - Update `packages/analyzer/src/libraries/pinia.ts` to create property nodes for store state
+  - Or update `packages/analyzer/src/parser/dfd-builder.ts` to recognize store properties as valid display sources
+  - The store properties should be accessible as data nodes that can flow to display elements
+  - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
+  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_

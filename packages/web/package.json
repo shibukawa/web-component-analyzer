@@ -1,14 +1,25 @@
 {
   "name": "@web-component-analyzer/web",
   "version": "0.0.1",
+  "description": "Web playground for analyzing React and Vue 3 components with Data Flow Diagrams",
   "type": "module",
+  "keywords": [
+    "react",
+    "vue",
+    "vue3",
+    "component-analysis",
+    "visualization",
+    "dfd",
+    "playground"
+  ],
   "scripts": {
     "extract-types": "tsx scripts/extract-types.ts",
     "prebuild": "pnpm run extract-types",
     "dev": "pnpm run extract-types && vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "@swc/wasm-web": "^1.15.1",

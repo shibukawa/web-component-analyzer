@@ -1,13 +1,18 @@
 import * as vscode from 'vscode';
-import { ReactParser, DFDSourceData } from '@web-component-analyzer/analyzer';
+import { ComponentParser, DFDSourceData } from '@web-component-analyzer/analyzer';
 import { WebviewPanelManager } from './webview-panel-manager';
 import { FileWatcher } from './file-watcher';
+
+/**
+ * Parser factory function type
+ */
+export type ParserFactory = (filePath: string) => ComponentParser;
 
 /**
  * Service for orchestrating DFD generation and webview management
  * 
  * Responsibilities:
- * - Parse components using React Parser
+ * - Parse components using appropriate parser (React or Vue)
  * - Manage webview panel lifecycle
  * - Handle errors gracefully
  * - Coordinate refresh operations
@@ -18,11 +23,20 @@ export class DFDVisualizerService {
 	private fileWatcher: FileWatcher;
 	private refreshTimers: Map<string, NodeJS.Timeout> = new Map();
 	private readonly refreshDebounceDelay = 500; // 500ms debounce for refresh calls
+	private parserFactory: ParserFactory;
 
 	constructor(
-		private readonly reactParser: ReactParser,
+		parserOrFactory: ComponentParser | ParserFactory,
 		private readonly webviewPanelManager: WebviewPanelManager
 	) {
+		// Support both legacy single parser and new parser factory
+		if (typeof parserOrFactory === 'function') {
+			this.parserFactory = parserOrFactory;
+		} else {
+			// Legacy: wrap single parser in factory
+			this.parserFactory = () => parserOrFactory;
+		}
+		
 		// Initialize file watcher
 		this.fileWatcher = new FileWatcher();
 		this.setupFileWatcher();
@@ -38,7 +52,7 @@ export class DFDVisualizerService {
 	 */
 	async showDFD(document: vscode.TextDocument): Promise<void> {
 		try {
-			// Parse component using React Parser
+			// Parse component using appropriate parser (React or Vue)
 			const dfdData = await this.parseComponent(document);
 
 			// Handle parse errors
@@ -52,8 +66,8 @@ export class DFDVisualizerService {
 				const panel = this.webviewPanelManager.getOrCreatePanel(document, componentName);
 				
 				// Check for specific error types and show in webview
-				if (errorMessages.includes('No React component found')) {
-					this.webviewPanelManager.showError(panel, 'No React component detected in the file. Please ensure the file contains a valid React functional or class component.');
+				if (errorMessages.includes('No React component found') || errorMessages.includes('No Vue component found') || errorMessages.includes('No component found')) {
+					this.webviewPanelManager.showError(panel, 'No component detected in the file. Please ensure the file contains a valid component.');
 					return;
 				}
 				
@@ -217,7 +231,10 @@ export class DFDVisualizerService {
 		const sourceCode = document.getText();
 		const filePath = document.uri.fsPath;
 
-		return await this.reactParser.parse(sourceCode, filePath);
+		// Get appropriate parser based on file extension
+		const parser = this.parserFactory(filePath);
+		
+		return await parser.parse(sourceCode, filePath);
 	}
 
 	/**
