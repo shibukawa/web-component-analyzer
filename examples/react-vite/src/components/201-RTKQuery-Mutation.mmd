@@ -1,9 +1,8 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
   state_0[("name")]
-  server_1["Server: UpdateUser"]
-  library_hook_2[("useUpdateUserMutation")]
-  process_3[["handleSubmit"]]
+  composable_1[("useUpdateUserMutation")]
+  process_2[["handleSubmit"]]
   jsx_element_5["div"]
   jsx_element_0["input"]
   jsx_element_1["button"]
@@ -31,30 +30,14 @@ flowchart LR
         jsx_element_4@{ shape: hex, label: "&lt;p&gt;" }
     end
   end
-  library_hook_2 elibrary_hook_2_server_1@-->|"mutate"| server_1
-  elibrary_hook_2_server_1@{ animate: true }
-  library_hook_2 elibrary_hook_2_subgraph_1@-->|"control visibility: isLoading"| subgraph_1
-  elibrary_hook_2_subgraph_1@{ animate: true }
-  library_hook_2 elibrary_hook_2_subgraph_2@-->|"control visibility: isError"| subgraph_2
-  elibrary_hook_2_subgraph_2@{ animate: true }
-  library_hook_2 elibrary_hook_2_subgraph_3@-->|"control visibility: data"| subgraph_3
-  elibrary_hook_2_subgraph_3@{ animate: true }
-  library_hook_2 elibrary_hook_2_jsx_element_5@-->|"display: isLoading"| jsx_element_5
-  elibrary_hook_2_jsx_element_5@{ animate: true }
-  library_hook_2 elibrary_hook_2_jsx_element_3@-->|"display: error"| jsx_element_3
-  elibrary_hook_2_jsx_element_3@{ animate: true }
-  library_hook_2 elibrary_hook_2_jsx_element_4@-->|"display: data"| jsx_element_4
-  elibrary_hook_2_jsx_element_4@{ animate: true }
   state_0 estate_0_jsx_element_0@-->|"binds"| jsx_element_0
   estate_0_jsx_element_0@{ animate: true }
   jsx_element_0 ejsx_element_0_state_0@-->|"onChange"| state_0
   ejsx_element_0_state_0@{ animate: true }
-  jsx_element_1 ejsx_element_1_process_3@-->|"onClick"| process_3
-  ejsx_element_1_process_3@{ animate: true }
-  state_0 estate_0_process_3@-->|"reads"| process_3
-  estate_0_process_3@{ animate: true }
-  process_3 eprocess_3_library_hook_2@-->|"calls: trigger"| library_hook_2
-  eprocess_3_library_hook_2@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_2@-->|"onClick"| process_2
+  ejsx_element_1_process_2@{ animate: true }
+  state_0 estate_0_process_2@-->|"reads"| process_2
+  estate_0_process_2@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -66,8 +49,8 @@ flowchart LR
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
   class state_0 dataStore
-  class library_hook_2 dataStore
-  class process_3 process
+  class composable_1 dataStore
+  class process_2 process
   class jsx_element_5 jsxElement
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement

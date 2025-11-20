@@ -1,7 +1,6 @@
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR
-  server_0["Server: GetUser"]
-  library_hook_1[("useGetUserQuery")]
+  composable_0[("useGetUserQuery")]
   jsx_element_0["p"]
   jsx_element_1["p"]
   jsx_element_6["div"]
@@ -31,26 +30,6 @@ flowchart LR
     end
       jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
   end
-  server_0 eserver_0_library_hook_1@-->|"fetch"| library_hook_1
-  eserver_0_library_hook_1@{ animate: true }
-  library_hook_1 elibrary_hook_1_subgraph_1@-->|"control visibility: isLoading"| subgraph_1
-  elibrary_hook_1_subgraph_1@{ animate: true }
-  library_hook_1 elibrary_hook_1_subgraph_2@-->|"control visibility: isError"| subgraph_2
-  elibrary_hook_1_subgraph_2@{ animate: true }
-  library_hook_1 elibrary_hook_1_subgraph_3@-->|"control visibility: data"| subgraph_3
-  elibrary_hook_1_subgraph_3@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_1@-->|"display: error"| jsx_element_1
-  elibrary_hook_1_jsx_element_1@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_6@-->|"display: data"| jsx_element_6
-  elibrary_hook_1_jsx_element_6@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_2@-->|"display: data"| jsx_element_2
-  elibrary_hook_1_jsx_element_2@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_3@-->|"display: data"| jsx_element_3
-  elibrary_hook_1_jsx_element_3@{ animate: true }
-  library_hook_1 elibrary_hook_1_jsx_element_4@-->|"display: data"| jsx_element_4
-  elibrary_hook_1_jsx_element_4@{ animate: true }
-  jsx_element_5 ejsx_element_5_library_hook_1@-->|"onClick: refetch"| library_hook_1
-  ejsx_element_5_library_hook_1@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -61,7 +40,7 @@ flowchart LR
   classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
-  class library_hook_1 dataStore
+  class composable_0 dataStore
   class jsx_element_0 jsxElement
   class jsx_element_1 jsxElement
   class jsx_element_6 jsxElement

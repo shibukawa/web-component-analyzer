@@ -4,7 +4,7 @@ import './ShareButton.css';
 
 interface ShareButtonProps {
   code: string;
-  framework: string;
+  framework?: string;
 }
 
 type ToastType = 'success' | 'error';
@@ -32,7 +32,9 @@ export function ShareButton({ code, framework }: ShareButtonProps) {
       // Generate shareable URL
       const url = new URL(window.location.href);
       url.searchParams.set('code', encoded);
-      url.searchParams.set('framework', framework);
+      if (framework) {
+        url.searchParams.set('framework', framework);
+      }
       
       const shareableUrl = url.toString();
 

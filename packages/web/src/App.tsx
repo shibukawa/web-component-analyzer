@@ -9,6 +9,7 @@ import { SplitPane } from './components/SplitPane';
 import { EditorPane } from './components/EditorPane';
 import { VisualizationPane } from './components/VisualizationPane';
 import { SampleSelector } from './components/SampleSelector';
+import { FrameworkSelector } from './components/FrameworkSelector';
 import { ShareButton } from './components/ShareButton';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { ErrorDisplay } from './components/ErrorDisplay';
@@ -23,12 +24,14 @@ function AppContent() {
   
   // Task 10.1: Set up App state management
   const [code, setCode] = useState('');
-  const [framework, setFramework] = useState<Framework>('react');
+  const [framework, setFramework] = useState<Framework | undefined>(undefined);
   const [language, setLanguage] = useState<'typescript' | 'vue' | 'svelte'>('typescript');
   const [mermaidCode, setMermaidCode] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentSampleId, setCurrentSampleId] = useState<string | undefined>(undefined);
+  const [detectedFramework, setDetectedFramework] = useState<Framework | undefined>(undefined);
+  const [detectionConfidence, setDetectionConfidence] = useState<number | undefined>(undefined);
 
   // Task 10.2: Integrate URL state on mount
   const { initialState, error: urlError, isLoading: isLoadingURL } = useURLState();
@@ -94,7 +97,7 @@ function AppContent() {
   useEffect(() => {
     const analyze = async () => {
       console.log('=== STARTING ANALYSIS ===');
-      console.log('Framework:', framework);
+      console.log('Framework (manual):', framework);
       console.log('Debounced code length:', debouncedCode.length);
       console.log('Full code being analyzed:');
       console.log(debouncedCode);
@@ -105,6 +108,8 @@ function AppContent() {
         console.log('Skipping analysis: empty code');
         setMermaidCode('');
         setError(null);
+        setDetectedFramework(undefined);
+        setDetectionConfidence(undefined);
         return;
       }
 
@@ -112,8 +117,15 @@ function AppContent() {
       setError(null);
 
       try {
-        // Analyze the component
+        // Analyze the component (framework is optional, will auto-detect if not provided)
         const result = await analyzeComponent(debouncedCode, framework);
+
+        // Update detected framework info
+        if (result.detectedFramework) {
+          setDetectedFramework(result.detectedFramework);
+          setDetectionConfidence(result.detectionConfidence);
+          console.log('Framework detected:', result.detectedFramework, 'confidence:', result.detectionConfidence);
+        }
 
         if (result.success && result.dfdData) {
           // Transform DFD data to Mermaid code with theme mode
@@ -154,15 +166,23 @@ function AppContent() {
     console.log('Code length:', sample.code.length);
     console.log('Code preview (first 100 chars):', sample.code.substring(0, 100));
     setCode(sample.code);
+    // Explicitly set framework when loading a sample (no auto-detection)
     setFramework(sample.framework);
     setLanguage(sample.framework === 'react' ? 'typescript' : sample.framework);
     setCurrentSampleId(sample.id);
+    // Clear detection info since we're using explicit framework
+    setDetectedFramework(undefined);
+    setDetectionConfidence(undefined);
   };
 
   // Handle code changes
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
     setCurrentSampleId(undefined); // Clear sample selection when user edits code
+    // Reset to auto-detection when user manually edits code
+    if (framework !== undefined) {
+      setFramework(undefined);
+    }
   };
 
   // Task 10.3: Wire up all components
@@ -179,6 +199,12 @@ function AppContent() {
           <SplitPane
           left={
             <EditorPane>
+              <FrameworkSelector
+                framework={framework}
+                detectedFramework={detectedFramework}
+                detectionConfidence={detectionConfidence}
+                onChange={setFramework}
+              />
               <SampleSelector
                 samples={ALL_SAMPLES}
                 currentSampleId={currentSampleId}

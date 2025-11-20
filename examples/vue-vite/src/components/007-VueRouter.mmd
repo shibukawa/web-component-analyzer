@@ -1,0 +1,83 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  vue_state_0[("navigationCount")]
+  jsx_element_1["&lt;button&gt;"]
+  jsx_element_2["&lt;button&gt;"]
+  jsx_element_3["&lt;button&gt;"]
+  url_input_4["URL: Input"]
+  library_hook_5[("useRoute")]
+  library_hook_6[["useRouter"]]
+  url_output_7["URL: Output"]
+  process_8[["goToHome"]]
+  process_9[["goToUser"]]
+  process_10[["goBack"]]
+  process_11[["onBeforeRouteUpdate"]]
+  process_12[["onBeforeRouteLeave"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_14@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_15@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_16@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  subgraph lifecycle_subgraph_13["Lifecycles"]
+    direction TB
+      process_11[["onBeforeRouteUpdate"]]
+      process_12[["onBeforeRouteLeave"]]
+  end
+  url_input_4 eurl_input_4_library_hook_5@-->|"provides"| library_hook_5
+  eurl_input_4_library_hook_5@{ animate: true }
+  library_hook_6 elibrary_hook_6_url_output_7@-->|"navigates"| url_output_7
+  elibrary_hook_6_url_output_7@{ animate: true }
+  url_input_4 eurl_input_4_process_11@-->|"on update"| process_11
+  eurl_input_4_process_11@{ animate: true }
+  url_input_4 eurl_input_4_process_12@-->|"on leave"| process_12
+  eurl_input_4_process_12@{ animate: true }
+  process_8 eprocess_8_library_hook_6@-->|"calls"| library_hook_6
+  eprocess_8_library_hook_6@{ animate: true }
+  process_9 eprocess_9_library_hook_6@-->|"calls"| library_hook_6
+  eprocess_9_library_hook_6@{ animate: true }
+  process_10 eprocess_10_library_hook_6@-->|"calls"| library_hook_6
+  eprocess_10_library_hook_6@{ animate: true }
+  jsx_element_1 ejsx_element_1_process_8@-->|"@click"| process_8
+  ejsx_element_1_process_8@{ animate: true }
+  process_8 eprocess_8_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_8_vue_state_0@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_9@-->|"@click"| process_9
+  ejsx_element_2_process_9@{ animate: true }
+  process_9 eprocess_9_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_9_vue_state_0@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_10@-->|"@click"| process_10
+  ejsx_element_3_process_10@{ animate: true }
+  library_hook_5 elibrary_hook_5_jsx_element_14@-->|"display"| jsx_element_14
+  elibrary_hook_5_jsx_element_14@{ animate: true }
+  library_hook_5 elibrary_hook_5_jsx_element_15@-->|"display"| jsx_element_15
+  elibrary_hook_5_jsx_element_15@{ animate: true }
+  library_hook_5 elibrary_hook_5_jsx_element_16@-->|"display"| jsx_element_16
+  elibrary_hook_5_jsx_element_16@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class vue_state_0 dataStore
+  class library_hook_5 dataStore
+  class library_hook_6 process
+  class process_8 process
+  class process_9 process
+  class process_10 process
+  class process_11 process
+  class process_12 process
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_14 jsxElement
+  class jsx_element_15 jsxElement
+  class jsx_element_16 jsxElement

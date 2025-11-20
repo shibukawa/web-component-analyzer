@@ -20,6 +20,9 @@ import { ApolloClientLibraryProcessor } from './apollo.js';
 import { ZustandLibraryProcessor } from './zustand.js';
 import { RTKQueryLibraryProcessor } from './rtk-query.js';
 import { TRPCLibraryProcessor } from './trpc.js';
+import { VueRouterLibraryProcessor } from './vue-router.js';
+import { PiniaLibraryProcessor } from './pinia.js';
+import { VueCoreLibraryProcessor } from './vue.js';
 import { CustomHookProcessor } from './custom-hook.js';
 
 /**
@@ -72,6 +75,9 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new ZustandLibraryProcessor());
   registry.register(new RTKQueryLibraryProcessor());
   registry.register(new TRPCLibraryProcessor());
+  registry.register(new VueRouterLibraryProcessor());
+  registry.register(new PiniaLibraryProcessor());
+  registry.register(new VueCoreLibraryProcessor());
   
   // Register custom hook processor (lowest priority - fallback)
   // This handles all user-defined hooks
@@ -93,6 +99,9 @@ export { ApolloClientLibraryProcessor } from './apollo.js';
 export { ZustandLibraryProcessor } from './zustand.js';
 export { RTKQueryLibraryProcessor } from './rtk-query.js';
 export { TRPCLibraryProcessor } from './trpc.js';
+export { VueRouterLibraryProcessor } from './vue-router.js';
+export { PiniaLibraryProcessor } from './pinia.js';
+export { VueCoreLibraryProcessor } from './vue.js';
 export { CustomHookProcessor } from './custom-hook.js';
 export type {
   HookProcessor,

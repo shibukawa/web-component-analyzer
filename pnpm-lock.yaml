@@ -15,25 +15,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  examples/react-vite:
-    dependencies:
-      react:
-        specifier: ^18.3.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.0
-        version: 18.3.1(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.0
-        version: 18.3.26
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.7(@types/react@18.3.26)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/analyzer:
     dependencies:
       '@swc/core':

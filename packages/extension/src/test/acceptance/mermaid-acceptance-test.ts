@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { createReactParser, type DFDSourceData } from '@web-component-analyzer/analyzer';
+import { createReactParser, createVueParser, type DFDSourceData } from '@web-component-analyzer/analyzer';
 import { parseComponent } from '../../utils/node-parser';
 import { transformToMermaid } from '../../visualization/mermaid-transformer';
 import {
@@ -46,6 +46,29 @@ function createNodeReactParser() {
 }
 
 /**
+ * Create a Vue parser for Node.js environment
+ */
+function createNodeVueParser() {
+  // Vue parser doesn't need a parserFn as it handles parsing internally
+  return createVueParser();
+}
+
+/**
+ * Create the appropriate parser based on framework
+ */
+function createParserForFramework(framework: string) {
+  switch (framework) {
+    case 'react':
+      return createNodeReactParser();
+    case 'vue':
+      return createNodeVueParser();
+    default:
+      // Default to React parser for unknown frameworks
+      return createNodeReactParser();
+  }
+}
+
+/**
  * Run a single acceptance test
  */
 export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): Promise<TestResult> {
@@ -82,7 +105,7 @@ export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): P
     const referenceMermaid = fs.readFileSync(testCase.referencePath, 'utf-8');
     
     // Parse component and generate DFD data
-    const parser = createNodeReactParser();
+    const parser = createParserForFramework(testCase.framework);
     const dfdData = await parser.parse(sourceCode, testCase.componentPath);
     
     if (!dfdData || dfdData.nodes.length === 0) {
@@ -171,7 +194,8 @@ export async function runSingleTest(testCase: TestCase, updateRefs?: boolean): P
 export async function runAcceptanceTests(
   baseDir: string,
   filter?: string,
-  updateRefs?: boolean
+  updateRefs?: boolean,
+  frameworkFilter?: string
 ): Promise<TestSuiteResult> {
   const startTime = Date.now();
   
@@ -179,7 +203,12 @@ export async function runAcceptanceTests(
   const discovery = discoverTests(baseDir);
   let testCases = discovery.testCases;
   
-  // Apply filter if provided
+  // Apply framework filter if provided
+  if (frameworkFilter) {
+    testCases = testCases.filter(tc => tc.framework === frameworkFilter);
+  }
+  
+  // Apply test name filter if provided
   if (filter) {
     testCases = testCases.filter(tc =>
       tc.testName.includes(filter) || tc.testName.match(new RegExp(filter))
@@ -212,7 +241,8 @@ export async function runAcceptanceTests(
 export async function runAcceptanceTestsMultiFramework(
   examplesDir: string,
   filter?: string,
-  updateRefs?: boolean
+  updateRefs?: boolean,
+  frameworkFilter?: string
 ): Promise<TestSuiteResult> {
   const startTime = Date.now();
   
@@ -220,7 +250,12 @@ export async function runAcceptanceTestsMultiFramework(
   const discovery = discoverTestsMultiFramework(examplesDir);
   let testCases = discovery.testCases;
   
-  // Apply filter if provided
+  // Apply framework filter if provided
+  if (frameworkFilter) {
+    testCases = testCases.filter(tc => tc.framework === frameworkFilter);
+  }
+  
+  // Apply test name filter if provided
   if (filter) {
     testCases = testCases.filter(tc =>
       tc.testName.includes(filter) || tc.testName.match(new RegExp(filter))

@@ -1,0 +1,63 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  vue_state_0[("inputValue")]
+  vue_emit_1("update")
+  vue_emit_2("submit")
+  vue_emit_3("cancel")
+  jsx_element_4["&lt;input&gt;"]
+  jsx_element_5["&lt;button&gt;"]
+  jsx_element_6["&lt;button&gt;"]
+  process_7[["handleInput"]]
+  process_8[["handleSubmit"]]
+  process_9[["handleCancel"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_4@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_11@{ shape: hex, label: "&lt;input&gt;" }
+  end
+  subgraph emits_subgraph_10["Emits"]
+    direction TB
+      vue_emit_1@{ shape: rounded, label: "update" }
+      vue_emit_2@{ shape: rounded, label: "submit" }
+      vue_emit_3@{ shape: rounded, label: "cancel" }
+  end
+  process_7 eprocess_7_vue_emit_1@-->|"emits"| vue_emit_1
+  eprocess_7_vue_emit_1@{ animate: true }
+  process_8 eprocess_8_vue_emit_2@-->|"emits"| vue_emit_2
+  eprocess_8_vue_emit_2@{ animate: true }
+  process_9 eprocess_9_vue_emit_3@-->|"emits"| vue_emit_3
+  eprocess_9_vue_emit_3@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_7@-->|"@input"| process_7
+  ejsx_element_4_process_7@{ animate: true }
+  process_7 eprocess_7_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_7_vue_state_0@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_8@-->|"@click"| process_8
+  ejsx_element_5_process_8@{ animate: true }
+  process_8 eprocess_8_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_8_vue_state_0@{ animate: true }
+  jsx_element_6 ejsx_element_6_process_9@-->|"@click"| process_9
+  ejsx_element_6_process_9@{ animate: true }
+  process_9 eprocess_9_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_9_vue_state_0@{ animate: true }
+  vue_state_0 evue_state_0_jsx_element_11@-->|"binds"| jsx_element_11
+  evue_state_0_jsx_element_11@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class vue_state_0 dataStore
+  class process_7 process
+  class process_8 process
+  class process_9 process
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_11 jsxElement

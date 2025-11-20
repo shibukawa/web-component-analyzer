@@ -1,0 +1,109 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  vue_state_0[("message")]
+  vue_state_1[("inputValue")]
+  vue_state_2[("placeholderText")]
+  vue_state_3[("modelValue")]
+  vue_state_4[("textareaValue")]
+  vue_state_5[("showContent")]
+  vue_state_6[("isVisible")]
+  vue_state_7[("items")]
+  vue_state_8[("dynamicClass")]
+  vue_state_9[("dynamicStyle")]
+  jsx_element_10["&lt;button&gt;"]
+  jsx_element_11["&lt;input&gt;"]
+  jsx_element_12["&lt;input&gt;"]
+  process_13[["handleClick"]]
+  process_14[["handleInput"]]
+  process_15[["handleFocus"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_10@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_11@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_12@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_16@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_17@{ shape: hex, label: "&lt;div&gt;" }
+      jsx_element_18@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_19@{ shape: hex, label: "&lt;textarea&gt;" }
+      jsx_element_20@{ shape: hex, label: "&lt;p&gt;" }
+    subgraph subgraph_21["{isVisible}"]
+      direction TB
+        jsx_element_22@{ shape: hex, label: "&lt;p&gt;" }
+    end
+    subgraph subgraph_23["{showContent}"]
+      direction TB
+        jsx_element_24@{ shape: hex, label: "&lt;p&gt;" }
+    end
+    subgraph subgraph_25["{v-for: items}"]
+      direction TB
+        jsx_element_26@{ shape: hex, label: "&lt;li&gt;" }
+    end
+  end
+  jsx_element_10 ejsx_element_10_process_13@-->|"@click"| process_13
+  ejsx_element_10_process_13@{ animate: true }
+  process_13 eprocess_13_vue_state_5@-->|"writes"| vue_state_5
+  eprocess_13_vue_state_5@{ animate: true }
+  jsx_element_11 ejsx_element_11_process_14@-->|"@input"| process_14
+  ejsx_element_11_process_14@{ animate: true }
+  process_14 eprocess_14_vue_state_1@-->|"writes"| vue_state_1
+  eprocess_14_vue_state_1@{ animate: true }
+  jsx_element_12 ejsx_element_12_process_15@-->|"@focus"| process_15
+  ejsx_element_12_process_15@{ animate: true }
+  vue_state_5 evue_state_5_subgraph_23@-->|"control visibility"| subgraph_23
+  evue_state_5_subgraph_23@{ animate: true }
+  vue_state_7 evue_state_7_subgraph_25@-->|"iterates over"| subgraph_25
+  evue_state_7_subgraph_25@{ animate: true }
+  vue_state_6 evue_state_6_subgraph_21@-->|"control visibility"| subgraph_21
+  evue_state_6_subgraph_21@{ animate: true }
+  vue_state_1 evue_state_1_jsx_element_16@-->|"binds"| jsx_element_16
+  evue_state_1_jsx_element_16@{ animate: true }
+  vue_state_2 evue_state_2_jsx_element_16@-->|"binds"| jsx_element_16
+  evue_state_2_jsx_element_16@{ animate: true }
+  vue_state_8 evue_state_8_jsx_element_17@-->|"binds"| jsx_element_17
+  evue_state_8_jsx_element_17@{ animate: true }
+  vue_state_9 evue_state_9_jsx_element_17@-->|"binds"| jsx_element_17
+  evue_state_9_jsx_element_17@{ animate: true }
+  vue_state_3 evue_state_3_jsx_element_18@-->|"binds"| jsx_element_18
+  evue_state_3_jsx_element_18@{ animate: true }
+  jsx_element_18 ejsx_element_18_vue_state_3@-->|"updates"| vue_state_3
+  ejsx_element_18_vue_state_3@{ animate: true }
+  vue_state_4 evue_state_4_jsx_element_19@-->|"binds"| jsx_element_19
+  evue_state_4_jsx_element_19@{ animate: true }
+  jsx_element_19 ejsx_element_19_vue_state_4@-->|"updates"| vue_state_4
+  ejsx_element_19_vue_state_4@{ animate: true }
+  vue_state_0 evue_state_0_jsx_element_20@-->|"display"| jsx_element_20
+  evue_state_0_jsx_element_20@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class vue_state_0 dataStore
+  class vue_state_1 dataStore
+  class vue_state_2 dataStore
+  class vue_state_3 dataStore
+  class vue_state_4 dataStore
+  class vue_state_5 dataStore
+  class vue_state_6 dataStore
+  class vue_state_7 dataStore
+  class vue_state_8 dataStore
+  class vue_state_9 dataStore
+  class process_13 process
+  class process_14 process
+  class process_15 process
+  class jsx_element_10 jsxElement
+  class jsx_element_11 jsxElement
+  class jsx_element_12 jsxElement
+  class jsx_element_16 jsxElement
+  class jsx_element_17 jsxElement
+  class jsx_element_18 jsxElement
+  class jsx_element_19 jsxElement
+  class jsx_element_20 jsxElement
+  class jsx_element_22 jsxElement
+  class jsx_element_24 jsxElement
+  class jsx_element_26 jsxElement

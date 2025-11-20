@@ -1,0 +1,50 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  jsx_element_0["&lt;button&gt;"]
+  jsx_element_1["&lt;button&gt;"]
+  jsx_element_2["&lt;button&gt;"]
+  composable_3[("useCounter")]
+  composable_4[("useLocalStorage")]
+  process_5[["updateStorage"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_0@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_1@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_7@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  jsx_element_0 ejsx_element_0_composable_3@-->|"calls: increment"| composable_3
+  ejsx_element_0_composable_3@{ animate: true }
+  jsx_element_1 ejsx_element_1_composable_3@-->|"calls: decrement"| composable_3
+  ejsx_element_1_composable_3@{ animate: true }
+  jsx_element_2 ejsx_element_2_process_5@-->|"@click"| process_5
+  ejsx_element_2_process_5@{ animate: true }
+  process_5 eprocess_5_composable_4@-->|"calls: setValue"| composable_4
+  eprocess_5_composable_4@{ animate: true }
+  composable_3 ecomposable_3_jsx_element_6@-->|"display: count"| jsx_element_6
+  ecomposable_3_jsx_element_6@{ animate: true }
+  composable_3 ecomposable_3_jsx_element_7@-->|"display: doubled"| jsx_element_7
+  ecomposable_3_jsx_element_7@{ animate: true }
+  composable_4 ecomposable_4_jsx_element_8@-->|"display: storedValue"| jsx_element_8
+  ecomposable_4_jsx_element_8@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class composable_3 dataStore
+  class composable_4 dataStore
+  class process_5 process
+  class jsx_element_0 jsxElement
+  class jsx_element_1 jsxElement
+  class jsx_element_2 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_8 jsxElement

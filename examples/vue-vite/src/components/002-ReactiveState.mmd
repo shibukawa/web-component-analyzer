@@ -1,0 +1,49 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  vue_state_0[("counter")]
+  vue_state_1[("user")]
+  jsx_element_2["&lt;button&gt;"]
+  jsx_element_3["&lt;button&gt;"]
+  process_4[["incrementCounter"]]
+  process_5[["updateUser"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_2@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_7@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  jsx_element_2 ejsx_element_2_process_4@-->|"@click"| process_4
+  ejsx_element_2_process_4@{ animate: true }
+  process_4 eprocess_4_vue_state_0@-->|"writes"| vue_state_0
+  eprocess_4_vue_state_0@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_5@-->|"@click"| process_5
+  ejsx_element_3_process_5@{ animate: true }
+  process_5 eprocess_5_vue_state_1@-->|"writes"| vue_state_1
+  eprocess_5_vue_state_1@{ animate: true }
+  vue_state_0 evue_state_0_jsx_element_6@-->|"display"| jsx_element_6
+  evue_state_0_jsx_element_6@{ animate: true }
+  vue_state_1 evue_state_1_jsx_element_7@-->|"display"| jsx_element_7
+  evue_state_1_jsx_element_7@{ animate: true }
+  vue_state_1 evue_state_1_jsx_element_8@-->|"display"| jsx_element_8
+  evue_state_1_jsx_element_8@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class vue_state_0 dataStore
+  class vue_state_1 dataStore
+  class process_4 process
+  class process_5 process
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_8 jsxElement

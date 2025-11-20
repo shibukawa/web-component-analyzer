@@ -5,6 +5,7 @@ export { ThemeToggle } from './ThemeToggle';
 export { MermaidDiagram } from './MermaidDiagram';
 export { Header } from './Header';
 export { SampleSelector } from './SampleSelector';
+export { FrameworkSelector } from './FrameworkSelector';
 export { ShareButton } from './ShareButton';
 export { ErrorDisplay } from './ErrorDisplay';
 export { LoadingIndicator } from './LoadingIndicator';

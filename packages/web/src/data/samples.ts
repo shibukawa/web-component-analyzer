@@ -750,8 +750,250 @@ export default function SearchBox({
   }
 ];
 
-// Vue samples will be added when vue-vite example project is created
-export const VUE_SAMPLES: SampleComponent[] = [];
+// Vue samples
+export const VUE_SAMPLES: SampleComponent[] = [
+  {
+    id: 'vue-emits',
+    name: 'Emits Example',
+    framework: 'vue',
+    description: 'Vue component demonstrating defineEmits with event handlers',
+    code: `<template>
+  <div class="emits-component">
+    <h2>Emits Example</h2>
+    <input 
+      :value="inputValue" 
+      @input="handleInput"
+      placeholder="Type something..."
+    />
+    <button @click="handleSubmit">Submit</button>
+    <button @click="handleCancel">Cancel</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+
+// Define emits
+const emit = defineEmits<{
+  update: [value: string];
+  submit: [data: { text: string; timestamp: number }];
+  cancel: [];
+}>();
+
+// State
+const inputValue = ref('');
+
+// Event handlers
+function handleInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  inputValue.value = target.value;
+  emit('update', target.value);
+}
+
+function handleSubmit() {
+  const data = {
+    text: inputValue.value,
+    timestamp: Date.now()
+  };
+  emit('submit', data);
+  inputValue.value = '';
+}
+
+function handleCancel() {
+  inputValue.value = '';
+  emit('cancel');
+}
+</script>`
+  },
+  {
+    id: 'vue-template-bindings',
+    name: 'Template Bindings',
+    framework: 'vue',
+    description: 'Vue component demonstrating various template directives and bindings',
+    code: `<template>
+  <div class="template-bindings">
+    <h2>Template Bindings Example</h2>
+    
+    <!-- Mustache binding -->
+    <p>Message: {{ message }}</p>
+    
+    <!-- v-bind / : directive -->
+    <input :value="inputValue" :placeholder="placeholderText" />
+    <div :class="dynamicClass" :style="dynamicStyle">Styled Content</div>
+    
+    <!-- v-on / @ directive -->
+    <button @click="handleClick">Click Me</button>
+    <input @input="handleInput" @focus="handleFocus" />
+    
+    <!-- v-model directive -->
+    <input v-model="modelValue" placeholder="Two-way binding" />
+    <textarea v-model="textareaValue"></textarea>
+    
+    <!-- v-if / v-show directives -->
+    <p v-if="showContent">Conditional Content</p>
+    <p v-show="isVisible">Visible Content</p>
+    
+    <!-- v-for directive -->
+    <ul>
+      <li v-for="item in items" :key="item.id">{{ item.name }}</li>
+    </ul>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+
+// State
+const message = ref('Hello Vue!');
+const inputValue = ref('');
+const placeholderText = ref('Enter text...');
+const modelValue = ref('');
+const textareaValue = ref('');
+const showContent = ref(true);
+const isVisible = ref(true);
+const items = ref([
+  { id: 1, name: 'Item 1' },
+  { id: 2, name: 'Item 2' },
+  { id: 3, name: 'Item 3' }
+]);
+
+// Computed
+const dynamicClass = computed(() => showContent.value ? 'active' : 'inactive');
+const dynamicStyle = computed(() => ({
+  color: isVisible.value ? 'blue' : 'gray'
+}));
+
+// Event handlers
+function handleClick() {
+  showContent.value = !showContent.value;
+}
+
+function handleInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  inputValue.value = target.value;
+}
+
+function handleFocus() {
+  console.log('Input focused');
+}
+</script>`
+  },
+  {
+    id: 'vue-pinia',
+    name: 'Pinia Store',
+    framework: 'vue',
+    description: 'Vue component demonstrating Pinia state management',
+    code: `<template>
+  <div class="pinia-component">
+    <h2>Pinia Store Example</h2>
+    <p>Count: {{ count }}</p>
+    <p>Double Count: {{ doubleCount }}</p>
+    <p>User Name: {{ userName }}</p>
+    <button @click="increment">Increment</button>
+    <button @click="decrement">Decrement</button>
+    <button @click="reset">Reset</button>
+    <button @click="updateUser">Update User</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useCounterStore } from '../stores/counter';
+import { useUserStore } from '../stores/user';
+import { storeToRefs } from 'pinia';
+
+// Access stores
+const counterStore = useCounterStore();
+const userStore = useUserStore();
+
+// Convert state to refs
+const { count, doubleCount } = storeToRefs(counterStore);
+const { userName } = storeToRefs(userStore);
+
+// Call store actions
+function increment() {
+  counterStore.increment();
+}
+
+function decrement() {
+  counterStore.decrement();
+}
+
+function reset() {
+  counterStore.reset();
+}
+
+function updateUser() {
+  userStore.updateName('John Doe');
+}
+</script>`
+  },
+  {
+    id: 'vue-simple-counter',
+    name: 'Simple Counter',
+    framework: 'vue',
+    description: 'Simple Vue counter with ref state and event handlers',
+    code: `<template>
+  <div class="counter">
+    <h2>Simple Counter</h2>
+    <p>Count: {{ count }}</p>
+    <button @click="increment">Increment</button>
+    <button @click="decrement">Decrement</button>
+    <button @click="reset">Reset</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const count = ref(0);
+
+function increment() {
+  count.value++;
+}
+
+function decrement() {
+  count.value--;
+}
+
+function reset() {
+  count.value = 0;
+}
+</script>`
+  },
+  {
+    id: 'vue-props-example',
+    name: 'Props Example',
+    framework: 'vue',
+    description: 'Vue component demonstrating defineProps with TypeScript',
+    code: `<template>
+  <div class="props-example">
+    <h2>{{ title }}</h2>
+    <p>{{ message }}</p>
+    <p>Count: {{ count }}</p>
+    <button @click="handleClick">Click Me</button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+
+// Define props
+const props = defineProps<{
+  title: string;
+  message: string;
+  initialCount?: number;
+}>();
+
+// State
+const count = ref(props.initialCount || 0);
+
+// Event handler
+function handleClick() {
+  count.value++;
+}
+</script>`
+  }
+];;
 
 // Svelte samples will be added when svelte-vite example project is created
 export const SVELTE_SAMPLES: SampleComponent[] = [];

@@ -1,6 +1,7 @@
 /**
- * Error handler for React Parser
+ * Error handler for Component Parser
  * Handles syntax errors, component not found scenarios, and timeout protection
+ * Supports React and Vue components
  */
 
 import { ParseError, DFDSourceData, ComponentAnalysis } from '@web-component-analyzer/analyzer';
@@ -94,13 +95,13 @@ export class ParserErrorHandler {
    */
   handleComponentNotFound(context: ParsingContext): ParseError {
     const error = new ComponentNotFoundError(
-      `No React component found in file: ${context.filePath}`
+      `No component found in file: ${context.filePath}`
     );
 
     this.logError(error, context);
 
     return {
-      message: `No React component detected in the file. Please ensure the file contains a valid React functional or class component.`,
+      message: `No component detected in the file. Please ensure the file contains a valid component (React or Vue).`,
     };
   }
 
@@ -161,7 +162,7 @@ export class ParserErrorHandler {
     }
 
     if (error instanceof ComponentNotFoundError) {
-      return 'No React component found in the file.';
+      return 'No component found in the file.';
     }
 
     // Check for common SWC/parsing errors
@@ -211,7 +212,7 @@ export class ParserErrorHandler {
    * @param context Parsing context
    */
   private logError(error: Error, context: ParsingContext): void {
-    console.error('[ReactParser Error]', {
+    console.error('[ComponentParser Error]', {
       errorName: error.name,
       errorMessage: error.message,
       filePath: context.filePath,
