@@ -66,7 +66,7 @@ export class DFDVisualizerService {
 				const panel = this.webviewPanelManager.getOrCreatePanel(document, componentName);
 				
 				// Check for specific error types and show in webview
-				if (errorMessages.includes('No React component found') || errorMessages.includes('No Vue component found') || errorMessages.includes('No component found')) {
+				if (errorMessages.includes('No React component found') || errorMessages.includes('No Vue component found') || errorMessages.includes('No Svelte component found') || errorMessages.includes('No component found')) {
 					this.webviewPanelManager.showError(panel, 'No component detected in the file. Please ensure the file contains a valid component.');
 					return;
 				}
@@ -255,6 +255,6 @@ export class DFDVisualizerService {
 
 		// Fall back to filename without extension
 		const fileName = document.fileName.split('/').pop() || 'Component';
-		return fileName.replace(/\.(tsx|jsx|vue)$/, '');
+		return fileName.replace(/\.(tsx|jsx|vue|svelte)$/, '');
 	}
 }

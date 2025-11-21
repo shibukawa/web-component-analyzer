@@ -17,3 +17,4 @@ export * from './services/type-classifier.js';
 export * from './services/type-resolver.js';
 export * from './utils/error-handler.js';
 export * from './utils/vue-error-handler.js';
+export * from './utils/svelte-error-handler.js';

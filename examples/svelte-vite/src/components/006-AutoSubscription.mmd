@@ -1,0 +1,64 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  svelte_store_0[("counter")]
+  svelte_store_1[("userName")]
+  svelte_computed_2[("doubled")]
+  svelte_computed_3[("greeting")]
+  jsx_element_4["&lt;p&gt;"]
+  jsx_element_5["&lt;p&gt;"]
+  jsx_element_6["&lt;p&gt;"]
+  jsx_element_7["&lt;button&gt;"]
+  jsx_element_8["&lt;button&gt;"]
+  process_9[["increment"]]
+  process_10[["updateName"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_4@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_7@{ shape: hex, label: "&lt;button&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  svelte_store_0 esvelte_store_0_jsx_element_4@-->|"displays"| jsx_element_4
+  esvelte_store_0_jsx_element_4@{ animate: true }
+  svelte_computed_2 esvelte_computed_2_jsx_element_5@-->|"displays"| jsx_element_5
+  esvelte_computed_2_jsx_element_5@{ animate: true }
+  svelte_computed_3 esvelte_computed_3_jsx_element_6@-->|"displays"| jsx_element_6
+  esvelte_computed_3_jsx_element_6@{ animate: true }
+  jsx_element_7 ejsx_element_7_process_9@-->|"on:click"| process_9
+  ejsx_element_7_process_9@{ animate: true }
+  svelte_store_0 esvelte_store_0_process_9@-->|"reads"| process_9
+  esvelte_store_0_process_9@{ animate: true }
+  jsx_element_8 ejsx_element_8_process_10@-->|"on:click"| process_10
+  ejsx_element_8_process_10@{ animate: true }
+  svelte_store_1 esvelte_store_1_process_10@-->|"reads"| process_10
+  esvelte_store_1_process_10@{ animate: true }
+  process_9 eprocess_9_svelte_store_0@-->|"updates"| svelte_store_0
+  eprocess_9_svelte_store_0@{ animate: true }
+  process_10 eprocess_10_svelte_store_1@-->|"updates"| svelte_store_1
+  eprocess_10_svelte_store_1@{ animate: true }
+  svelte_store_0 esvelte_store_0_svelte_computed_2@-->|"provides data"| svelte_computed_2
+  esvelte_store_0_svelte_computed_2@{ animate: true }
+  svelte_store_1 esvelte_store_1_svelte_computed_3@-->|"provides data"| svelte_computed_3
+  esvelte_store_1_svelte_computed_3@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class svelte_store_0 dataStore
+  class svelte_store_1 dataStore
+  class svelte_computed_2 dataStore
+  class svelte_computed_3 dataStore
+  class process_9 process
+  class process_10 process
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement
+  class jsx_element_8 jsxElement

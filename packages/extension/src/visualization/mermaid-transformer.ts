@@ -8,8 +8,8 @@ import { DFDSourceData, DFDNode, DFDEdge, DFDSubgraph } from '@web-component-ana
  * Get Mermaid shape for node type
  */
 function getMermaidShape(node: DFDNode): { prefix: string; suffix: string } {
-  // Vue emit nodes - rounded (rounded rectangle)
-  if (node.metadata?.category === 'vue-emit') {
+  // Vue emit and Svelte event nodes - rounded (rounded rectangle)
+  if (node.metadata?.category === 'vue-emit' || node.metadata?.category === 'svelte-event') {
     return { prefix: '(', suffix: ')' };
   }
   
@@ -77,6 +77,10 @@ function renderSubgraph(
     // Loop subgraphs already have the correct label format from buildVueLoopSubgraphs
     // e.g., "{v-for: items}" or "{v-for: items, v-if: item.active}"
     subgraphLabel = subgraph.label;
+  } else if (subgraph.type === 'await') {
+    // Await subgraphs already have the correct label format from buildSvelteAwaitEdges
+    // e.g., "{#await dataPromise}"
+    subgraphLabel = subgraph.label;
   } else if (subgraph.type === 'exported-handlers') {
     // Use "exported handlers" label for imperative handle subgraphs
     subgraphLabel = 'exported handlers';
@@ -88,7 +92,7 @@ function renderSubgraph(
   
   // Render elements within the subgraph
   for (const element of subgraph.elements) {
-    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional' || element.type === 'loop' || element.type === 'loop-conditional' || element.type === 'exported-handlers')) {
+    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional' || element.type === 'loop' || element.type === 'loop-conditional' || element.type === 'await' || element.type === 'exported-handlers')) {
       // It's a nested subgraph, recurse
       renderSubgraph(element as DFDSubgraph, lines, indent + '  ');
     } else {
@@ -97,16 +101,18 @@ function renderSubgraph(
       const id = sanitizeId(node.id);
       let label = sanitizeLabel(node.label);
       
-      // Vue emit nodes should be rounded shape (rounded rectangle) without angle brackets
+      // Vue emit and Svelte event nodes should be rounded shape (rounded rectangle) without angle brackets
       const isVueEmit = node.metadata?.category === 'vue-emit';
+      const isSvelteEvent = node.metadata?.category === 'svelte-event';
+      const isEventNode = isVueEmit || isSvelteEvent;
       
-      // Add angle brackets for JSX elements (but not for text nodes or emit nodes)
-      if (node.type === 'external-entity-output' && !isVueEmit && !label.startsWith('&lt;') && !label.startsWith('#quot;')) {
+      // Add angle brackets for JSX elements (but not for text nodes or event nodes)
+      if (node.type === 'external-entity-output' && !isEventNode && !label.startsWith('&lt;') && !label.startsWith('#quot;')) {
         label = `&lt;${label}&gt;`;
       }
       
-      // Use new syntax for JSX elements (hex shape), but rounded for emit nodes
-      if (isVueEmit) {
+      // Use new syntax for JSX elements (hex shape), but rounded for event nodes
+      if (isEventNode) {
         lines.push(`${indent}    ${id}@{ shape: rounded, label: "${label}" }`);
       } else if (node.type === 'external-entity-output' || node.type === 'subgraph') {
         lines.push(`${indent}    ${id}@{ shape: hex, label: "${label}" }`);
@@ -127,7 +133,7 @@ function collectNodesFromSubgraph(subgraph: DFDSubgraph): DFDNode[] {
   const nodes: DFDNode[] = [];
   
   for (const element of subgraph.elements) {
-    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional' || element.type === 'loop' || element.type === 'loop-conditional' || element.type === 'exported-handlers')) {
+    if ('type' in element && (element.type === 'jsx-output' || element.type === 'conditional' || element.type === 'loop' || element.type === 'loop-conditional' || element.type === 'await' || element.type === 'exported-handlers')) {
       // It's a subgraph, recurse
       nodes.push(...collectNodesFromSubgraph(element as DFDSubgraph));
     } else {
@@ -274,16 +280,18 @@ export function transformToMermaid(dfdData: DFDSourceData): string {
         const id = sanitizeId(node.id);
         let label = sanitizeLabel(node.label);
         
-        // Vue emit nodes should be rounded shape (rounded rectangle) without angle brackets
+        // Vue emit and Svelte event nodes should be rounded shape (rounded rectangle) without angle brackets
         const isVueEmit = node.metadata?.category === 'vue-emit';
+        const isSvelteEvent = node.metadata?.category === 'svelte-event';
+        const isEventNode = isVueEmit || isSvelteEvent;
         
-        // Add angle brackets for JSX elements (but not for text nodes or emit nodes)
-        if (node.type === 'external-entity-output' && !isVueEmit && !label.startsWith('&lt;') && !label.startsWith('#quot;')) {
+        // Add angle brackets for JSX elements (but not for text nodes or event nodes)
+        if (node.type === 'external-entity-output' && !isEventNode && !label.startsWith('&lt;') && !label.startsWith('#quot;')) {
           label = `&lt;${label}&gt;`;
         }
         
-        // Use new syntax for JSX elements, but rounded for emit nodes
-        if (isVueEmit) {
+        // Use new syntax for JSX elements, but rounded for event nodes
+        if (isEventNode) {
           lines.push(`    ${id}@{ shape: rounded, label: "${label}" }`);
         } else if (node.type === 'external-entity-output') {
           lines.push(`    ${id}@{ shape: hex, label: "${label}" }`);

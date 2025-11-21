@@ -1,0 +1,45 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  svelte_store_0[("count")]
+  svelte_store_1[("name")]
+  svelte_store_2[("timestamp")]
+  svelte_store_3[("doubleCount")]
+  jsx_element_4["&lt;p&gt;"]
+  jsx_element_5["&lt;p&gt;"]
+  jsx_element_6["&lt;p&gt;"]
+  jsx_element_7["&lt;p&gt;"]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_4@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_5@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_7@{ shape: hex, label: "&lt;p&gt;" }
+  end
+  svelte_store_0 esvelte_store_0_svelte_store_3@-->|"derives"| svelte_store_3
+  esvelte_store_0_svelte_store_3@{ animate: true }
+  svelte_store_0 esvelte_store_0_jsx_element_4@-->|"displays"| jsx_element_4
+  esvelte_store_0_jsx_element_4@{ animate: true }
+  svelte_store_1 esvelte_store_1_jsx_element_5@-->|"displays"| jsx_element_5
+  esvelte_store_1_jsx_element_5@{ animate: true }
+  svelte_store_2 esvelte_store_2_jsx_element_6@-->|"displays"| jsx_element_6
+  esvelte_store_2_jsx_element_6@{ animate: true }
+  svelte_store_3 esvelte_store_3_jsx_element_7@-->|"displays"| jsx_element_7
+  esvelte_store_3_jsx_element_7@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class svelte_store_0 dataStore
+  class svelte_store_1 dataStore
+  class svelte_store_2 dataStore
+  class svelte_store_3 dataStore
+  class jsx_element_4 jsxElement
+  class jsx_element_5 jsxElement
+  class jsx_element_6 jsxElement
+  class jsx_element_7 jsxElement

@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { createReactParser, createVueParser, type DFDSourceData } from '@web-component-analyzer/analyzer';
+import { createReactParser, createVueParser, createSvelteParser, type DFDSourceData } from '@web-component-analyzer/analyzer';
 import { parseComponent } from '../../utils/node-parser';
 import { transformToMermaid } from '../../visualization/mermaid-transformer';
 import {
@@ -54,6 +54,14 @@ function createNodeVueParser() {
 }
 
 /**
+ * Create a Svelte parser for Node.js environment
+ */
+function createNodeSvelteParser() {
+  // Svelte parser doesn't need a parserFn as it handles parsing internally
+  return createSvelteParser();
+}
+
+/**
  * Create the appropriate parser based on framework
  */
 function createParserForFramework(framework: string) {
@@ -62,6 +70,8 @@ function createParserForFramework(framework: string) {
       return createNodeReactParser();
     case 'vue':
       return createNodeVueParser();
+    case 'svelte':
+      return createNodeSvelteParser();
     default:
       // Default to React parser for unknown frameworks
       return createNodeReactParser();

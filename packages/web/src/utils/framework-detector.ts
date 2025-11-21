@@ -204,6 +204,10 @@ function calculateSvelteScore(code: string): ScoreResult {
     { pattern: /\bwritable\s*\(/, score: 1, reason: 'writable store' },
     { pattern: /\breadable\s*\(/, score: 1, reason: 'readable store' },
     { pattern: /\bderived\s*\(/, score: 1, reason: 'derived store' },
+    { pattern: /\$state\s*\(/, score: 2, reason: 'Svelte 5 $state rune' },
+    { pattern: /\$derived\s*\(/, score: 2, reason: 'Svelte 5 $derived rune' },
+    { pattern: /\$effect\s*\(/, score: 2, reason: 'Svelte 5 $effect rune' },
+    { pattern: /\$props\s*\(/, score: 2, reason: 'Svelte 5 $props rune' },
   ];
 
   for (const { pattern, score: points, reason } of sveltePatterns) {

@@ -19,20 +19,20 @@ flowchart LR
   end
   subgraph lifecycle_subgraph_10["Lifecycles"]
     direction TB
-      process_5@{ shape: stadium, label: "onBeforeMount" }
-      process_6@{ shape: stadium, label: "onMounted" }
-      process_7@{ shape: stadium, label: "onBeforeUpdate" }
-      process_8@{ shape: stadium, label: "onUpdated" }
-      process_9@{ shape: stadium, label: "onUnmounted" }
+      process_5[["onBeforeMount"]]
+      process_6[["onMounted"]]
+      process_7[["onBeforeUpdate"]]
+      process_8[["onUpdated"]]
+      process_9[["onUnmounted"]]
   end
-  jsx_element_3 ejsx_element_3_process_4@-->|"@click"| process_4
-  ejsx_element_3_process_4@{ animate: true }
-  process_4 eprocess_4_vue_state_2@-->|"writes"| vue_state_2
-  eprocess_4_vue_state_2@{ animate: true }
   process_6 eprocess_6_vue_state_0@-->|"writes"| vue_state_0
   eprocess_6_vue_state_0@{ animate: true }
   process_8 eprocess_8_vue_state_1@-->|"writes"| vue_state_1
   eprocess_8_vue_state_1@{ animate: true }
+  jsx_element_3 ejsx_element_3_process_4@-->|"@click"| process_4
+  ejsx_element_3_process_4@{ animate: true }
+  process_4 eprocess_4_vue_state_2@-->|"writes"| vue_state_2
+  eprocess_4_vue_state_2@{ animate: true }
   vue_state_0 evue_state_0_jsx_element_11@-->|"display"| jsx_element_11
   evue_state_0_jsx_element_11@{ animate: true }
   vue_state_1 evue_state_1_jsx_element_12@-->|"display"| jsx_element_12

@@ -1,0 +1,65 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
+flowchart LR
+  svelte_computed_0[("userId")]
+  svelte_computed_1[("searchQuery")]
+  jsx_element_2["&lt;h1&gt;"]
+  jsx_element_3["&lt;p&gt;"]
+  jsx_element_4["&lt;button&gt;"]
+  url_input_5["URL: Input"]
+  svelte_store_6[("page")]
+  process_7[["goto"]]
+  url_output_8["URL: Output"]
+  process_9[["beforeNavigate"]]
+  process_10[["afterNavigate"]]
+  process_11[["handleNavigate"]]
+  subgraph subgraph_0["&lt;template&gt;"]
+    direction TB
+      jsx_element_2@{ shape: hex, label: "&lt;h1&gt;" }
+      jsx_element_3@{ shape: hex, label: "&lt;p&gt;" }
+      jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
+  end
+  subgraph lifecycle_subgraph_12["Lifecycle"]
+    direction TB
+      process_9[["beforeNavigate"]]
+      process_10[["afterNavigate"]]
+  end
+  url_input_5 eurl_input_5_svelte_store_6@-->|"provides"| svelte_store_6
+  eurl_input_5_svelte_store_6@{ animate: true }
+  process_7 eprocess_7_url_output_8@-->|"navigates"| url_output_8
+  eprocess_7_url_output_8@{ animate: true }
+  url_input_5 eurl_input_5_process_9@-->|"triggers"| process_9
+  eurl_input_5_process_9@{ animate: true }
+  url_input_5 eurl_input_5_process_10@-->|"triggers"| process_10
+  eurl_input_5_process_10@{ animate: true }
+  svelte_computed_0 esvelte_computed_0_jsx_element_2@-->|"displays"| jsx_element_2
+  esvelte_computed_0_jsx_element_2@{ animate: true }
+  svelte_computed_1 esvelte_computed_1_jsx_element_3@-->|"displays"| jsx_element_3
+  esvelte_computed_1_jsx_element_3@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_11@-->|"on:click"| process_11
+  ejsx_element_4_process_11@{ animate: true }
+  svelte_store_6 esvelte_store_6_svelte_computed_0@-->|"provides data"| svelte_computed_0
+  esvelte_store_6_svelte_computed_0@{ animate: true }
+  svelte_store_6 esvelte_store_6_svelte_computed_1@-->|"provides data"| svelte_computed_1
+  esvelte_store_6_svelte_computed_1@{ animate: true }
+  process_11 eprocess_11_process_7@-->|"calls"| process_7
+  eprocess_11_process_7@{ animate: true }
+
+  %% Styling
+  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px
+  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+  class svelte_computed_0 dataStore
+  class svelte_computed_1 dataStore
+  class svelte_store_6 dataStore
+  class process_7 process
+  class process_9 process
+  class process_10 process
+  class process_11 process
+  class jsx_element_2 jsxElement
+  class jsx_element_3 jsxElement
+  class jsx_element_4 jsxElement
