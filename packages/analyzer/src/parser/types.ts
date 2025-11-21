@@ -61,7 +61,7 @@ export interface AtomDefinition {
  */
 export interface ComponentAnalysis {
   componentName: string;
-  componentType: 'functional' | 'class';
+  componentType: 'functional' | 'class' | 'vue-script-setup' | 'svelte-runes';
   props: PropInfo[];
   hooks: HookInfo[];
   processes: ProcessInfo[];
@@ -326,9 +326,10 @@ export type JSXStructure = JSXElementStructure | ConditionalBranch;
 export interface DFDSubgraph {
   id: string;
   label: string;
-  type: 'jsx-output' | 'conditional' | 'exported-handlers' | 'loop' | 'loop-conditional' | 'lifecycle-hooks' | 'emits';
+  type: 'jsx-output' | 'conditional' | 'exported-handlers' | 'loop' | 'loop-conditional' | 'await' | 'lifecycle-hooks' | 'emits';
   condition?: ConditionExpression; // For conditional subgraphs
   source?: string; // For loop subgraphs (v-for source)
+  promise?: string; // For await subgraphs (Svelte {#await})
   elements: (DFDNode | DFDSubgraph)[]; // Can contain nodes or nested subgraphs
   parentProcessId?: string; // Reference to parent useImperativeHandle process
 }

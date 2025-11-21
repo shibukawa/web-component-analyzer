@@ -140,7 +140,6 @@ export class TypeClassifier {
 
     // Svelte-specific types
     if (this.isSvelteStoreOrDispatcher(normalized)) {
-      console.log(`[TypeClassifier] "${normalized}" is Svelte store/dispatcher`);
       return true;
     }
 

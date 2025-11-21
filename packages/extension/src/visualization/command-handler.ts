@@ -60,10 +60,10 @@ export class DFDCommandHandler implements CommandHandler {
 		const document = editor.document;
 		const filePath = document.fileName;
 		
-		// Validate file type (.tsx, .jsx, .vue)
+		// Validate file type (.tsx, .jsx, .vue, .svelte)
 		if (!this.isSupportedFileType(filePath)) {
 			vscode.window.showErrorMessage(
-				'Unsupported file type. Please open a .tsx, .jsx, or .vue file.'
+				'Unsupported file type. Please open a .tsx, .jsx, .vue, or .svelte file.'
 			);
 			return;
 		}
@@ -97,10 +97,10 @@ export class DFDCommandHandler implements CommandHandler {
 		const document = editor.document;
 		const filePath = document.fileName;
 		
-		// Validate file type (.tsx, .jsx, .vue)
+		// Validate file type (.tsx, .jsx, .vue, .svelte)
 		if (!this.isSupportedFileType(filePath)) {
 			vscode.window.showErrorMessage(
-				'Unsupported file type. Please open a .tsx, .jsx, or .vue file.'
+				'Unsupported file type. Please open a .tsx, .jsx, .vue, or .svelte file.'
 			);
 			return;
 		}
@@ -119,7 +119,7 @@ export class DFDCommandHandler implements CommandHandler {
 	 * Check if the file type is supported for DFD visualization
 	 */
 	private isSupportedFileType(filePath: string): boolean {
-		return /\.(tsx|jsx|vue)$/i.test(filePath);
+		return /\.(tsx|jsx|vue|svelte)$/i.test(filePath);
 	}
 	
 	/**

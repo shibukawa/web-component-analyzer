@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 /**
  * File watcher for component files
  * 
- * Watches for changes to .tsx, .jsx, .vue files and emits
+ * Watches for changes to .tsx, .jsx, .vue, .svelte files and emits
  * debounced change events to trigger DFD refresh.
  */
 export class FileWatcher {
@@ -19,7 +19,7 @@ export class FileWatcher {
 	start(): void {
 		// Create file system watcher for supported file types
 		this.watcher = vscode.workspace.createFileSystemWatcher(
-			'**/*.{tsx,jsx,vue}'
+			'**/*.{tsx,jsx,vue,svelte}'
 		);
 
 		// Watch for file changes

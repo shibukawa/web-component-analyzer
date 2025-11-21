@@ -48,8 +48,8 @@ export function activate(context: vscode.ExtensionContext) {
 		const sourceCode = document.getText();
 
 		// Check if file is a supported file type
-		if (!filePath.match(/\.(tsx|jsx|ts|js|vue)$/)) {
-			vscode.window.showWarningMessage('Please open a component file (.tsx, .jsx, .ts, .js, or .vue)');
+		if (!filePath.match(/\.(tsx|jsx|ts|js|vue|svelte)$/)) {
+			vscode.window.showWarningMessage('Please open a component file (.tsx, .jsx, .ts, .js, .vue, or .svelte)');
 			return;
 		}
 

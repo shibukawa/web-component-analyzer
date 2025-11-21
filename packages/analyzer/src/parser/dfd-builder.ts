@@ -101,6 +101,64 @@ export class DefaultDFDBuilder implements DFDBuilder {
       this.log('🚚 DFD Builder: Built Vue computed dependency edges');
     }
     
+    // Create nodes for Svelte runes (if present)
+    if (analysis.metadata?.svelteRunes && Array.isArray(analysis.metadata.svelteRunes)) {
+      this.createSvelteRuneNodes(analysis.metadata.svelteRunes);
+      this.log('🚚 DFD Builder: Created', analysis.metadata.svelteRunes.length, 'Svelte rune nodes');
+      
+      // Build edges for derived rune dependencies
+      this.buildSvelteDerivedRuneDependencyEdges(analysis.metadata.svelteRunes);
+      this.log('🚚 DFD Builder: Built Svelte derived rune dependency edges');
+      
+      // Build edges for effect rune dependencies
+      this.buildSvelteEffectRuneDependencyEdges(analysis.metadata.svelteRunes);
+      this.log('🚚 DFD Builder: Built Svelte effect rune dependency edges');
+    }
+    
+    // Create nodes for Svelte stores (if present)
+    if (analysis.metadata?.svelteStores && Array.isArray(analysis.metadata.svelteStores)) {
+      this.createSvelteStoreNodes(analysis.metadata.svelteStores);
+      this.log('🚚 DFD Builder: Created', analysis.metadata.svelteStores.length, 'Svelte store nodes');
+      
+      // Create nodes for store subscriptions
+      if (analysis.metadata?.svelteStoreSubscriptions && Array.isArray(analysis.metadata.svelteStoreSubscriptions)) {
+        this.createSvelteStoreSubscriptionNodes(analysis.metadata.svelteStoreSubscriptions);
+        this.log('🚚 DFD Builder: Created', analysis.metadata.svelteStoreSubscriptions.length, 'Svelte store subscription nodes');
+      }
+      
+      // Create process nodes for computed values from subscriptions
+      if (analysis.metadata?.svelteComputedFromSubscriptions && Array.isArray(analysis.metadata.svelteComputedFromSubscriptions)) {
+        this.createSvelteComputedFromSubscriptionNodes(analysis.metadata.svelteComputedFromSubscriptions);
+        this.log('🚚 DFD Builder: Created', analysis.metadata.svelteComputedFromSubscriptions.length, 'Svelte computed from subscription nodes');
+      }
+      
+      // Build edges for derived store dependencies
+      this.buildSvelteStoreDependencyEdges(analysis.metadata.svelteStores);
+      this.log('🚚 DFD Builder: Built Svelte store dependency edges');
+    }
+    
+    // Create nodes for Svelte events (if present)
+    if (analysis.metadata?.svelteEvents && Array.isArray(analysis.metadata.svelteEvents)) {
+      this.createSvelteEventNodes(analysis.metadata.svelteEvents);
+      this.log('🚚 DFD Builder: Created', analysis.metadata.svelteEvents.length, 'Svelte event nodes');
+    }
+    
+    // Create nodes for Svelte markup elements (if present)
+    if (analysis.metadata?.svelteMarkupElements && Array.isArray(analysis.metadata.svelteMarkupElements)) {
+      this.createSvelteMarkupOutputNodes(analysis.metadata.svelteMarkupElements);
+      this.log('🚚 DFD Builder: Created', analysis.metadata.svelteMarkupElements.length, 'Svelte markup output nodes');
+      
+      // Note: Edges will be built after process nodes are created
+    }
+    
+    // Create element nodes for Svelte elements with event handlers (if present)
+    if (analysis.metadata?.svelteElementsWithEventHandlers && Array.isArray(analysis.metadata.svelteElementsWithEventHandlers)) {
+      this.createSvelteElementNodesWithEventHandlers(analysis.metadata.svelteElementsWithEventHandlers);
+      this.log('🚚 DFD Builder: Created Svelte element nodes with event handlers');
+    }
+    
+    // Note: Svelte control flow subgraphs will be built after markup elements are created
+    
     // Create nodes for Vue emits (if present)
     if (analysis.vueEmits && analysis.vueEmits.length > 0) {
       this.createVueEmitsNodes(analysis.vueEmits);
@@ -123,6 +181,58 @@ export class DefaultDFDBuilder implements DFDBuilder {
     this.log('🚚 DFD Builder: Nodes after hooks:', this.nodes.length);
     this.createProcessNodes(analysis.processes);
     
+    // Build edges for Svelte markup bindings (after process nodes are created)
+    if (analysis.metadata?.svelteMarkupElements && Array.isArray(analysis.metadata.svelteMarkupElements)) {
+      this.buildSvelteMarkupEdges(analysis.metadata.svelteMarkupElements);
+      this.log('🚚 DFD Builder: Built Svelte markup edges');
+    }
+    
+    // Build edges from Svelte element nodes to handler processes (after process nodes are created)
+    if (analysis.metadata?.svelteElementsWithEventHandlers && Array.isArray(analysis.metadata.svelteElementsWithEventHandlers)) {
+      this.buildSvelteEventHandlerDataFlows(analysis);
+      this.log('🚚 DFD Builder: Built Svelte event handler data flows');
+    }
+    
+    // Build edges for Svelte bind: directives (after state and element nodes are created)
+    if (analysis.metadata?.svelteMarkupBindings && Array.isArray(analysis.metadata.svelteMarkupBindings)) {
+      this.buildSvelteBindingEdges(analysis.metadata.svelteMarkupBindings);
+      this.log('🚚 DFD Builder: Built Svelte binding edges');
+    }
+    
+    // Build edges for Svelte dispatch calls (after process nodes are created)
+    if (analysis.metadata?.svelteDispatchCalls && Array.isArray(analysis.metadata.svelteDispatchCalls)) {
+      this.buildSvelteDispatchEdges(analysis.metadata.svelteDispatchCalls);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteDispatchCalls.length, 'Svelte dispatch edges');
+    }
+    
+    // Build edges for Svelte store updates (after process nodes are created)
+    if (analysis.metadata?.svelteStoreUpdates && Array.isArray(analysis.metadata.svelteStoreUpdates)) {
+      this.buildSvelteStoreUpdateEdges(analysis.metadata.svelteStoreUpdates);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteStoreUpdates.length, 'Svelte store update edges');
+    }
+    
+    // Build edges for computed values from subscriptions (after process nodes are created)
+    if (analysis.metadata?.svelteComputedFromSubscriptions && Array.isArray(analysis.metadata.svelteComputedFromSubscriptions)) {
+      this.buildSvelteComputedFromSubscriptionEdges(analysis.metadata.svelteComputedFromSubscriptions);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteComputedFromSubscriptions.length, 'Svelte computed from subscription edges');
+    }
+    
+    // Build subgraphs for Svelte control flow structures (after markup elements are created)
+    if (analysis.metadata?.svelteConditionalStructures && Array.isArray(analysis.metadata.svelteConditionalStructures)) {
+      this.buildSvelteConditionalEdges(analysis.metadata.svelteConditionalStructures);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteConditionalStructures.length, 'Svelte conditional subgraphs');
+    }
+    
+    if (analysis.metadata?.svelteLoopStructures && Array.isArray(analysis.metadata.svelteLoopStructures)) {
+      this.buildSvelteLoopEdges(analysis.metadata.svelteLoopStructures);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteLoopStructures.length, 'Svelte loop subgraphs');
+    }
+    
+    if (analysis.metadata?.svelteAwaitStructures && Array.isArray(analysis.metadata.svelteAwaitStructures)) {
+      this.buildSvelteAwaitEdges(analysis.metadata.svelteAwaitStructures);
+      this.log('🚚 DFD Builder: Built', analysis.metadata.svelteAwaitStructures.length, 'Svelte await subgraphs');
+    }
+    
     // Create lifecycle hooks subgraph for Vue components (if present)
     this.createLifecycleHooksSubgraph(analysis);
     this.log('🚚 DFD Builder: Created lifecycle hooks subgraph');
@@ -142,6 +252,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // Create Pinia store edges (if present)
     this.createPiniaStoreEdges(analysis);
     this.log('🚚 DFD Builder: Created Pinia store edges');
+    
+    // Build edges from processes to other processes (calls)
+    this.buildProcessToProcessEdges(analysis);
+    this.log('🚚 DFD Builder: Created process to process edges');
     
     // Create exported handlers subgroups for imperative handle calls
     this.createImperativeHandlerSubgroups(analysis.processes);
@@ -656,6 +770,51 @@ export class DefaultDFDBuilder implements DFDBuilder {
               }
             }
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * Build edges from processes to other processes they call
+   * This handles cases like handleNavigate calling goto
+   */
+  private buildProcessToProcessEdges(analysis: ComponentAnalysis): void {
+    const processNodes = this.nodes.filter(
+      node => node.type === 'process'
+    );
+
+    this.log('🚚 buildProcessToProcessEdges: Process nodes:', processNodes.length);
+
+    for (const process of analysis.processes) {
+      // Skip inline handlers - they're handled separately
+      if (process.isInlineHandler) {
+        continue;
+      }
+      
+      const processNode = this.nodes.find(
+        node => node.type === 'process' && node.label === process.name
+      );
+
+      if (!processNode) {
+        continue;
+      }
+
+      // Check if process references any other processes
+      for (const targetProcessNode of processNodes) {
+        // Skip self-references
+        if (targetProcessNode.id === processNode.id) {
+          continue;
+        }
+        
+        const isReferenced = process.references.includes(targetProcessNode.label);
+        if (isReferenced) {
+          console.log(`🚚 ✅ Creating calls edge from ${process.name} to ${targetProcessNode.label}`);
+          this.edges.push({
+            from: processNode.id,
+            to: targetProcessNode.id,
+            label: 'calls'
+          });
         }
       }
     }
@@ -1450,6 +1609,1202 @@ export class DefaultDFDBuilder implements DFDBuilder {
           column: state.column
         }
       });
+    }
+  }
+
+  /**
+   * Create Data Store nodes for Svelte runes ($state, $derived)
+   * and Process nodes for $effect runes
+   * @param svelteRunes - Array of Svelte rune information
+   */
+  private createSvelteRuneNodes(svelteRunes: any[]): void {
+    for (const rune of svelteRunes) {
+      // Create Data Store nodes for state and derived runes
+      if (rune.type === 'state' || rune.type === 'derived') {
+        this.nodes.push({
+          id: this.generateNodeId('svelte_state'),
+          label: rune.name,
+          type: 'data-store',
+          line: rune.line,
+          column: rune.column,
+          metadata: {
+            category: `svelte-${rune.type}`, // 'svelte-state' or 'svelte-derived'
+            dataType: rune.dataType,
+            svelteRuneType: rune.type,
+            line: rune.line,
+            column: rune.column,
+            dependencies: rune.dependencies, // For derived runes
+          }
+        });
+      }
+      // Create Process nodes for effect runes
+      else if (rune.type === 'effect') {
+        this.nodes.push({
+          id: this.generateNodeId('svelte_effect'),
+          label: 'effect', // Display label is always "effect"
+          type: 'process',
+          line: rune.line,
+          column: rune.column,
+          metadata: {
+            category: 'svelte-effect',
+            svelteRuneType: rune.type,
+            effectName: rune.name, // Store internal name (effect_1, effect_2, etc.) for identification
+            line: rune.line,
+            column: rune.column,
+            dependencies: rune.dependencies, // Variables accessed in the effect
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Create Data Store nodes for Svelte stores (writable, readable, derived)
+   * @param svelteStores - Array of Svelte store information
+   */
+  private createSvelteStoreNodes(svelteStores: any[]): void {
+    for (const store of svelteStores) {
+      this.nodes.push({
+        id: this.generateNodeId('svelte_store'),
+        label: store.name,
+        type: 'data-store',
+        line: store.line,
+        column: store.column,
+        metadata: {
+          category: `svelte-store-${store.type}`, // 'svelte-store-writable', 'svelte-store-readable', 'svelte-store-derived'
+          dataType: store.dataType,
+          svelteStoreType: store.type,
+          line: store.line,
+          column: store.column,
+          dependencies: store.dependencies, // For derived stores
+          isImported: store.isImported,
+          source: store.source,
+        }
+      });
+    }
+  }
+
+  /**
+   * Create External Entity Input nodes for Svelte store subscriptions
+   * @param subscriptions - Array of store subscription information
+   */
+  private createSvelteStoreSubscriptionNodes(subscriptions: any[]): void {
+    for (const sub of subscriptions) {
+      // Only create nodes for auto-subscriptions ($store syntax)
+      if (sub.isAutoSubscription) {
+        // Find the store node
+        const storeNode = this.nodes.find(n => 
+          n.label === sub.storeName && 
+          n.metadata?.category?.startsWith('svelte-store-')
+        );
+        
+        if (storeNode) {
+          // Create edge from store to subscription usage
+          // The subscription is implicit in Svelte, so we don't create a separate node
+          // Instead, we'll create edges when the subscribed value is used
+        }
+      }
+    }
+  }
+
+  /**
+   * Create Process nodes for computed values from auto-subscriptions
+   * @param computedValues - Array of computed value information
+   */
+  private createSvelteComputedFromSubscriptionNodes(computedValues: any[]): void {
+    for (const computed of computedValues) {
+      this.nodes.push({
+        id: this.generateNodeId('svelte_computed'),
+        label: computed.name,
+        type: 'data-store',
+        line: computed.line,
+        column: computed.column,
+        metadata: {
+          category: 'svelte-computed-from-subscription',
+          dependencies: computed.dependencies,
+          line: computed.line,
+          column: computed.column,
+        }
+      });
+    }
+  }
+
+  /**
+   * Build data flow edges for Svelte derived store dependencies
+   * Creates edges from source stores to derived stores
+   */
+  private buildSvelteStoreDependencyEdges(svelteStores: any[]): void {
+    for (const store of svelteStores) {
+      // Only process derived stores with dependencies
+      if (store.type !== 'derived' || !store.dependencies || store.dependencies.length === 0) {
+        continue;
+      }
+      
+      // Find the derived store node
+      const derivedNode = this.nodes.find(n => 
+        n.label === store.name && 
+        n.metadata?.category === 'svelte-store-derived'
+      );
+      
+      if (!derivedNode) {
+        console.log(`[DFDBuilder] Could not find derived store node: ${store.name}`);
+        continue;
+      }
+      
+      // Create edges from each dependency to the derived store
+      for (const depName of store.dependencies) {
+        // Find the source store node
+        const sourceNode = this.nodes.find(n => 
+          n.label === depName && 
+          n.metadata?.category?.startsWith('svelte-store-')
+        );
+        
+        if (sourceNode) {
+          this.edges.push({
+            from: sourceNode.id,
+            to: derivedNode.id,
+            label: 'derives'
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges for Svelte $derived() rune dependencies
+   * Creates edges from source state/stores to derived values
+   */
+  private buildSvelteDerivedRuneDependencyEdges(svelteRunes: any[]): void {
+    for (const rune of svelteRunes) {
+      // Only process derived runes with dependencies
+      if (rune.type !== 'derived' || !rune.dependencies || rune.dependencies.length === 0) {
+        continue;
+      }
+      
+      // Find the derived rune node
+      const derivedNode = this.nodes.find(n => 
+        n.label === rune.name && 
+        n.metadata?.category === 'svelte-derived'
+      );
+      
+      if (!derivedNode) {
+        console.log(`[DFDBuilder] Could not find derived rune node: ${rune.name}`);
+        continue;
+      }
+      
+      // Create edges from each dependency to the derived rune
+      for (const depName of rune.dependencies) {
+        // Find the source node (could be $state, another $derived, or a store)
+        const sourceNode = this.nodes.find(n => 
+          n.label === depName && 
+          (n.metadata?.category === 'svelte-state' ||
+           n.metadata?.category === 'svelte-derived' ||
+           n.metadata?.category?.startsWith('svelte-store-'))
+        );
+        
+        if (sourceNode) {
+          // Check if edge already exists
+          const edgeExists = this.edges.some(edge =>
+            edge.from === sourceNode.id &&
+            edge.to === derivedNode.id
+          );
+          
+          if (!edgeExists) {
+            this.edges.push({
+              from: sourceNode.id,
+              to: derivedNode.id,
+              label: 'derives'
+            });
+          }
+        } else {
+          console.log(`[DFDBuilder] Warning: Source node not found for dependency: ${depName}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges for Svelte $effect() rune dependencies
+   * Creates edges from source state/stores to effect processes (like Vue watchers)
+   */
+  private buildSvelteEffectRuneDependencyEdges(svelteRunes: any[]): void {
+    for (const rune of svelteRunes) {
+      // Only process effect runes with dependencies
+      if (rune.type !== 'effect' || !rune.dependencies || rune.dependencies.length === 0) {
+        continue;
+      }
+      
+      // Find the effect rune node by internal name (effect_1, effect_2, etc.)
+      const effectNode = this.nodes.find(n => 
+        n.metadata?.effectName === rune.name && 
+        n.metadata?.category === 'svelte-effect'
+      );
+      
+      if (!effectNode) {
+        console.log(`[DFDBuilder] Could not find effect rune node: ${rune.name}`);
+        continue;
+      }
+      
+      // Create edges from each dependency to the effect rune
+      for (const depName of rune.dependencies) {
+        // Find the source node (could be $state, $derived, or a store)
+        const sourceNode = this.nodes.find(n => 
+          n.label === depName && 
+          (n.metadata?.category === 'svelte-state' ||
+           n.metadata?.category === 'svelte-derived' ||
+           n.metadata?.category?.startsWith('svelte-store-'))
+        );
+        
+        if (sourceNode) {
+          // Check if edge already exists
+          const edgeExists = this.edges.some(edge =>
+            edge.from === sourceNode.id &&
+            edge.to === effectNode.id
+          );
+          
+          if (!edgeExists) {
+            this.edges.push({
+              from: sourceNode.id,
+              to: effectNode.id,
+              label: 'triggers'
+            });
+          }
+        } else {
+          console.log(`[DFDBuilder] Warning: Source node not found for effect dependency: ${depName}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Create External Entity Output nodes for Svelte markup bindings
+   * Wraps all template output nodes in a <template> subgraph (like Vue implementation)
+   * @param markupBindings - Array of Svelte markup binding information
+   */
+  private createSvelteMarkupOutputNodes(markupElements: any[]): void {
+    // Create a root template subgraph if it doesn't exist
+    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
+      if (this.currentAnalysis?.jsxOutput) {
+        this.currentAnalysis.jsxOutput.rootSubgraph = {
+          id: 'subgraph-0',
+          label: '&lt;template&gt;',
+          type: 'jsx-output',
+          elements: [],
+        };
+      }
+    }
+
+    // Create one output node per element
+    // Note: Elements inside control flow blocks are already filtered out by the markup analyzer
+    for (const element of markupElements) {
+      const tagName = element.tagName;
+      const bindings = element.bindings || [];
+      
+      // Convert tag name to <tag> format with HTML entities
+      const label = `&lt;${tagName}&gt;`;
+      
+      const nodeId = this.generateNodeId('jsx_element');
+      const node: any = {
+        id: nodeId,
+        label,
+        type: 'external-entity-output',
+        line: element.line,
+        column: element.column,
+        metadata: {
+          category: 'svelte-template',
+          target: tagName,
+          boundVariables: bindings, // Track which variables are bound to this element
+          line: element.line,
+          column: element.column,
+        },
+      };
+      
+      this.nodes.push(node);
+      
+      // Add node to root template subgraph
+      if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
+        this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(node);
+      }
+    }
+  }
+
+  /**
+   * Create event input nodes from Svelte markup bindings
+   * @param markupBindings - Array of Svelte markup binding information
+   */
+  private createSvelteEventNodesFromMarkup(markupBindings: any[]): void {
+    // This method is deprecated - use createSvelteElementNodesWithEventHandlers instead
+    // Kept for backward compatibility but does nothing
+  }
+
+  /**
+   * Create element nodes for Svelte elements with event handlers (e.g., buttons with on:click)
+   * Similar to Vue's createVueElementNodesWithEventHandlers
+   * @param elementsWithEventHandlers - Array of Svelte element information with event handlers
+   */
+  private createSvelteElementNodesWithEventHandlers(elementsWithEventHandlers: Array<{
+    tagName: string;
+    event: string;
+    handler: string;
+    line?: number;
+    column?: number;
+  }>): void {
+    // Create a root template subgraph if it doesn't exist
+    // This ensures event handler elements are placed in the same subgraph as other template elements
+    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
+      if (this.currentAnalysis?.jsxOutput) {
+        this.currentAnalysis.jsxOutput.rootSubgraph = {
+          id: 'subgraph-0',
+          label: '&lt;template&gt;',
+          type: 'jsx-output',
+          elements: [],
+        };
+      }
+    }
+    
+    for (const element of elementsWithEventHandlers) {
+      // Convert tag name to <tag> format with HTML entities
+      const label = `&lt;${element.tagName}&gt;`;
+      
+      const elementNode: any = {
+        id: this.generateNodeId('jsx_element'),
+        label,
+        type: 'external-entity-output',
+        line: element.line,
+        column: element.column,
+        metadata: {
+          category: 'svelte-element',
+          tagName: element.tagName,
+          event: element.event,
+          handler: element.handler,
+          line: element.line,
+          column: element.column,
+        }
+      };
+      
+      // Add to both nodes array (for edge creation) and subgraph elements
+      this.nodes.push(elementNode);
+      
+      // Add node to root template subgraph
+      if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
+        this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(elementNode);
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges from variables to Svelte markup output nodes
+   * @param markupBindings - Array of Svelte markup binding information
+   */
+  private buildSvelteMarkupEdges(markupElements: any[]): void {
+    // Get markup bindings from metadata to determine binding types
+    const markupBindings = this.currentAnalysis?.metadata?.svelteMarkupBindings || [];
+    
+    for (const element of markupElements) {
+      const tagName = element.tagName;
+      const bindings = element.bindings || [];
+      
+      // Find the template node for this element
+      const templateNode = this.nodes.find(n => 
+        n.type === 'external-entity-output' &&
+        n.metadata?.category === 'svelte-template' &&
+        n.metadata?.target === tagName &&
+        n.line === element.line
+      );
+      
+      if (!templateNode) {
+        continue;
+      }
+      
+      // Create edges from each bound variable to the template node
+      for (const variable of bindings) {
+        // Check if this is a store auto-subscription (starts with $)
+        let sourceVariableName = variable;
+        let isAutoSubscription = false;
+        
+        if (variable.startsWith('$')) {
+          // Strip the $ prefix to find the store node
+          sourceVariableName = variable.substring(1);
+          isAutoSubscription = true;
+        }
+        
+        // Find the source node (could be state, derived, prop, store, or computed process)
+        const sourceNode = this.nodes.find(n => 
+          n.label === sourceVariableName && 
+          (n.type === 'data-store' || 
+           n.type === 'external-entity-input' ||
+           n.type === 'process' ||
+           n.metadata?.category?.startsWith('svelte-'))
+        );
+        
+        if (sourceNode) {
+          // Determine the edge label based on binding type
+          // Check if this variable is used in a class: or style: directive for this specific element
+          const bindingInfo = markupBindings.find((b: any) => 
+            b.variable === variable && 
+            (b.type === 'class' || b.type === 'style') &&
+            // Match by line number to ensure we're looking at the same element
+            Math.abs((b.line || 0) - (element.line || 0)) < 5
+          );
+          
+          const label = bindingInfo ? 'binds' : 'displays';
+          
+          this.edges.push({
+            from: sourceNode.id,
+            to: templateNode.id,
+            label: label
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges from Svelte event nodes to handler processes
+   * @param markupBindings - Array of Svelte markup binding information
+   */
+  private buildSvelteEventEdges(markupBindings: any[]): void {
+    // This method is deprecated - use buildSvelteEventHandlerDataFlows instead
+    // Kept for backward compatibility but does nothing
+  }
+
+  /**
+   * Build data flow edges from Svelte element nodes to handler processes
+   * Similar to Vue's buildVueEventHandlerDataFlows
+   * @param analysis - Component analysis with Svelte elements with event handlers
+   */
+  private buildSvelteEventHandlerDataFlows(analysis: ComponentAnalysis): void {
+    if (!analysis.metadata?.svelteElementsWithEventHandlers || analysis.metadata.svelteElementsWithEventHandlers.length === 0) {
+      return;
+    }
+
+    for (const element of analysis.metadata.svelteElementsWithEventHandlers) {
+      // Find the element node
+      const elementNode = this.nodes.find(node =>
+        node.metadata?.category === 'svelte-element' &&
+        node.metadata?.tagName === element.tagName &&
+        node.metadata?.handler === element.handler &&
+        node.line === element.line
+      );
+
+      if (!elementNode) {
+        continue;
+      }
+
+      // Extract the function name from the handler (support "functionName", functionName(), etc.)
+      const functionName = element.handler.replace(/\(.*\)$/, '').trim();
+
+      // Find the process node for the event handler
+      const processNode = this.nodes.find(node =>
+        node.type === 'process' &&
+        node.label === element.handler
+      );
+
+      if (!processNode) {
+        continue;
+      }
+
+      // Create edge from element to process with event label
+      const eventLabel = `on:${element.event}`;
+      
+      this.edges.push({
+        from: elementNode.id,
+        to: processNode.id,
+        label: eventLabel
+      });
+
+      // Find state nodes that this process references or modifies
+      const processInfo = analysis.processes.find(p => p.name === element.handler);
+      if (processInfo && processInfo.references) {
+        for (const ref of processInfo.references) {
+          // Extract the base variable name (e.g., "counter" from "counter.update")
+          const baseRef = ref.split('.')[0];
+          
+          // Find the state/store node
+          const stateNode = this.nodes.find(node =>
+            (node.type === 'data-store' || node.type === 'external-entity-input') &&
+            (node.label === ref || node.label === baseRef)
+          );
+
+          if (stateNode) {
+            // Determine if this is a read or write operation
+            // If the reference includes method calls like .update, .set, it's a write
+            const isWrite = ref.includes('.update') || ref.includes('.set') || ref.includes('=');
+            
+            if (isWrite) {
+              // Check if edge already exists
+              const edgeExists = this.edges.some(edge =>
+                edge.from === processNode.id &&
+                edge.to === stateNode.id &&
+                edge.label === 'updates'
+              );
+
+              if (!edgeExists) {
+                this.edges.push({
+                  from: processNode.id,
+                  to: stateNode.id,
+                  label: 'updates'
+                });
+              }
+            } else {
+              // It's a read operation - create edge from state to process
+              const edgeExists = this.edges.some(edge =>
+                edge.from === stateNode.id &&
+                edge.to === processNode.id &&
+                edge.label === 'reads'
+              );
+
+              if (!edgeExists) {
+                this.edges.push({
+                  from: stateNode.id,
+                  to: processNode.id,
+                  label: 'reads'
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges for Svelte bind: directives
+   * Creates bidirectional edges for two-way bindings like bind:value
+   * @param markupBindings - Array of markup bindings from Svelte analyzer
+   */
+  private buildSvelteBindingEdges(markupBindings: any[]): void {
+    if (!markupBindings || markupBindings.length === 0) {
+      return;
+    }
+
+    for (const binding of markupBindings) {
+      if (binding.type !== 'bind') {
+        continue;
+      }
+
+      const variable = binding.variable;
+      const target = binding.target; // e.g., "value", "checked"
+      
+      // Find the state node
+      const stateNode = this.nodes.find(n =>
+        n.label === variable &&
+        (n.type === 'data-store' || n.metadata?.category?.startsWith('svelte-'))
+      );
+
+      if (!stateNode) {
+        continue;
+      }
+
+      // Find or create the input element node
+      // Look for existing element node at the same line
+      let elementNode = this.nodes.find(n =>
+        n.type === 'external-entity-output' &&
+        n.metadata?.category === 'svelte-element' &&
+        n.line === binding.line
+      );
+
+      // If no element node exists, create one
+      if (!elementNode) {
+        // Find the tag name from markup at this line
+        const tagName = this.findTagNameAtLine(binding.line);
+        
+        elementNode = {
+          id: this.generateNodeId('jsx_element'),
+          label: `<${tagName}>`,
+          type: 'external-entity-output',
+          line: binding.line,
+          column: binding.column,
+          metadata: {
+            category: 'svelte-element',
+            tagName: tagName,
+            bindTarget: target,
+          }
+        };
+        
+        this.nodes.push(elementNode);
+        
+        // Add to template subgraph if it exists
+        if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
+          this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(elementNode);
+        }
+      }
+
+      // Create bidirectional edges for two-way binding
+      // 1. State -> Element (binds)
+      this.edges.push({
+        from: stateNode.id,
+        to: elementNode.id,
+        label: 'binds'
+      });
+
+      // 2. Element -> State (on:change/on:input)
+      const changeEvent = target === 'checked' ? 'on:change' : 'on:input';
+      this.edges.push({
+        from: elementNode.id,
+        to: stateNode.id,
+        label: changeEvent
+      });
+    }
+  }
+
+  /**
+   * Helper method to find tag name at a specific line
+   * @param line - Line number
+   * @returns Tag name or 'input' as default
+   */
+  private findTagNameAtLine(line?: number): string {
+    if (!line) {
+      return 'input';
+    }
+
+    // Look for existing element nodes at this line
+    const existingElement = this.nodes.find(n =>
+      n.line === line &&
+      n.metadata?.tagName
+    );
+
+    if (existingElement && existingElement.metadata?.tagName) {
+      return existingElement.metadata.tagName;
+    }
+
+    // Default to 'input' for bind: directives
+    return 'input';
+  }
+
+  /**
+   * Build data flow edges for Svelte conditional structures ({#if})
+   * @param conditionalStructures - Array of Svelte conditional structure information
+   */
+  /**
+   * Build subgraphs for Svelte conditional structures ({#if})
+   * Creates subgraph structures for conditional rendering
+   */
+  private buildSvelteConditionalEdges(conditionalStructures: any[]): void {
+    if (!conditionalStructures || conditionalStructures.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildSvelteConditionalEdges: Processing ${conditionalStructures.length} conditional structures`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
+      if (this.currentAnalysis) {
+        this.currentAnalysis.jsxOutput.rootSubgraph = {
+          id: 'subgraph-0',
+          label: '<template>',
+          type: 'jsx-output',
+          elements: [],
+        };
+      }
+    }
+
+    const rootSubgraph = this.currentAnalysis?.jsxOutput.rootSubgraph;
+    if (!rootSubgraph) {
+      console.log('[DFDBuilder] Warning: No root subgraph available for conditional structures');
+      return;
+    }
+
+    // Process each conditional structure
+    for (const conditionalStructure of conditionalStructures) {
+      const { condition, variables } = conditionalStructure;
+
+      console.log(`[DFDBuilder] Creating conditional subgraph for: ${condition}`);
+
+      // Create a conditional subgraph
+      const subgraphId = this.generateNodeId('subgraph');
+      const conditionalSubgraph: any = {
+        id: subgraphId,
+        label: `{${condition}}`,
+        type: 'conditional',
+        condition: {
+          expression: condition,
+          variables: variables,
+        },
+        elements: [],
+      };
+
+      // Extract display dependencies from the element bindings
+      const displayDependencies: string[] = [];
+      
+      if (conditionalStructure.element.bindings) {
+        for (const binding of conditionalStructure.element.bindings) {
+          if (binding.type === 'expression') {
+            if (!displayDependencies.includes(binding.variable)) {
+              displayDependencies.push(binding.variable);
+            }
+          }
+        }
+      }
+
+      // Create a template output node for the element inside the conditional
+      const elementNodeId = this.generateNodeId('jsx_element');
+      const elementNode: any = {
+        id: elementNodeId,
+        label: '<p>',
+        type: 'external-entity-output',
+        line: conditionalStructure.line,
+        column: conditionalStructure.column,
+        metadata: {
+          category: 'svelte-template',
+          displayDependencies: displayDependencies,
+          attributeReferences: [],
+        },
+      };
+
+      // Add the element node to the conditional subgraph
+      conditionalSubgraph.elements.push(elementNode);
+
+      // Add the conditional subgraph to the root subgraph
+      rootSubgraph.elements.push(conditionalSubgraph);
+
+      // Create data flow edges from condition variables to the subgraph
+      for (const variable of variables) {
+        // Find the source node (prop, state, computed, etc.)
+        const sourceNode = this.nodes.find(node =>
+          node.label === variable &&
+          (node.type === 'external-entity-input' ||
+           node.type === 'data-store' ||
+           node.metadata?.category?.startsWith('svelte-'))
+        );
+
+        if (sourceNode) {
+          console.log(`[DFDBuilder] Creating edge from ${variable} to conditional subgraph`);
+          
+          // Create edge from source to subgraph (control visibility)
+          this.edges.push({
+            from: sourceNode.id,
+            to: subgraphId,
+            label: 'control visibility',
+          });
+        } else {
+          console.log(`[DFDBuilder] Warning: No source node found for conditional variable: ${variable}`);
+        }
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${conditionalStructures.length} conditional subgraphs`);
+  }
+
+  /**
+   * Build data flow edges for Svelte loop structures ({#each})
+   * @param loopStructures - Array of Svelte loop structure information
+   */
+  /**
+   * Build subgraphs for Svelte loop structures ({#each})
+   * Creates subgraph structures for list rendering
+   */
+  private buildSvelteLoopEdges(loopStructures: any[]): void {
+    if (!loopStructures || loopStructures.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildSvelteLoopEdges: Processing ${loopStructures.length} loop structures`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
+      if (this.currentAnalysis) {
+        this.currentAnalysis.jsxOutput.rootSubgraph = {
+          id: 'subgraph-0',
+          label: '&lt;template&gt;',
+          type: 'jsx-output',
+          elements: [],
+        };
+      }
+    }
+
+    const rootSubgraph = this.currentAnalysis?.jsxOutput.rootSubgraph;
+    if (!rootSubgraph) {
+      console.log('[DFDBuilder] Warning: No root subgraph available for loop structures');
+      return;
+    }
+
+    // Process each loop structure
+    for (const loopStructure of loopStructures) {
+      const { source } = loopStructure;
+
+      console.log(`[DFDBuilder] Creating loop subgraph for: ${source}`);
+
+      // Create a loop subgraph
+      const subgraphId = this.generateNodeId('subgraph');
+      const subgraphLabel = `{#each ${source}}`;
+      
+      const loopSubgraph: any = {
+        id: subgraphId,
+        label: subgraphLabel,
+        type: 'loop',
+        source: source,
+        elements: [],
+        subgraphs: [], // Add subgraphs array for nested structure
+      };
+
+      // Extract display dependencies from the element bindings
+      // Note: Loop variables (like "item" in {#each items as item}) should be treated
+      // as references to the source array, not as separate variables
+      const displayDependencies: string[] = [];
+      
+      if (loopStructure.element.bindings) {
+        for (const binding of loopStructure.element.bindings) {
+          if (binding.type === 'expression') {
+            // The binding variable is the loop variable (e.g., "item")
+            // We want to track that this element displays data from the source array
+            if (!displayDependencies.includes(source)) {
+              displayDependencies.push(source);
+            }
+          }
+        }
+      }
+
+      // Create a single template output node for the element inside the loop
+      // There should be only ONE element per loop structure
+      const elementNodeId = this.generateNodeId('jsx_element');
+      const elementNode: any = {
+        id: elementNodeId,
+        label: '&lt;li&gt;',
+        type: 'external-entity-output',
+        line: loopStructure.line,
+        column: loopStructure.column,
+        metadata: {
+          category: 'svelte-template',
+          displayDependencies: displayDependencies,
+          attributeReferences: [],
+        },
+      };
+
+      // Add the element node to the loop subgraph
+      loopSubgraph.elements.push(elementNode);
+
+      // Add the loop subgraph to the root subgraph
+      rootSubgraph.elements.push(loopSubgraph);
+
+      // Create data flow edge from source array to the subgraph
+      const sourceNode = this.nodes.find(node =>
+        node.label === source &&
+        (node.type === 'external-entity-input' ||
+         node.type === 'data-store' ||
+         node.metadata?.category?.startsWith('svelte-'))
+      );
+
+      if (sourceNode) {
+        console.log(`[DFDBuilder] Creating edge from ${source} to loop subgraph`);
+        
+        // Create edge from source to subgraph (provides data for iteration)
+        this.edges.push({
+          from: sourceNode.id,
+          to: subgraphId,
+          label: 'iterates over',
+        });
+
+        // Create direct edge from source to the element inside the loop
+        // This is needed because Mermaid doesn't display edges to nodes inside subgraphs well
+        console.log(`[DFDBuilder] Creating direct edge from ${source} to <li> element`);
+        this.edges.push({
+          from: sourceNode.id,
+          to: elementNodeId,
+          label: 'displays',
+        });
+      } else {
+        console.log(`[DFDBuilder] Warning: No source node found for loop source: ${source}`);
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${loopStructures.length} loop subgraphs`);
+  }
+
+  /**
+   * Build data flow edges for Svelte await structures ({#await})
+   * @param awaitStructures - Array of Svelte await structure information
+   */
+  /**
+   * Build subgraphs for Svelte await structures ({#await})
+   * Creates subgraph structures for async rendering
+   */
+  private buildSvelteAwaitEdges(awaitStructures: any[]): void {
+    if (!awaitStructures || awaitStructures.length === 0) {
+      return;
+    }
+
+    console.log(`[DFDBuilder] buildSvelteAwaitEdges: Processing ${awaitStructures.length} await structures`);
+
+    // Create a root template subgraph if it doesn't exist
+    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
+      if (this.currentAnalysis) {
+        this.currentAnalysis.jsxOutput.rootSubgraph = {
+          id: 'subgraph-0',
+          label: '&lt;template&gt;',
+          type: 'jsx-output',
+          elements: [],
+        };
+      }
+    }
+
+    const rootSubgraph = this.currentAnalysis?.jsxOutput.rootSubgraph;
+    if (!rootSubgraph) {
+      console.log('[DFDBuilder] Warning: No root subgraph available for await structures');
+      return;
+    }
+
+    // Process each await structure
+    for (const awaitStructure of awaitStructures) {
+      const { promise } = awaitStructure;
+
+      console.log(`[DFDBuilder] Creating await subgraph for: ${promise}`);
+
+      // Create an await subgraph
+      const subgraphId = this.generateNodeId('subgraph');
+      const subgraphLabel = `{#await ${promise}}`;
+      
+      const awaitSubgraph: any = {
+        id: subgraphId,
+        label: subgraphLabel,
+        type: 'await',
+        promise: promise,
+        elements: [],
+        subgraphs: [], // Add subgraphs array for nested structure
+      };
+
+      // Group bindings by their line number to create separate elements
+      // This ensures we create one element per actual HTML element in the markup
+      const elementBindingsMap = new Map<number, any[]>();
+      
+      if (awaitStructure.element.bindings) {
+        for (const binding of awaitStructure.element.bindings) {
+          if (binding.type === 'expression') {
+            const line = binding.line || 0;
+            if (!elementBindingsMap.has(line)) {
+              elementBindingsMap.set(line, []);
+            }
+            elementBindingsMap.get(line)!.push(binding);
+          }
+        }
+      }
+
+      // Create template output nodes for each unique element (by line number)
+      const createdElements: any[] = [];
+      for (const [line, bindings] of elementBindingsMap.entries()) {
+        const firstBinding = bindings[0];
+        const tagName = firstBinding.target || 'p'; // Default to 'p' if no target
+        const elementNodeId = this.generateNodeId('jsx_element');
+        const elementNode: any = {
+          id: elementNodeId,
+          label: `&lt;${tagName}&gt;`,
+          type: 'external-entity-output',
+          line: firstBinding.line,
+          column: firstBinding.column,
+          metadata: {
+            category: 'svelte-template',
+            displayDependencies: bindings.map(b => b.variable),
+            attributeReferences: [],
+          },
+        };
+
+        // Add the element node to the await subgraph
+        awaitSubgraph.elements.push(elementNode);
+        createdElements.push({ node: elementNode, bindings });
+      }
+
+      // Add the await subgraph to the root subgraph
+      rootSubgraph.elements.push(awaitSubgraph);
+
+      // Create data flow edge from promise to the subgraph
+      const promiseNode = this.nodes.find(node =>
+        node.label === promise &&
+        (node.type === 'external-entity-input' ||
+         node.type === 'data-store' ||
+         node.metadata?.category?.startsWith('svelte-'))
+      );
+
+      if (promiseNode) {
+        console.log(`[DFDBuilder] Creating edge from ${promise} to await subgraph`);
+        
+        // Create edge from promise to subgraph (async resolution)
+        this.edges.push({
+          from: promiseNode.id,
+          to: subgraphId,
+          label: 'resolves to',
+        });
+
+        // Create direct edges from promise to each <p> element inside the await block
+        // This is needed because Mermaid doesn't display edges to nodes inside subgraphs well
+        for (const { node } of createdElements) {
+          console.log(`[DFDBuilder] Creating direct edge from ${promise} to <p> element`);
+          this.edges.push({
+            from: promiseNode.id,
+            to: node.id,
+            label: 'displays',
+          });
+        }
+      } else {
+        console.log(`[DFDBuilder] Warning: No source node found for promise: ${promise}`);
+      }
+    }
+
+    console.log(`[DFDBuilder] Created ${awaitStructures.length} await subgraphs`);
+  }
+
+  /**
+   * Create External Entity Output nodes for Svelte events
+   * @param svelteEvents - Array of Svelte event information
+   */
+  private createSvelteEventNodes(svelteEvents: any[]): void {
+    const eventNodes: DFDNode[] = [];
+    
+    for (const event of svelteEvents) {
+      const eventNode: DFDNode = {
+        id: this.generateNodeId('svelte_event'),
+        label: event.name,
+        type: 'external-entity-output',
+        line: event.line,
+        column: event.column,
+        metadata: {
+          category: 'svelte-event',
+          dataType: event.dataType,
+          line: event.line,
+          column: event.column,
+        }
+      };
+      
+      eventNodes.push(eventNode);
+      this.nodes.push(eventNode);
+    }
+    
+    // Create events subgraph (similar to Vue emits)
+    if (eventNodes.length > 0) {
+      const eventsSubgraph: DFDSubgraph = {
+        id: this.generateNodeId('events_subgraph'),
+        label: 'Events',
+        type: 'emits', // Use 'emits' type like Vue
+        elements: eventNodes
+      };
+      
+      // Add the subgraph to exportedHandlerSubgroups (reusing existing infrastructure)
+      this.exportedHandlerSubgroups.push(eventsSubgraph);
+    }
+  }
+
+  /**
+   * Build data flow edges for Svelte dispatch calls
+   * Creates edges from processes to event outputs
+   * @param dispatchCalls - Array of dispatch call information
+   */
+  private buildSvelteDispatchEdges(dispatchCalls: any[]): void {
+    for (const call of dispatchCalls) {
+      // Find the event node
+      const eventNode = this.nodes.find(n => 
+        n.label === call.eventName && 
+        n.metadata?.category === 'svelte-event'
+      );
+      
+      if (!eventNode) {
+        console.log(`[DFDBuilder] Could not find event node: ${call.eventName}`);
+        continue;
+      }
+      
+      // Find the caller process node (if specified)
+      if (call.callerProcess) {
+        const processNode = this.nodes.find(n => 
+          n.label === call.callerProcess && 
+          n.type === 'process'
+        );
+        
+        if (processNode) {
+          this.edges.push({
+            from: processNode.id,
+            to: eventNode.id,
+            label: 'dispatches'
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Build edges from processes to stores for update operations
+   * Handles counter.update() and userName.set() calls
+   */
+  private buildSvelteStoreUpdateEdges(storeUpdates: any[]): void {
+    for (const update of storeUpdates) {
+      // Find the store node
+      const storeNode = this.nodes.find(n => 
+        n.label === update.storeName && 
+        n.type === 'data-store' &&
+        n.metadata?.category?.startsWith('svelte-store')
+      );
+      
+      if (!storeNode) {
+        continue;
+      }
+      
+      // Find the process node that contains this update
+      // We need to find which process this update belongs to
+      // For now, we'll look for processes that reference this store
+      const processNode = this.nodes.find(n => 
+        n.type === 'process' &&
+        n.metadata?.references?.includes(update.storeName)
+      );
+      
+      if (processNode) {
+        this.edges.push({
+          from: processNode.id,
+          to: storeNode.id,
+          label: 'updates'
+        });
+      }
+    }
+  }
+
+  /**
+   * Build data flow edges for computed values from auto-subscriptions
+   * Creates edges from stores to computed processes and from computed processes to template
+   */
+  private buildSvelteComputedFromSubscriptionEdges(computedValues: any[]): void {
+    for (const computed of computedValues) {
+      // Find the computed data store node
+      const computedNode = this.nodes.find(n => 
+        n.label === computed.name && 
+        n.type === 'data-store' &&
+        n.metadata?.category === 'svelte-computed-from-subscription'
+      );
+      
+      if (!computedNode) {
+        continue;
+      }
+      
+      // Create edges from stores to computed data store
+      for (const storeName of computed.dependencies) {
+        const storeNode = this.nodes.find(n => 
+          n.label === storeName && 
+          n.type === 'data-store' &&
+          n.metadata?.category?.startsWith('svelte-store')
+        );
+        
+        if (storeNode) {
+          this.edges.push({
+            from: storeNode.id,
+            to: computedNode.id,
+            label: 'provides data'
+          });
+        }
+      }
+      
+      // Create edges from computed data store to template elements that display it
+      // Find template elements that reference this computed value
+      const templateNodes = this.nodes.filter(n => 
+        n.type === 'external-entity-output' &&
+        n.metadata?.category === 'svelte-template'
+      );
+      
+      for (const templateNode of templateNodes) {
+        // Check if this template node displays the computed value
+        // This is determined by checking if the computed variable is referenced in the template
+        if (templateNode.metadata?.boundVariables?.includes(computed.name)) {
+          this.edges.push({
+            from: computedNode.id,
+            to: templateNode.id,
+            label: 'displays'
+          });
+        }
+      }
     }
   }
 
@@ -2704,10 +4059,12 @@ export class DefaultDFDBuilder implements DFDBuilder {
     // Find all lifecycle hook nodes (they were created as process nodes)
     const lifecycleHookNodes = this.nodes.filter(node => 
       node.type === 'process' && 
-      node.metadata?.processType === 'lifecycle' &&
+      (node.metadata?.processType === 'lifecycle' ||
+       node.metadata?.category === 'lifecycle' ||
+       node.metadata?.isSvelteKitLifecycle === true) &&
       node.label && (
         node.label.startsWith('on') || 
-        ['onMounted', 'onUpdated', 'onBeforeMount', 'onBeforeUpdate', 'onUnmounted', 'onBeforeUnmount'].includes(node.label)
+        ['onMounted', 'onUpdated', 'onBeforeMount', 'onBeforeUpdate', 'onUnmounted', 'onBeforeUnmount', 'beforeNavigate', 'afterNavigate'].includes(node.label)
       )
     );
     
@@ -2718,10 +4075,14 @@ export class DefaultDFDBuilder implements DFDBuilder {
     
     console.log(`[DFDBuilder] Creating lifecycle subgraph with ${lifecycleHookNodes.length} hooks:`, lifecycleHookNodes.map(n => n.label));
     
-    // Create the Lifecycles subgraph
+    // Determine the label based on the framework
+    const isSvelteKit = lifecycleHookNodes.some(n => n.metadata?.isSvelteKitLifecycle === true);
+    const subgraphLabel = isSvelteKit ? 'Lifecycle' : 'Lifecycles';
+    
+    // Create the Lifecycle(s) subgraph
     const lifecycleSubgraph: DFDSubgraph = {
       id: this.generateNodeId('lifecycle_subgraph'),
-      label: 'Lifecycles',
+      label: subgraphLabel,
       type: 'lifecycle-hooks',
       elements: lifecycleHookNodes
     };

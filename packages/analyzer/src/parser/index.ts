@@ -9,11 +9,16 @@ import { DFDSourceData, ParseError } from './types';
 import type { ParseResult } from './ast-parser';
 import { SWCASTAnalyzer } from './ast-analyzer';
 import { VueASTAnalyzer } from './vue-ast-analyzer';
+import { SvelteASTAnalyzer } from './svelte-ast-analyzer';
 import { DefaultDFDBuilder } from './dfd-builder';
 import { ParserErrorHandler, ParsingContext } from '../utils/error-handler';
 import { VueErrorHandler, VueParsingContext, VueAnalysisError } from '../utils/vue-error-handler';
+import { SvelteErrorHandler, SvelteParsingContext, SvelteAnalysisError } from '../utils/svelte-error-handler';
 import { VueSFCParseError } from './vue-sfc-parser';
 import { TypeResolver } from '../services/type-resolver';
+
+// Export shared SFC parser for use by other frameworks (e.g., Svelte)
+export { SFCParser, SFCParseError, type SFCSection, type ParsedSFC, type SFCParserOptions } from './sfc-parser';
 
 /**
  * Parser function type - should be provided by the caller (Node or Browser)
@@ -305,6 +310,139 @@ export class DefaultVueParser implements ComponentParser {
 }
 
 /**
+ * Default implementation of Svelte Parser
+ * 
+ * Orchestrates the Svelte parsing pipeline:
+ * 1. Parse Svelte SFC to extract script and markup
+ * 2. Parse script using SWC
+ * 3. Analyze script and markup to extract component information
+ * 4. Build DFD source data from analysis
+ * 5. Handle errors and timeouts gracefully
+ */
+export class DefaultSvelteParser implements ComponentParser {
+  private astAnalyzer: SvelteASTAnalyzer;
+  private dfdBuilder: DefaultDFDBuilder;
+  private errorHandler: SvelteErrorHandler;
+
+  constructor(typeResolver?: TypeResolver) {
+    this.astAnalyzer = new SvelteASTAnalyzer(typeResolver);
+    this.dfdBuilder = new DefaultDFDBuilder();
+    this.errorHandler = new SvelteErrorHandler();
+  }
+
+  /**
+   * Parse Svelte component source code and generate DFD source data
+   * 
+   * @param sourceCode - The Svelte component source code
+   * @param filePath - The file path (used for error reporting)
+   * @returns Promise resolving to DFDSourceData with nodes, edges, and any errors
+   */
+  async parse(sourceCode: string, filePath: string): Promise<DFDSourceData> {
+    const context: SvelteParsingContext = {
+      filePath,
+      sourceCode,
+      startTime: Date.now(),
+    };
+
+    try {
+      // Validate SFC structure first
+      const validationErrors = this.errorHandler.validateSFCStructure(sourceCode, context);
+      if (validationErrors.length > 0) {
+        // Return empty DFD with validation errors
+        return this.errorHandler.createEmptyDFDData(validationErrors);
+      }
+
+      // Wrap the entire parsing operation with timeout protection
+      return await this.errorHandler.withTimeout(
+        () => this.parseInternal(sourceCode, filePath, context),
+        context
+      );
+    } catch (error) {
+      // Handle Svelte-specific errors
+      if (error instanceof SvelteAnalysisError) {
+        const parseError = error.toParseError();
+        return this.errorHandler.createEmptyDFDData([parseError]);
+      }
+
+      // Handle timeout errors
+      if (error instanceof Error && error.name === 'SvelteAnalysisError' && (error as SvelteAnalysisError).code === 'TIMEOUT') {
+        return this.errorHandler.handleTimeout(null, context);
+      }
+
+      // Handle other unexpected errors
+      const parseError = this.errorHandler.handleError(
+        error instanceof Error ? error : new Error(String(error)),
+        context
+      );
+
+      return this.errorHandler.createEmptyDFDData([parseError]);
+    }
+  }
+
+  /**
+   * Internal parsing implementation
+   */
+  private async parseInternal(
+    sourceCode: string,
+    filePath: string,
+    context: SvelteParsingContext
+  ): Promise<DFDSourceData> {
+    const errors: ParseError[] = [];
+    let partialAnalysis = null;
+
+    try {
+      // Step 1: Analyze Svelte SFC (parsing is done internally by SvelteASTAnalyzer)
+      const analysis = await this.astAnalyzer.analyze(sourceCode, filePath);
+
+      if (!analysis) {
+        // No Svelte component found
+        const componentNotFoundError = this.errorHandler.handleComponentNotFound(context);
+        return this.errorHandler.createEmptyDFDData([componentNotFoundError]);
+      }
+
+      partialAnalysis = analysis;
+
+      // Check timeout after analysis
+      if (this.errorHandler.isTimeoutExceeded(context.startTime)) {
+        return this.errorHandler.handleTimeout(analysis, context);
+      }
+
+      // Step 2: Build DFD source data from analysis
+      const dfdData = this.dfdBuilder.build(analysis);
+
+      // Add any accumulated errors
+      if (errors.length > 0) {
+        dfdData.errors = errors;
+      }
+
+      return dfdData;
+    } catch (error) {
+      // Attempt partial analysis recovery
+      const recoveredAnalysis = this.errorHandler.recoverPartialAnalysis(
+        error instanceof Error ? error : new Error(String(error)),
+        partialAnalysis,
+        context
+      );
+
+      if (recoveredAnalysis) {
+        // Build DFD from partial analysis
+        const dfdData = this.dfdBuilder.build(recoveredAnalysis);
+        
+        // Add error information
+        if (recoveredAnalysis.metadata?.error) {
+          dfdData.errors = [recoveredAnalysis.metadata.error];
+        }
+
+        return dfdData;
+      }
+
+      // No recovery possible, re-throw
+      throw error;
+    }
+  }
+}
+
+/**
  * Create a new React Parser instance
  * 
  * @param parserFn - Parser function (Node or Browser implementation)
@@ -326,6 +464,16 @@ export function createVueParser(typeResolver?: TypeResolver): ComponentParser {
 }
 
 /**
+ * Create a new Svelte Parser instance
+ * 
+ * @param typeResolver - Optional TypeResolver for type information
+ * @returns ComponentParser instance
+ */
+export function createSvelteParser(typeResolver?: TypeResolver): ComponentParser {
+  return new DefaultSvelteParser(typeResolver);
+}
+
+/**
  * Create a parser based on file extension
  * 
  * @param filePath - File path to determine parser type
@@ -341,6 +489,10 @@ export function createParser(
   // Detect framework based on file extension
   if (filePath.endsWith('.vue')) {
     return createVueParser(typeResolver);
+  }
+  
+  if (filePath.endsWith('.svelte')) {
+    return createSvelteParser(typeResolver);
   }
   
   // Default to React parser for .tsx, .jsx, .ts, .js files

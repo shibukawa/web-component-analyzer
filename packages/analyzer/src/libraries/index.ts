@@ -23,6 +23,8 @@ import { TRPCLibraryProcessor } from './trpc.js';
 import { VueRouterLibraryProcessor } from './vue-router.js';
 import { PiniaLibraryProcessor } from './pinia.js';
 import { VueCoreLibraryProcessor } from './vue.js';
+import { SvelteStoreLibraryProcessor } from './svelte-store.js';
+import { SvelteKitLibraryProcessor } from './sveltekit.js';
 import { CustomHookProcessor } from './custom-hook.js';
 
 /**
@@ -78,6 +80,8 @@ function registerDefaultProcessors(registry: ProcessorRegistry): void {
   registry.register(new VueRouterLibraryProcessor());
   registry.register(new PiniaLibraryProcessor());
   registry.register(new VueCoreLibraryProcessor());
+  registry.register(new SvelteStoreLibraryProcessor());
+  registry.register(new SvelteKitLibraryProcessor());
   
   // Register custom hook processor (lowest priority - fallback)
   // This handles all user-defined hooks
@@ -102,6 +106,8 @@ export { TRPCLibraryProcessor } from './trpc.js';
 export { VueRouterLibraryProcessor } from './vue-router.js';
 export { PiniaLibraryProcessor } from './pinia.js';
 export { VueCoreLibraryProcessor } from './vue.js';
+export { SvelteStoreLibraryProcessor } from './svelte-store.js';
+export { SvelteKitLibraryProcessor } from './sveltekit.js';
 export { CustomHookProcessor } from './custom-hook.js';
 export type {
   HookProcessor,

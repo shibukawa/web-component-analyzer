@@ -1,7 +1,7 @@
 {
   "name": "web-component-analyzer",
   "displayName": "Web Component Analyzer",
-  "description": "Visualize React and Vue 3 component structure through Data Flow Diagrams (DFD)",
+  "description": "Visualize React, Vue 3, and Svelte 5 component structure through Data Flow Diagrams (DFD)",
   "version": "0.0.1",
   "publisher": "your-publisher-name",
   "type": "commonjs",
@@ -16,13 +16,16 @@
     "react",
     "vue",
     "vue3",
+    "svelte",
+    "svelte5",
     "component",
     "visualization",
     "dfd",
     "data flow diagram",
     "composition api",
     "hooks",
-    "composables"
+    "composables",
+    "runes"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
@@ -49,20 +52,20 @@
         "command": "web-component-analyzer.showDFD",
         "key": "ctrl+shift+d",
         "mac": "cmd+shift+d",
-        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue)$/"
+        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue|svelte)$/"
       },
       {
         "command": "web-component-analyzer.refreshDFD",
         "key": "ctrl+shift+r",
         "mac": "cmd+shift+r",
-        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue)$/"
+        "when": "editorTextFocus && resourceExtname =~ /\\.(tsx|jsx|vue|svelte)$/"
       }
     ],
     "menus": {
       "editor/context": [
         {
           "command": "web-component-analyzer.showDFD",
-          "when": "resourceExtname =~ /\\.(tsx|jsx|vue)$/",
+          "when": "resourceExtname =~ /\\.(tsx|jsx|vue|svelte)$/",
           "group": "navigation@1"
         }
       ]
