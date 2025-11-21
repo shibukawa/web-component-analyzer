@@ -16,6 +16,8 @@ import { VueComposablesAnalyzer } from '../analyzers/vue-composables-analyzer';
 import { VueEmitsAnalyzer, VueEmitInfo, EmitCallInfo } from '../analyzers/vue-emits-analyzer';
 import { VueTemplateAnalyzer, TemplateBinding } from '../analyzers/vue-template-analyzer';
 import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
+import type { ParserFunction } from './index';
+import type { ParseResult } from './ast-parser';
 
 /**
  * Vue AST Analyzer implementation
@@ -24,6 +26,7 @@ import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
  * from Vue SFC files with script setup syntax.
  */
 export class VueASTAnalyzer implements ASTAnalyzer {
+  private parserFn: ParserFunction;
   private sfcParser: VueSFCParser;
   private typeResolver?: TypeResolver;
   private propsAnalyzer: VuePropsAnalyzer;
@@ -33,7 +36,8 @@ export class VueASTAnalyzer implements ASTAnalyzer {
   private templateAnalyzer: VueTemplateAnalyzer;
   private processAnalyzer: SWCProcessAnalyzer;
 
-  constructor(typeResolver?: TypeResolver) {
+  constructor(parserFn: ParserFunction, typeResolver?: TypeResolver) {
+    this.parserFn = parserFn;
     this.sfcParser = new VueSFCParser();
     this.typeResolver = typeResolver;
     this.propsAnalyzer = new VuePropsAnalyzer(typeResolver);
@@ -165,7 +169,7 @@ export class VueASTAnalyzer implements ASTAnalyzer {
   }
 
   /**
-   * Parse script setup content using SWC
+   * Parse script setup content using provided parser function
    * 
    * @param content - Script setup content
    * @param lang - Language (ts or js)
@@ -173,19 +177,21 @@ export class VueASTAnalyzer implements ASTAnalyzer {
    */
   private async parseScriptSetup(content: string, lang: string): Promise<swc.Module | null> {
     try {
-      // Import SWC parser dynamically to avoid circular dependencies
-      const { parseSync } = await import('@swc/core');
+      // Use the injected parser function
+      const filePath = `temp.${lang}`;
+      const parseResult: ParseResult = await this.parserFn(content, filePath);
 
-      const syntax = lang === 'ts' ? 'typescript' : 'ecmascript';
-      
-      const module = parseSync(content, {
-        syntax,
-        tsx: false, // Vue doesn't use JSX in script setup
-        decorators: true,
-        dynamicImport: true,
-      });
+      // Handle parse errors
+      if (parseResult.error) {
+        const errorMessage = parseResult.error.message;
+        const errorLocation = parseResult.error.line 
+          ? ` at line ${parseResult.error.line}${parseResult.error.column ? `:${parseResult.error.column}` : ''}`
+          : '';
+        throw new Error(`Failed to parse script setup${errorLocation}: ${errorMessage}`);
+      }
 
-      return module;
+      // Return the parsed module
+      return parseResult.module || null;
     } catch (error) {
       console.error('🔍 VueASTAnalyzer: Failed to parse script setup:', error);
       // Re-throw to allow caller to handle syntax errors

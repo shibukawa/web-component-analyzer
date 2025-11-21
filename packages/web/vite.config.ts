@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/web-component-analyzer/',
+  define: {
+    'process.env': {},
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,
@@ -23,18 +26,6 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
         },
       },
-      external: [
-        '@swc/core',
-        '@swc/core-darwin-arm64',
-        '@swc/core-darwin-x64',
-        '@swc/core-linux-arm64-gnu',
-        '@swc/core-linux-arm64-musl',
-        '@swc/core-linux-x64-gnu',
-        '@swc/core-linux-x64-musl',
-        '@swc/core-win32-arm64-msvc',
-        '@swc/core-win32-ia32-msvc',
-        '@swc/core-win32-x64-msvc',
-      ],
     },
     chunkSizeWarningLimit: 1000,
   },
@@ -45,16 +36,13 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['monaco-editor', 'mermaid'],
-    exclude: ['@swc/core', '@swc/wasm-web'],
+    exclude: ['@swc/wasm-web'],
   },
   worker: {
     format: 'es',
   },
   resolve: {
-    alias: {
-      // Prevent @swc/core from being bundled
-      '@swc/core': false,
-    },
+    alias: {},
   },
   assetsInclude: ['**/*.wasm'],
 });

@@ -59,7 +59,7 @@ export function FrameworkSelector({
         <option value="auto">Auto-detect</option>
         <option value="react">React</option>
         <option value="vue">Vue</option>
-        <option value="svelte" disabled>Svelte</option>
+        <option value="svelte">Svelte</option>
       </select>
       <span className="detection-status" data-auto={isAutoDetect}>
         {getDetectionLabel()}

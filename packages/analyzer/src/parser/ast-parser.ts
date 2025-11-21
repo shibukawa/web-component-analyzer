@@ -2,7 +2,7 @@
  * AST Parser types and utilities
  * 
  * Note: This module no longer contains parser implementation.
- * Parsing should be done by the caller using @swc/core (Node) or @swc/wasm-web (Browser).
+ * Parsing should be done by the caller using @swc/core (Node) or @swc/core (Browser).
  */
 
 import type { Module, ParseOptions } from '@swc/core';

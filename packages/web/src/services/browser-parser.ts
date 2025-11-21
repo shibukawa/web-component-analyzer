@@ -110,3 +110,32 @@ export function parseComponent(sourceCode: string, filePath: string = 'component
     };
   }
 }
+
+/**
+ * Browser parser function compatible with ParserFunction type
+ * Used for dependency injection into Vue and Svelte parsers
+ * 
+ * @param sourceCode - The source code to parse
+ * @param filePath - The file path (used to determine syntax type)
+ * @returns Promise resolving to ParseResult with AST or error
+ */
+export async function parseWithSWCBrowser(sourceCode: string, filePath: string): Promise<ParseResult> {
+  // Ensure SWC is initialized
+  if (!swcInitialized) {
+    await initializeSWC();
+  }
+
+  try {
+    const options = getSWCOptions(filePath);
+    const module = parseSync(sourceCode, options);
+    
+    return {
+      module
+    };
+  } catch (error) {
+    return {
+      module: undefined,
+      error: createParseError(error)
+    };
+  }
+}

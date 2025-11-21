@@ -171,14 +171,26 @@ export class DefaultReactParser implements ReactParser {
  * 5. Handle errors and timeouts gracefully
  */
 export class DefaultVueParser implements ComponentParser {
-  private astAnalyzer: VueASTAnalyzer;
+  private astAnalyzer: any; // VueASTAnalyzer - loaded dynamically
+  private parserFn: ParserFunction;
   private dfdBuilder: DefaultDFDBuilder;
   private errorHandler: VueErrorHandler;
+  private typeResolver?: TypeResolver;
+  private analyzerPromise: Promise<void>;
 
-  constructor(typeResolver?: TypeResolver) {
-    this.astAnalyzer = new VueASTAnalyzer(typeResolver);
+  constructor(parserFn: ParserFunction, typeResolver?: TypeResolver) {
+    this.parserFn = parserFn;
+    this.typeResolver = typeResolver;
     this.dfdBuilder = new DefaultDFDBuilder();
     this.errorHandler = new VueErrorHandler();
+    
+    // Load VueASTAnalyzer dynamically to avoid bundling @swc/core
+    this.analyzerPromise = this.loadAnalyzer();
+  }
+
+  private async loadAnalyzer(): Promise<void> {
+    const { VueASTAnalyzer } = await import('./vue-ast-analyzer.js');
+    this.astAnalyzer = new VueASTAnalyzer(this.parserFn, this.typeResolver);
   }
 
   /**
@@ -252,6 +264,9 @@ export class DefaultVueParser implements ComponentParser {
     let partialAnalysis = null;
 
     try {
+      // Ensure analyzer is loaded
+      await this.analyzerPromise;
+      
       // Step 1: Analyze Vue SFC (parsing is done internally by VueASTAnalyzer)
       const analysis = await this.astAnalyzer.analyze(sourceCode, filePath);
 
@@ -320,14 +335,26 @@ export class DefaultVueParser implements ComponentParser {
  * 5. Handle errors and timeouts gracefully
  */
 export class DefaultSvelteParser implements ComponentParser {
-  private astAnalyzer: SvelteASTAnalyzer;
+  private parserFn: ParserFunction;
+  private astAnalyzer: any; // SvelteASTAnalyzer - loaded dynamically
   private dfdBuilder: DefaultDFDBuilder;
   private errorHandler: SvelteErrorHandler;
+  private typeResolver?: TypeResolver;
+  private analyzerPromise: Promise<void>;
 
-  constructor(typeResolver?: TypeResolver) {
-    this.astAnalyzer = new SvelteASTAnalyzer(typeResolver);
+  constructor(parserFn: ParserFunction, typeResolver?: TypeResolver) {
+    this.parserFn = parserFn;
+    this.typeResolver = typeResolver;
     this.dfdBuilder = new DefaultDFDBuilder();
     this.errorHandler = new SvelteErrorHandler();
+    
+    // Load SvelteASTAnalyzer dynamically to avoid bundling @swc/core
+    this.analyzerPromise = this.loadAnalyzer();
+  }
+
+  private async loadAnalyzer(): Promise<void> {
+    const { SvelteASTAnalyzer } = await import('./svelte-ast-analyzer.js');
+    this.astAnalyzer = new SvelteASTAnalyzer(this.parserFn, this.typeResolver);
   }
 
   /**
@@ -391,6 +418,9 @@ export class DefaultSvelteParser implements ComponentParser {
     let partialAnalysis = null;
 
     try {
+      // Ensure analyzer is loaded before using it
+      await this.analyzerPromise;
+
       // Step 1: Analyze Svelte SFC (parsing is done internally by SvelteASTAnalyzer)
       const analysis = await this.astAnalyzer.analyze(sourceCode, filePath);
 
@@ -459,8 +489,8 @@ export function createReactParser(parserFn: ParserFunction, typeResolver?: TypeR
  * @param typeResolver - Optional TypeResolver for type information
  * @returns ComponentParser instance
  */
-export function createVueParser(typeResolver?: TypeResolver): ComponentParser {
-  return new DefaultVueParser(typeResolver);
+export function createVueParser(parserFn: ParserFunction, typeResolver?: TypeResolver): ComponentParser {
+  return new DefaultVueParser(parserFn, typeResolver);
 }
 
 /**
@@ -469,8 +499,8 @@ export function createVueParser(typeResolver?: TypeResolver): ComponentParser {
  * @param typeResolver - Optional TypeResolver for type information
  * @returns ComponentParser instance
  */
-export function createSvelteParser(typeResolver?: TypeResolver): ComponentParser {
-  return new DefaultSvelteParser(typeResolver);
+export function createSvelteParser(parserFn: ParserFunction, typeResolver?: TypeResolver): ComponentParser {
+  return new DefaultSvelteParser(parserFn, typeResolver);
 }
 
 /**
@@ -488,11 +518,11 @@ export function createParser(
 ): ComponentParser {
   // Detect framework based on file extension
   if (filePath.endsWith('.vue')) {
-    return createVueParser(typeResolver);
+    return createVueParser(parserFn, typeResolver);
   }
   
   if (filePath.endsWith('.svelte')) {
-    return createSvelteParser(typeResolver);
+    return createSvelteParser(parserFn, typeResolver);
   }
   
   // Default to React parser for .tsx, .jsx, .ts, .js files

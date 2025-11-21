@@ -124,3 +124,16 @@ This document specifies requirements for a GitHub Pages web application that pro
 8. WHEN dark mode is active, THE Web Application SHALL display Halloween-themed decorative elements including bats, pumpkins, mummies, zombies, and vampires
 9. WHEN light mode is active, THE Web Application SHALL display Easter-themed decorative elements including eggs, bunnies, and bright cheerful imagery
 10. THE themed decorative elements SHALL not interfere with the functionality or readability of the Code Editor or Visualization Panel
+
+### Requirement 9
+
+**User Story:** As a developer, I want the web application to work with Vue and Svelte components, so that I can analyze components from multiple frameworks in the browser.
+
+#### Acceptance Criteria
+
+1. THE Analyzer Engine SHALL use browser-compatible parsing for all framework types
+2. THE Analyzer Engine SHALL use @swc/wasm-web instead of @swc/core for browser environments
+3. WHEN analyzing Vue components, THE Analyzer Engine SHALL parse Vue SFC files using browser-compatible parser
+4. WHEN analyzing Svelte components, THE Analyzer Engine SHALL parse Svelte SFC files using browser-compatible parser
+5. THE Web Application SHALL display appropriate error messages when framework-specific parsing fails
+6. THE Analyzer Engine SHALL handle dynamic imports of framework-specific analyzers without bundling Node.js dependencies

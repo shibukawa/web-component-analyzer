@@ -10,13 +10,14 @@ import { ComponentAnalysis, PropInfo } from './types';
 import { SFCParser } from './sfc-parser';
 import { TypeResolver } from '../services/type-resolver';
 import { ASTAnalyzer } from './ast-analyzer';
-import { parseSync } from '@swc/core';
 import { SvelteRunesAnalyzer } from '../analyzers/svelte-runes-analyzer';
 import { SvelteStoreAnalyzer } from '../analyzers/svelte-store-analyzer';
 import { SvelteMarkupAnalyzer } from '../analyzers/svelte-markup-analyzer';
 import { SvelteEventAnalyzer } from '../analyzers/svelte-event-analyzer';
 import { SWCProcessAnalyzer } from '../analyzers/process-analyzer';
 import { createImportDetector } from '../analyzers/import-detector';
+import type { ParserFunction } from './index';
+import type { ParseResult } from './ast-parser';
 
 /**
  * Svelte AST Analyzer implementation
@@ -25,6 +26,7 @@ import { createImportDetector } from '../analyzers/import-detector';
  * from Svelte SFC files with Svelte 5 runes syntax.
  */
 export class SvelteASTAnalyzer implements ASTAnalyzer {
+  private parserFn: ParserFunction;
   private sfcParser: SFCParser;
   private typeResolver?: TypeResolver;
   private runesAnalyzer: SvelteRunesAnalyzer;
@@ -33,7 +35,8 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
   private eventAnalyzer: SvelteEventAnalyzer;
   private processAnalyzer: SWCProcessAnalyzer;
 
-  constructor(typeResolver?: TypeResolver) {
+  constructor(parserFn: ParserFunction, typeResolver?: TypeResolver) {
+    this.parserFn = parserFn;
     this.sfcParser = new SFCParser();
     this.typeResolver = typeResolver;
     this.runesAnalyzer = new SvelteRunesAnalyzer(typeResolver);
@@ -91,21 +94,28 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
         return null;
       }
 
-      // Step 2: Parse script section using SWC
+      // Step 2: Parse script section using injected parser function
       
       const scriptLang = sfc.script.lang || 'javascript';
-      const isTsx = scriptLang === 'ts' || scriptLang === 'typescript';
+      const filePath = `temp.${scriptLang}`;
       
-      let module: swc.Module;
-      try {
-        module = parseSync(sfc.script.content, {
-          syntax: isTsx ? 'typescript' : 'ecmascript',
-          tsx: false,
-          decorators: false,
-          dynamicImport: true,
-        });
-      } catch (error) {
-        console.error('SvelteASTAnalyzer: Script parsing failed:', error);
+      // Use the injected parser function
+      const parseResult: ParseResult = await this.parserFn(sfc.script.content, filePath);
+      
+      // Handle parse errors
+      if (parseResult.error) {
+        const errorMessage = parseResult.error.message;
+        const errorLocation = parseResult.error.line 
+          ? ` at line ${parseResult.error.line}${parseResult.error.column ? `:${parseResult.error.column}` : ''}`
+          : '';
+        console.error(`SvelteASTAnalyzer: Script parsing failed${errorLocation}: ${errorMessage}`);
+        return null;
+      }
+      
+      // Get the parsed module
+      const module = parseResult.module;
+      if (!module) {
+        console.error('SvelteASTAnalyzer: No module returned from parser');
         return null;
       }
 

@@ -2,8 +2,8 @@
  * Analyzer Service - Browser-compatible implementation using @swc/wasm-web
  */
 
-import { SWCASTAnalyzer, DefaultDFDBuilder } from '@web-component-analyzer/analyzer';
-import { parseComponent as parseBrowser, initializeSWC } from './browser-parser';
+import { SWCASTAnalyzer, DefaultDFDBuilder, createVueParser, createSvelteParser } from '@web-component-analyzer/analyzer';
+import { parseComponent as parseBrowser, initializeSWC, parseWithSWCBrowser } from './browser-parser';
 import type { DFDSourceData } from './types';
 import { detectFramework, type Framework } from '../utils/framework-detector';
 
@@ -91,39 +91,30 @@ export async function analyzeComponent(
     if (effectiveFramework === 'vue') {
       console.log('Analyzing Vue component...');
       
-      // Import Vue analyzer dynamically
-      const { VueASTAnalyzer } = await import('@web-component-analyzer/analyzer');
-      
-      // Analyze Vue component (analyzer will parse the SFC internally)
-      const vueAnalyzer = new VueASTAnalyzer();
-      const analysis = await vueAnalyzer.analyze(code, 'component.vue');
-      
-      if (!analysis) {
-        console.log('Analysis failed: no component found');
+      try {
+        // Use dependency injection pattern with browser parser
+        const parser = createVueParser(parseWithSWCBrowser);
+        const dfdData = await parser.parse(code, 'component.vue');
+        
+        console.log('Vue analysis successful');
+        console.log('Nodes:', dfdData.nodes.length);
+        console.log('Edges:', dfdData.edges.length);
+
+        return {
+          success: true,
+          dfdData,
+          detectedFramework,
+          detectionConfidence
+        };
+      } catch (error) {
+        console.error('Vue analysis error:', error);
         return {
           success: false,
-          error: 'No Vue component found in the code. Ensure the component has a <script setup> section.',
+          error: `Vue analysis failed: ${error instanceof Error ? error.message : String(error)}`,
           detectedFramework,
           detectionConfidence
         };
       }
-      
-      console.log('Vue analysis successful, building DFD...');
-      
-      // Build DFD from analysis
-      const builder = new DefaultDFDBuilder();
-      const dfdData = builder.build(analysis);
-      
-      console.log('DFD built successfully');
-      console.log('Nodes:', dfdData.nodes.length);
-      console.log('Edges:', dfdData.edges.length);
-
-      return {
-        success: true,
-        dfdData,
-        detectedFramework,
-        detectionConfidence
-      };
     }
 
     // Handle React components
@@ -175,10 +166,40 @@ export async function analyzeComponent(
       };
     }
 
-    // Svelte not yet supported
+    // Handle Svelte components
+    if (effectiveFramework === 'svelte') {
+      console.log('Analyzing Svelte component...');
+      
+      try {
+        // Use dependency injection pattern with browser parser
+        const parser = createSvelteParser(parseWithSWCBrowser);
+        const dfdData = await parser.parse(code, 'component.svelte');
+        
+        console.log('Svelte analysis successful');
+        console.log('Nodes:', dfdData.nodes.length);
+        console.log('Edges:', dfdData.edges.length);
+
+        return {
+          success: true,
+          dfdData,
+          detectedFramework,
+          detectionConfidence
+        };
+      } catch (error) {
+        console.error('Svelte analysis error:', error);
+        return {
+          success: false,
+          error: `Svelte analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+          detectedFramework,
+          detectionConfidence
+        };
+      }
+    }
+
+    // Unknown framework
     return {
       success: false,
-      error: `Framework "${effectiveFramework}" is not yet supported. Currently supported: React, Vue.`,
+      error: `Framework "${effectiveFramework}" is not yet supported. Currently supported: React, Vue, Svelte.`,
       detectedFramework,
       detectionConfidence
     };

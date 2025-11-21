@@ -995,8 +995,205 @@ function handleClick() {
   }
 ];;
 
-// Svelte samples will be added when svelte-vite example project is created
-export const SVELTE_SAMPLES: SampleComponent[] = [];
+// Svelte samples
+export const SVELTE_SAMPLES: SampleComponent[] = [
+  {
+    id: 'svelte-simple-counter',
+    name: 'Simple Counter',
+    framework: 'svelte',
+    description: 'Simple Svelte counter using $state rune',
+    code: `<script lang="ts">
+  let count = $state(0);
+
+  function increment() {
+    count++;
+  }
+
+  function decrement() {
+    count--;
+  }
+
+  function reset() {
+    count = 0;
+  }
+</script>
+
+<div class="counter">
+  <h2>Simple Counter</h2>
+  <p>Count: {count}</p>
+  <button onclick={increment}>Increment</button>
+  <button onclick={decrement}>Decrement</button>
+  <button onclick={reset}>Reset</button>
+</div>`
+  },
+  {
+    id: 'svelte-props-example',
+    name: 'Props Example',
+    framework: 'svelte',
+    description: 'Svelte component demonstrating $props rune',
+    code: `<script lang="ts">
+  interface Props {
+    title: string;
+    message: string;
+    initialCount?: number;
+  }
+
+  let { title, message, initialCount = 0 }: Props = $props();
+  let count = $state(initialCount);
+
+  function handleClick() {
+    count++;
+  }
+</script>
+
+<div class="props-example">
+  <h2>{title}</h2>
+  <p>{message}</p>
+  <p>Count: {count}</p>
+  <button onclick={handleClick}>Click Me</button>
+</div>`
+  },
+  {
+    id: 'svelte-derived-values',
+    name: 'Derived Values',
+    framework: 'svelte',
+    description: 'Svelte component demonstrating $derived rune',
+    code: `<script lang="ts">
+  let count = $state(0);
+  let multiplier = $state(2);
+  
+  // Derived values
+  let doubled = $derived(count * 2);
+  let tripled = $derived(count * 3);
+  let multiplied = $derived(count * multiplier);
+  let isEven = $derived(count % 2 === 0);
+
+  function increment() {
+    count++;
+  }
+
+  function updateMultiplier(value: number) {
+    multiplier = value;
+  }
+</script>
+
+<div class="derived-example">
+  <h2>Derived Values</h2>
+  <p>Count: {count}</p>
+  <p>Doubled: {doubled}</p>
+  <p>Tripled: {tripled}</p>
+  <p>Multiplied by {multiplier}: {multiplied}</p>
+  <p>Is Even: {isEven}</p>
+  
+  <button onclick={increment}>Increment</button>
+  <button onclick={() => updateMultiplier(3)}>Set Multiplier to 3</button>
+  <button onclick={() => updateMultiplier(5)}>Set Multiplier to 5</button>
+</div>`
+  },
+  {
+    id: 'svelte-control-flow',
+    name: 'Control Flow',
+    framework: 'svelte',
+    description: 'Svelte component demonstrating control flow structures',
+    code: `<script lang="ts">
+  let showContent = $state(true);
+  let selectedOption = $state<'a' | 'b' | 'c'>('a');
+  let items = $state([
+    { id: 1, name: 'Item 1' },
+    { id: 2, name: 'Item 2' },
+    { id: 3, name: 'Item 3' }
+  ]);
+
+  function toggleContent() {
+    showContent = !showContent;
+  }
+
+  function selectOption(option: 'a' | 'b' | 'c') {
+    selectedOption = option;
+  }
+</script>
+
+<div class="control-flow">
+  <h2>Control Flow Example</h2>
+  
+  <button onclick={toggleContent}>Toggle Content</button>
+  
+  {#if showContent}
+    <p>Content is visible</p>
+  {:else}
+    <p>Content is hidden</p>
+  {/if}
+  
+  <div>
+    <button onclick={() => selectOption('a')}>Option A</button>
+    <button onclick={() => selectOption('b')}>Option B</button>
+    <button onclick={() => selectOption('c')}>Option C</button>
+  </div>
+  
+  {#if selectedOption === 'a'}
+    <p>You selected Option A</p>
+  {:else if selectedOption === 'b'}
+    <p>You selected Option B</p>
+  {:else}
+    <p>You selected Option C</p>
+  {/if}
+  
+  <ul>
+    {#each items as item (item.id)}
+      <li>{item.name}</li>
+    {/each}
+  </ul>
+</div>`
+  },
+  {
+    id: 'svelte-events',
+    name: 'Events',
+    framework: 'svelte',
+    description: 'Svelte component demonstrating event dispatching',
+    code: `<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher<{
+    update: string;
+    submit: { text: string; timestamp: number };
+    cancel: undefined;
+  }>();
+
+  let inputValue = $state('');
+
+  function handleInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    inputValue = target.value;
+    dispatch('update', target.value);
+  }
+
+  function handleSubmit() {
+    const data = {
+      text: inputValue,
+      timestamp: Date.now()
+    };
+    dispatch('submit', data);
+    inputValue = '';
+  }
+
+  function handleCancel() {
+    inputValue = '';
+    dispatch('cancel', undefined);
+  }
+</script>
+
+<div class="events-component">
+  <h2>Events Example</h2>
+  <input 
+    value={inputValue} 
+    oninput={handleInput}
+    placeholder="Type something..."
+  />
+  <button onclick={handleSubmit}>Submit</button>
+  <button onclick={handleCancel}>Cancel</button>
+</div>`
+  }
+];
 
 export const ALL_SAMPLES: SampleComponent[] = [
   ...REACT_SAMPLES,

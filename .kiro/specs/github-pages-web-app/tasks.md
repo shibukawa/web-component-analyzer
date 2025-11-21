@@ -300,7 +300,7 @@
   - Configure custom domain if needed
   - _Requirements: 5.4_
 
-- [ ]* 13. Testing and validation
+- [ ] 13. Testing and validation
 - [ ]* 13.1 Manual browser testing
   - Test in Chrome, Firefox, and Safari
   - Verify responsive layout on different screen sizes
@@ -335,3 +335,47 @@
   - Include placeholder text in editor
   - Show helpful error messages
   - _Requirements: 2.5_
+
+- [x] 15. Fix browser compatibility for Vue and Svelte analyzers
+- [x] 15.1 Investigate Vue component display errors
+  - Reproduce the Vue component error in the web application
+  - Check browser console for detailed error messages
+  - Verify if error is related to @swc/core imports or other issues
+  - Document the exact error message and stack trace
+  - Identify root cause of Vue component failures
+  - _Requirements: 9.1, 9.3_
+
+- [x] 15.2 Create browser-compatible parser wrapper for Vue
+  - Create browser-specific Vue parser that uses @swc/wasm-web
+  - Implement parseVueSFC function that works in browser environment
+  - Handle script section parsing with WASM parser
+  - Export browser-compatible VueASTAnalyzer wrapper
+  - _Requirements: 9.1, 9.2, 9.3_
+
+- [x] 15.3 Create browser-compatible parser wrapper for Svelte
+  - Create browser-specific Svelte parser that uses @swc/wasm-web
+  - Implement parseSvelteSFC function that works in browser environment
+  - Handle script section parsing with WASM parser
+  - Export browser-compatible SvelteASTAnalyzer wrapper
+  - _Requirements: 9.1, 9.2, 9.4_
+
+- [x] 15.4 Update analyzer service to use browser-compatible parsers
+  - Import browser-compatible Vue analyzer wrapper
+  - Import browser-compatible Svelte analyzer wrapper
+  - Remove direct imports of Node.js-based analyzers
+  - Ensure all framework analysis uses @swc/wasm-web
+  - _Requirements: 9.1, 9.2, 9.6_
+
+- [x] 15.5 Update Vite configuration for proper module resolution
+  - Ensure @swc/core is properly externalized for browser builds
+  - Configure resolve.alias to prevent @swc/core bundling
+  - Add proper optimizeDeps configuration for framework analyzers
+  - Test that build completes without @swc/core import errors
+  - _Requirements: 9.1, 9.2, 9.6_
+
+- [x] 15.6 Add error handling for framework-specific parsing failures
+  - Display user-friendly error messages for Vue parsing failures
+  - Display user-friendly error messages for Svelte parsing failures
+  - Log detailed error information to console for debugging
+  - Test error handling with invalid Vue and Svelte components
+  - _Requirements: 9.5_

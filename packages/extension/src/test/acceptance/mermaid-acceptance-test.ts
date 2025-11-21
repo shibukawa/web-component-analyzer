@@ -49,16 +49,14 @@ function createNodeReactParser() {
  * Create a Vue parser for Node.js environment
  */
 function createNodeVueParser() {
-  // Vue parser doesn't need a parserFn as it handles parsing internally
-  return createVueParser();
+  return createVueParser(parseComponent);
 }
 
 /**
  * Create a Svelte parser for Node.js environment
  */
 function createNodeSvelteParser() {
-  // Svelte parser doesn't need a parserFn as it handles parsing internally
-  return createSvelteParser();
+  return createSvelteParser(parseComponent);
 }
 
 /**

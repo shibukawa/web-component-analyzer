@@ -195,7 +195,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
             }
           }
           // Check for hook call with type assertion (e.g., useSearch() as SearchParams)
-          else if (decl.init.type === 'TsAsExpression' || decl.init.type === 'TsSatisfiesExpression') {
+          else if (decl.init.type === 'TsAsExpression' || (decl.init as any).type === 'TsSatisfiesExpression') {
             console.log('🪝 Found TsAsExpression/TsSatisfiesExpression in VariableDeclaration');
             const expr = decl.init as any;
             if (expr.expression && expr.expression.type === 'CallExpression') {
@@ -351,7 +351,7 @@ export class SWCHooksAnalyzer implements HooksAnalyzer {
     let callExpression: swc.CallExpression | null = null;
     if (declaration.init.type === 'CallExpression') {
       callExpression = declaration.init;
-    } else if (declaration.init.type === 'TsAsExpression' || declaration.init.type === 'TsSatisfiesExpression') {
+    } else if (declaration.init.type === 'TsAsExpression' || (declaration.init as any).type === 'TsSatisfiesExpression') {
       const expr = declaration.init as any;
       if (expr.expression && expr.expression.type === 'CallExpression') {
         callExpression = expr.expression;
