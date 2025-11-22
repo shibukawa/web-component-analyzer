@@ -1,5 +1,9 @@
 # Web Component Analyzer
 
+> [!CAUTION]
+> This repository is a participant of [Kiroween](https://kiroween.devpost.com). So this repository is locked from December 5, 2025 to January 30, 2026.
+> During the period, I will modify the code at https://github.com/shibukawa/web-component-analyzer-temp.
+
 Visualize the internal structure of frontend components through Data Flow Diagrams (DFD) like the following mermaid.js style.
 
 You can try it without installing on the [playground](https://shibukawa.github.io/web-component-analyzer/) site.

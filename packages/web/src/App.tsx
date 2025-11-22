@@ -11,6 +11,7 @@ import { VisualizationPane } from './components/VisualizationPane';
 import { SampleSelector } from './components/SampleSelector';
 import { FrameworkSelector } from './components/FrameworkSelector';
 import { ShareButton } from './components/ShareButton';
+import { GitHubButton } from './components/GitHubButton';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
@@ -193,6 +194,7 @@ function AppContent() {
         <Header>
           <ThemeToggle />
           <ShareButton code={code} framework={framework} />
+          <GitHubButton />
         </Header>
         
         <div style={{ marginTop: '60px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
