@@ -323,7 +323,7 @@
     - Update component to use `<button {onclick}>` shorthand syntax instead of `onclick={handleClick}`
     - Create <button> template node within <template> subgraph
     - Implement data flow edge from <button> element to onclick process with on:click label
-    - Implement data flow edge from onclick process to count state with "updates" label
+    - Implement data flow edge from onclick process to cfount state with "updates" label
     - Update acceptance test `012-PropsExample.mmd` to include all data flows
     - Verify edges: initialCount → count (initializes), <button> → onclick (on:click), onclick → count (updates)
     - _Requirements: 2.2, 5.2, 5.3, 4.1, 6.5_
@@ -351,7 +351,7 @@
     - Run all Svelte acceptance tests to ensure no regressions
     - _Requirements: 5.2, 5.3, 6.5_
 
-  - [ ] 10.2 Debug and fix event handler line number tracking
+  - [x] 10.2 Debug and fix event handler line number tracking
     - Investigate why event handler line numbers differ from component source (e.g., on:click at line 35 vs actual line 20)
     - Check if line numbers are calculated correctly in markup analyzer
     - Verify line number calculation in `extractElementsWithEventHandlers` method
@@ -361,7 +361,7 @@
     - Update acceptance tests if line numbers change
     - _Requirements: 5.2, 5.3, 6.5_
 
-  - [ ] 10.3 Fix Vue event handler line number tracking (parallel issue)
+  - [x] 10.3 Fix Vue event handler line number tracking (parallel issue)
     - Apply same line number debugging and fixes to Vue framework
     - Check `createVueElementNodesWithEventHandlers` method in DFD builder
     - Verify Vue template analyzer line number calculation
@@ -373,7 +373,18 @@
   - [ ] 10.4 Implement bind directive edge creation fix
     - Fix `buildSvelteBindingEdges` to correctly find element nodes created by unified method
     - Ensure bind:value edges are created from state to element nodes
-    - Verify bidirectional edges are created (state → element with "binds", element → state with "on:input")
+    - Verify bidirectional edges are created (state → element with "binds", element → state with "oninput")
     - Test with components that have both bind directives and event handlers
     - Update acceptance tests to verify bind edges are correctly generated
+    - _Requirements: 5.2, 5.3, 6.5_
+
+  - [ ] 10.5 Remove colons from Svelte event handler edge labels
+    - Update DFD builder to generate event labels without colons: "onclick" instead of "on:click", "oninput" instead of "on:input"
+    - Modify `buildSvelteEventHandlerDataFlows` method to strip "on:" prefix from event labels
+    - Modify `buildSvelteBindingEdges` method to use "input" instead of "on:input" for bind directive edges
+    - Update all Svelte acceptance test `.mmd` files to reflect new label format
+    - Update `011-SimpleCounter.mmd`: change "on:click" to "onclick"
+    - Update `012-PropsExample.mmd`: change "on:click" to "onclick"
+    - Update `013-Events.mmd`: change "on:input" to "input", "on:click" to "onclick"
+    - Verify all Svelte acceptance tests pass with new label format
     - _Requirements: 5.2, 5.3, 6.5_

@@ -20,6 +20,7 @@ export interface ProcessAnalyzer {
 export class SWCProcessAnalyzer implements ProcessAnalyzer {
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private lineOffset: number = 0;
   private imperativeHandleAnalyzer: ImperativeHandleAnalyzer;
 
   constructor() {
@@ -34,6 +35,15 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
     this.imperativeHandleAnalyzer.setSourceCode(sourceCode);
+  }
+
+  /**
+   * Set line offset for file-relative line number calculation
+   * Used when the source code is extracted from a larger file (e.g., script section from SFC)
+   * @param lineOffset - Starting line number of the source code in the original file (1-based)
+   */
+  setLineOffset(lineOffset: number): void {
+    this.lineOffset = lineOffset;
   }
 
   /**
@@ -409,7 +419,10 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       }
       line = i + 1;
     }
-    return line;
+    
+    // Add line offset to get file-relative line number
+    // The offset is 1-based, so we subtract 1 before adding to get the correct result
+    return line + this.lineOffset - 1;
   }
 
   /**

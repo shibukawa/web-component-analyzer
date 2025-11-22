@@ -50,6 +50,20 @@ export interface VueLoopStructure {
 
 export class VueTemplateAnalyzer {
   /**
+   * Line offset for template section in SFC file
+   * Used to adjust line numbers from template-relative to file-relative
+   */
+  private templateLineOffset: number = 0;
+
+  /**
+   * Set the line offset for the template section
+   * @param lineOffset - Starting line number of template in SFC file
+   */
+  setTemplateLineOffset(lineOffset: number): void {
+    this.templateLineOffset = lineOffset;
+  }
+
+  /**
    * Parse Vue template and extract bindings
    * @param template - Template HTML string
    * @returns Array of template bindings
@@ -878,8 +892,30 @@ export class VueTemplateAnalyzer {
   /**
    * Get line number for a given position in the template
    */
+  /**
+   * Calculate the file-relative line number for a position within the template string
+   * 
+   * The template string is trimmed, so it doesn't include leading whitespace from the SFC file.
+   * However, the templateLineOffset is set to the line number of the first character of the
+   * trimmed template in the original SFC file.
+   * 
+   * Example:
+   * - SFC file line 10: <template>
+   * - SFC file line 11:   <div>
+   * - Template string: "<div>..."
+   * - Position of <div> in template: 0
+   * - lines.length = 1 (because template.substring(0, 0).split('\n') = [''])
+   * - templateLineOffset = 11 (the line where <div> appears in the SFC file)
+   * - fileLineNumber = 1 + 11 - 1 = 11 ✓ Correct!
+   * 
+   * @param template - The template string (trimmed)
+   * @param position - The position within the template string
+   * @returns The file-relative line number (1-based)
+   */
   private getLineNumber(template: string, position: number): number {
     const lines = template.substring(0, position).split('\n');
-    return lines.length;
+    // Add 1 because split creates one less element than actual lines
+    // Then add the template's starting line offset (minus 1 because offset is 1-based)
+    return lines.length + this.templateLineOffset - 1;
   }
 }

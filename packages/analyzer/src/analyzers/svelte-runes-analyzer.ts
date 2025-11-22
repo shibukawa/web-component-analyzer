@@ -41,6 +41,7 @@ export class SvelteRunesAnalyzer {
   private typeResolver?: TypeResolver;
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private lineOffset: number = 0;
   private effectCounter: number = 0;
 
   /**
@@ -58,6 +59,15 @@ export class SvelteRunesAnalyzer {
   setSourceCode(sourceCode: string): void {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Set line offset for file-relative line number calculation
+   * Used when the source code is extracted from a larger file (e.g., script section from SFC)
+   * @param lineOffset - Starting line number of the source code in the original file (1-based)
+   */
+  setLineOffset(lineOffset: number): void {
+    this.lineOffset = lineOffset;
   }
 
   /**
@@ -392,12 +402,17 @@ export class SvelteRunesAnalyzer {
    * @returns Line number (1-indexed)
    */
   private getLineNumber(pos: number): number {
+    let line = 1;
     for (let i = 0; i < this.lineStarts.length; i++) {
       if (pos < this.lineStarts[i]) {
-        return i; // Return 1-indexed line number
+        break;
       }
+      line = i + 1;
     }
-    return this.lineStarts.length;
+    
+    // Add line offset to get file-relative line number
+    // The offset is 1-based, so we subtract 1 before adding to get the correct result
+    return line + this.lineOffset - 1;
   }
 
   /**

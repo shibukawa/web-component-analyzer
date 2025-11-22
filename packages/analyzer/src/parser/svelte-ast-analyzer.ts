@@ -134,6 +134,9 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       // Set source code for line number calculation
       this.runesAnalyzer.setSourceCode(sfc.script.content);
       
+      // Set line offset for file-relative line numbers
+      this.runesAnalyzer.setLineOffset(sfc.script.line);
+      
       // Analyze runes
       const runes = await this.runesAnalyzer.analyzeRunes(module, filePath);
       
@@ -141,6 +144,9 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       
       // Set source code for line number calculation
       this.storeAnalyzer.setSourceCode(sfc.script.content);
+      
+      // Set line offset for file-relative line numbers
+      this.storeAnalyzer.setLineOffset(sfc.script.line);
       
       // Analyze stores
       const storeAnalysis = await this.storeAnalyzer.analyzeStores(module, filePath);
@@ -150,6 +156,9 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       // Set source code for line number calculation
       this.processAnalyzer.setSourceCode(sfc.script.content);
       
+      // Set line offset for file-relative line numbers
+      this.processAnalyzer.setLineOffset(sfc.script.line);
+      
       // Analyze processes
       const processes = this.processAnalyzer.analyzeProcesses(module.body);
       
@@ -157,6 +166,9 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       
       // Set source code for line number calculation
       this.eventAnalyzer.setSourceCode(sfc.script.content);
+      
+      // Set line offset for file-relative line numbers
+      this.eventAnalyzer.setLineOffset(sfc.script.line);
       
       // Analyze events
       const eventAnalysis = await this.eventAnalyzer.analyzeEvents(module, filePath);
@@ -171,6 +183,9 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       let awaitStructures: any[] = [];
       
       if (sfc.template) {
+        // Set the markup line offset for accurate line number tracking
+        this.markupAnalyzer.setMarkupLineOffset(sfc.template.line);
+        
         markupBindings = this.markupAnalyzer.analyzeMarkup(sfc.template.content);
         markupElements = this.markupAnalyzer.extractElementBindings(sfc.template.content);
         elementsWithEventHandlers = this.markupAnalyzer.extractElementsWithEventHandlers(sfc.template.content);

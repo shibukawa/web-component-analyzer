@@ -178,12 +178,16 @@ export class SFCParser {
       const lang = match[1] || 'js';
       const content = match[2];
       const matchIndex = match.index || 0;
+      const trimmedContent = content.trim();
 
-      // Calculate line and column of the script content start
-      const { line, column } = this.getLineColumn(source, matchIndex + match[0].indexOf('>') + 1);
+      // Calculate line and column of the FIRST CHARACTER of the trimmed content
+      // We need to find where the trimmed content starts in the original source
+      const trimStartOffset = content.indexOf(trimmedContent);
+      const scriptStartIndex = matchIndex + match[0].indexOf('>') + 1 + trimStartOffset;
+      const { line, column } = this.getLineColumn(source, scriptStartIndex);
 
       return {
-        content: content.trim(),
+        content: trimmedContent,
         lang: this.normalizeLang(lang),
         line,
         column,
@@ -222,12 +226,16 @@ export class SFCParser {
       const lang = match[1] || 'js';
       const content = match[2];
       const matchIndex = match.index || 0;
+      const trimmedContent = content.trim();
 
-      // Calculate line and column of the script content start
-      const { line, column } = this.getLineColumn(source, matchIndex + match[0].indexOf('>') + 1);
+      // Calculate line and column of the FIRST CHARACTER of the trimmed content
+      // We need to find where the trimmed content starts in the original source
+      const trimStartOffset = content.indexOf(trimmedContent);
+      const scriptStartIndex = matchIndex + match[0].indexOf('>') + 1 + trimStartOffset;
+      const { line, column } = this.getLineColumn(source, scriptStartIndex);
 
       return {
-        content: content.trim(),
+        content: trimmedContent,
         lang: this.normalizeLang(lang),
         line,
         column,
@@ -260,12 +268,16 @@ export class SFCParser {
 
       const content = match[1];
       const matchIndex = match.index || 0;
+      const trimmedContent = content.trim();
 
-      // Calculate line and column of the template content start
-      const { line, column } = this.getLineColumn(source, matchIndex + match[0].indexOf('>') + 1);
+      // Calculate line and column of the FIRST CHARACTER of the trimmed template content
+      // We need to find where the trimmed content starts in the original source
+      const trimStartOffset = content.indexOf(trimmedContent);
+      const templateStartIndex = matchIndex + match[0].indexOf('>') + 1 + trimStartOffset;
+      const { line, column } = this.getLineColumn(source, templateStartIndex);
 
       return {
-        content: content.trim(),
+        content: trimmedContent,
         line,
         column,
       };
@@ -321,8 +333,11 @@ export class SFCParser {
         return null;
       }
 
-      // Calculate line and column of the markup content start
-      const { line, column } = this.getLineColumn(source, scriptCloseIndex);
+      // Calculate line and column of the FIRST CHARACTER of the trimmed markup content
+      // We need to find where the trimmed content starts in the original source
+      const trimStartOffset = markupContent.indexOf(trimmedContent);
+      const markupStartIndex = scriptCloseIndex + trimStartOffset;
+      const { line, column } = this.getLineColumn(source, markupStartIndex);
 
       return {
         content: trimmedContent,

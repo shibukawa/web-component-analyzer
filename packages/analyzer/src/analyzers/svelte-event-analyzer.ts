@@ -40,6 +40,7 @@ export class SvelteEventAnalyzer {
   private typeResolver?: TypeResolver;
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private lineOffset: number = 0;
   private dispatchVariableName: string | null = null; // Name of the dispatch variable
 
   /**
@@ -57,6 +58,15 @@ export class SvelteEventAnalyzer {
   setSourceCode(sourceCode: string): void {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Set line offset for file-relative line number calculation
+   * Used when the source code is extracted from a larger file (e.g., script section from SFC)
+   * @param lineOffset - Starting line number of the source code in the original file (1-based)
+   */
+  setLineOffset(lineOffset: number): void {
+    this.lineOffset = lineOffset;
   }
 
   /**

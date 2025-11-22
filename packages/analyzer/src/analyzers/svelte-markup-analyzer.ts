@@ -54,6 +54,20 @@ export interface SvelteAwaitStructure {
 
 export class SvelteMarkupAnalyzer {
   /**
+   * Line offset for markup section in SFC file
+   * Used to adjust line numbers from markup-relative to file-relative
+   */
+  private markupLineOffset: number = 0;
+
+  /**
+   * Set the line offset for the markup section
+   * @param lineOffset - Starting line number of markup in SFC file
+   */
+  setMarkupLineOffset(lineOffset: number): void {
+    this.markupLineOffset = lineOffset;
+  }
+
+  /**
    * Parse Svelte markup and extract bindings
    * @param markup - Markup HTML string
    * @returns Array of markup bindings
@@ -748,8 +762,34 @@ export class SvelteMarkupAnalyzer {
   /**
    * Get line number for a given position in the markup
    */
+  /**
+   * Calculate the file-relative line number for a position within the markup string
+   * 
+   * The markup string is trimmed, so it doesn't include leading whitespace from the SFC file.
+   * However, the markupLineOffset is set to the line number of the first character of the
+   * trimmed markup in the original SFC file.
+   * 
+   * Example:
+   * - SFC file line 17: <div>
+   * - SFC file line 18:   <button>
+   * - Markup string: "<div>\n  <button>"
+   * - Position of <button> in markup: 6 (after "<div>\n")
+   * - lineInMarkup = 2 (because markup.substring(0, 6).split('\n') = ['<div>', ''])
+   * - markupLineOffset = 17 (the line where <div> appears in the SFC file)
+   * - fileLineNumber = 2 + 17 - 1 = 18 ✓ Correct!
+   * 
+   * @param markup - The markup string (trimmed)
+   * @param position - The position within the markup string
+   * @returns The file-relative line number (1-based)
+   */
   private getLineNumber(markup: string, position: number): number {
     const lines = markup.substring(0, position).split('\n');
-    return lines.length;
+    // Calculate line number within the markup (1-based)
+    const lineInMarkup = lines.length;
+    // Add the markup's starting line offset to get the file-relative line number
+    // Formula: lineInMarkup + markupLineOffset - 1
+    // The -1 is needed because markupLineOffset is 1-based (line 17 = 17, not 16)
+    const fileLineNumber = lineInMarkup + this.markupLineOffset - 1;
+    return fileLineNumber;
   }
 }

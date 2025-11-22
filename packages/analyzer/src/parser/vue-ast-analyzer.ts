@@ -145,6 +145,8 @@ export class VueASTAnalyzer implements ASTAnalyzer {
       let templateAnalysis: TemplateAnalysis | null = null;
       if (sfc.template) {
         try {
+          // Set the template line offset for accurate line number tracking
+          this.templateAnalyzer.setTemplateLineOffset(sfc.template.line);
           templateAnalysis = this.analyzeTemplate(sfc.template.content, scriptAnalysis);
         } catch (error) {
           console.error('🔍 VueASTAnalyzer: Template analysis failed:', error);
