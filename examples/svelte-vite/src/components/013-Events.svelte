@@ -33,10 +33,10 @@
 <div class="events-component">
   <h2>Events Example</h2>
   <input 
-    value={inputValue} 
-    oninput={handleInput}
+    bind:value={inputValue}
+    on:input={handleInput}
     placeholder="Type something..."
   />
-  <button onclick={handleSubmit}>Submit</button>
-  <button onclick={handleCancel}>Cancel</button>
+  <button on:click={handleSubmit}>Submit</button>
+  <button on:click={handleCancel}>Cancel</button>
 </div>

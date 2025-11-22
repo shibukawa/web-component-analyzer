@@ -439,7 +439,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     }
 
     const functionExpr = declaration.init as swc.ArrowFunctionExpression | swc.FunctionExpression;
-    const { references, externalCalls } = this.analyzeFunctionBody(functionExpr);
+    const { references, externalCalls, writes } = this.analyzeFunctionBody(functionExpr);
 
     // All functions are classified as 'custom-function'
     // Event handler detection is now handled by EventHandlerUsageAnalyzer
@@ -455,6 +455,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       type: 'custom-function',
       references,
       externalCalls,
+      writes,
       line,
       column,
     };
@@ -469,7 +470,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       return null;
     }
 
-    const { references, externalCalls } = this.analyzeFunctionBody(funcDecl);
+    const { references, externalCalls, writes } = this.analyzeFunctionBody(funcDecl);
 
     // All functions are classified as 'custom-function'
     // Event handler detection is now handled by EventHandlerUsageAnalyzer
@@ -485,6 +486,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       type: 'custom-function',
       references,
       externalCalls,
+      writes,
       line,
       column,
     };
@@ -586,8 +588,9 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
    */
   private analyzeFunctionBody(
     func: swc.ArrowFunctionExpression | swc.FunctionExpression | swc.FunctionDeclaration
-  ): { references: string[]; externalCalls: ExternalCallInfo[] } {
+  ): { references: string[]; externalCalls: ExternalCallInfo[]; writes?: string[] } {
     const references = new Set<string>();
+    const writes = new Set<string>();
     const externalCalls: ExternalCallInfo[] = [];
 
     console.log(`[ProcessAnalyzer] analyzeFunctionBody - func.type:`, func.type, 'body.type:', func.body?.type);
@@ -601,6 +604,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     else if (func.body && func.body.type === 'BlockStatement') {
       console.log(`[ProcessAnalyzer] Block statement body with ${func.body.stmts.length} statements`);
       this.extractReferencesFromBlockStatement(func.body, references, externalCalls);
+      this.extractWritesFromBlockStatement(func.body, writes);
     }
 
     console.log(`[ProcessAnalyzer] analyzeFunctionBody result - references:`, Array.from(references));
@@ -608,6 +612,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     return {
       references: Array.from(references),
       externalCalls,
+      writes: writes.size > 0 ? Array.from(writes) : undefined,
     };
   }
 
@@ -625,6 +630,103 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       this.extractReferencesFromStatement(statement, references, externalCalls);
     }
     console.log(`[ProcessAnalyzer] extractReferencesFromBlockStatement done - references:`, Array.from(references));
+  }
+
+  /**
+   * Extract write operations (variable modifications) from a block statement
+   * Detects assignments, updates (++, --), and other write operations
+   */
+  private extractWritesFromBlockStatement(
+    block: swc.BlockStatement,
+    writes: Set<string>
+  ): void {
+    for (const statement of block.stmts) {
+      this.extractWritesFromStatement(statement, writes);
+    }
+  }
+
+  /**
+   * Extract write operations from a statement
+   */
+  private extractWritesFromStatement(
+    statement: swc.Statement,
+    writes: Set<string>
+  ): void {
+    switch (statement.type) {
+      case 'ExpressionStatement':
+        this.extractWritesFromExpression(statement.expression, writes);
+        break;
+      
+      case 'VariableDeclaration':
+        // Variable declarations with initializers are writes
+        for (const decl of statement.declarations) {
+          if (decl.id.type === 'Identifier') {
+            writes.add(decl.id.value);
+          }
+        }
+        break;
+      
+      case 'IfStatement':
+        this.extractWritesFromStatement(statement.consequent, writes);
+        if (statement.alternate) {
+          this.extractWritesFromStatement(statement.alternate, writes);
+        }
+        break;
+      
+      case 'BlockStatement':
+        this.extractWritesFromBlockStatement(statement, writes);
+        break;
+      
+      case 'ForStatement':
+        if (statement.body) {
+          this.extractWritesFromStatement(statement.body, writes);
+        }
+        break;
+      
+      case 'WhileStatement':
+        if (statement.body) {
+          this.extractWritesFromStatement(statement.body, writes);
+        }
+        break;
+    }
+  }
+
+  /**
+   * Extract write operations from an expression
+   */
+  private extractWritesFromExpression(
+    expression: swc.Expression,
+    writes: Set<string>
+  ): void {
+    switch (expression.type) {
+      case 'AssignmentExpression':
+        // Extract the left side of assignment
+        if (expression.left.type === 'Identifier') {
+          writes.add(expression.left.value);
+        } else if (expression.left.type === 'MemberExpression' && expression.left.object.type === 'Identifier') {
+          // For member expressions like obj.prop = value, track the object
+          writes.add(expression.left.object.value);
+        }
+        break;
+      
+      case 'UpdateExpression':
+        // Extract the argument of update expressions (++, --)
+        if (expression.argument.type === 'Identifier') {
+          writes.add(expression.argument.value);
+        }
+        break;
+      
+      case 'CallExpression':
+        // Check for method calls that might modify state (e.g., array.push, store.set)
+        if (expression.callee.type === 'MemberExpression' && expression.callee.object.type === 'Identifier') {
+          const methodName = expression.callee.property.type === 'Identifier' ? expression.callee.property.value : '';
+          // Common mutation methods
+          if (['push', 'pop', 'shift', 'unshift', 'splice', 'set', 'update'].includes(methodName)) {
+            writes.add(expression.callee.object.value);
+          }
+        }
+        break;
+    }
   }
 
   /**
@@ -1173,7 +1275,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     // Generate a unique name for the inline callback
     const name = `inline_${attrName}_${counter.count++}`;
 
-    const { references, externalCalls } = this.analyzeFunctionBody(func);
+    const { references, externalCalls, writes } = this.analyzeFunctionBody(func);
 
     const line = func.span?.start ? this.getLineNumber(func.span.start) : undefined;
     const column = func.span?.start ? this.getColumnNumber(func.span.start) : undefined;
@@ -1189,6 +1291,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
       type: 'event-handler',
       references,
       externalCalls,
+      writes,
       line,
       column,
       isInlineHandler: true,

@@ -307,3 +307,73 @@
       - Verify internal edges: await data → <p> elements, items → <li> element
       - Run acceptance test to confirm all changes are correct
       - _Requirements: 5.5, 6.5_
+
+  - [x] 9.7 Fix 011-SimpleCounter.svelte event handler data flows
+    - Create <button> template nodes for increment, decrement, and reset buttons within <template> subgraph
+    - Create process nodes for increment, decrement, and reset functions
+    - Implement data flow edges from each <button> element to corresponding handler process with on:click label
+    - Implement data flow edges from each handler process to count state with "updates" label
+    - Update acceptance test `011-SimpleCounter.mmd` to include all button elements and data flows
+    - Verify edges: <button> → increment → count, <button> → decrement → count, <button> → reset → count
+    - _Requirements: 5.2, 5.3, 4.1, 6.5_
+
+  - [x] 9.8 Fix 012-PropsExample.svelte data flows
+    - Implement data flow edge from initialCount prop to count state with "initializes" label
+    - Rename handleClick function to onclick for consistency with Svelte shorthand syntax
+    - Update component to use `<button {onclick}>` shorthand syntax instead of `onclick={handleClick}`
+    - Create <button> template node within <template> subgraph
+    - Implement data flow edge from <button> element to onclick process with on:click label
+    - Implement data flow edge from onclick process to count state with "updates" label
+    - Update acceptance test `012-PropsExample.mmd` to include all data flows
+    - Verify edges: initialCount → count (initializes), <button> → onclick (on:click), onclick → count (updates)
+    - _Requirements: 2.2, 5.2, 5.3, 4.1, 6.5_
+
+  - [x] 9.9 Fix 013-Events.svelte data flows
+    - Update component to use proper Svelte event syntax: `bind:value`, `on:input`, `on:click`
+    - Create <input> and <button> template nodes within <template> subgraph
+    - Implement data flow edges from inputValue state to <input> element with "binds" label
+    - Implement data flow edges from <input> element to handleInput process with "on:input" label
+    - Implement data flow edges from handleInput process to inputValue state with "updates" label
+    - Implement data flow edges from <button> elements to handleSubmit/handleCancel processes with "on:click" label
+    - Implement data flow edges from handler processes to inputValue state with "updates" label
+    - Create "Events" subgraph containing update, submit, cancel event output nodes
+    - Implement data flow edges from handler processes to event nodes with "dispatches" label
+    - Update acceptance test `013-Events.mmd` to include all data flows and events subgraph
+    - _Requirements: 5.2, 5.3, 4.1, 4.2, 4.3, 6.5_
+
+- [ ] 10. Fix element creation duplication and line number tracking issues
+  - [ ] 10.1 Integrate Svelte markup element creation methods
+    - Analyze root cause: `createSvelteMarkupOutputNodes` and `createSvelteElementNodesWithEventHandlers` create duplicate elements
+    - Consolidate element creation into single unified method that handles both event handlers and bind directives
+    - Update DFD builder to call unified method instead of two separate methods
+    - Ensure element nodes have consistent metadata categories (use 'svelte-element' for all)
+    - Verify no duplicate element nodes are created for components with both event handlers and bindings
+    - Run all Svelte acceptance tests to ensure no regressions
+    - _Requirements: 5.2, 5.3, 6.5_
+
+  - [ ] 10.2 Debug and fix event handler line number tracking
+    - Investigate why event handler line numbers differ from component source (e.g., on:click at line 35 vs actual line 20)
+    - Check if line numbers are calculated correctly in markup analyzer
+    - Verify line number calculation in `extractElementsWithEventHandlers` method
+    - Compare with Vue implementation to identify differences in line number handling
+    - Add debug logging to track line number calculation through the pipeline
+    - Fix line number calculation to match actual source positions
+    - Update acceptance tests if line numbers change
+    - _Requirements: 5.2, 5.3, 6.5_
+
+  - [ ] 10.3 Fix Vue event handler line number tracking (parallel issue)
+    - Apply same line number debugging and fixes to Vue framework
+    - Check `createVueElementNodesWithEventHandlers` method in DFD builder
+    - Verify Vue template analyzer line number calculation
+    - Compare Vue and Svelte implementations to ensure consistency
+    - Fix any line number discrepancies in Vue event handler detection
+    - Run Vue acceptance tests to verify fixes
+    - _Requirements: 5.2, 5.3, 6.5_
+
+  - [ ] 10.4 Implement bind directive edge creation fix
+    - Fix `buildSvelteBindingEdges` to correctly find element nodes created by unified method
+    - Ensure bind:value edges are created from state to element nodes
+    - Verify bidirectional edges are created (state → element with "binds", element → state with "on:input")
+    - Test with components that have both bind directives and event handlers
+    - Update acceptance tests to verify bind edges are correctly generated
+    - _Requirements: 5.2, 5.3, 6.5_

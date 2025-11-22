@@ -22,6 +22,7 @@ export interface RuneInfo {
   column?: number;
   dependencies?: string[]; // For derived and effect: list of variables they depend on
   propsProperties?: PropProperty[]; // For $props(): list of prop properties
+  initialValue?: string; // For $state(): identifier used for initialization (e.g., prop name)
 }
 
 /**
@@ -168,19 +169,26 @@ export class SvelteRunesAnalyzer {
 
     // Try to infer data type from initial value
     let dataType = 'unknown';
+    let initialValue: string | undefined;
+    
     if (callExpr.arguments.length > 0) {
       const arg = callExpr.arguments[0];
-      if (arg.expression.type === 'NumericLiteral') {
+      const argExpr = arg.expression;
+      
+      if (argExpr.type === 'NumericLiteral') {
         dataType = 'number';
-      } else if (arg.expression.type === 'StringLiteral') {
+      } else if (argExpr.type === 'StringLiteral') {
         dataType = 'string';
-      } else if (arg.expression.type === 'BooleanLiteral') {
+      } else if (argExpr.type === 'BooleanLiteral') {
         dataType = 'boolean';
-      } else if (arg.expression.type === 'ArrayExpression') {
+      } else if (argExpr.type === 'ArrayExpression') {
         dataType = 'array';
-      } else if (arg.expression.type === 'ObjectExpression') {
+      } else if (argExpr.type === 'ObjectExpression') {
         dataType = 'object';
       }
+      
+      // Extract initial value identifier (e.g., initialCount from $state(initialCount))
+      initialValue = this.extractInitialValueIdentifier(argExpr);
     }
 
     return {
@@ -189,6 +197,7 @@ export class SvelteRunesAnalyzer {
       dataType,
       line,
       column,
+      initialValue,
     };
   }
 
@@ -400,5 +409,57 @@ export class SvelteRunesAnalyzer {
     const lineNumber = this.getLineNumber(pos);
     const lineStart = this.lineStarts[lineNumber - 1] || 0;
     return pos - lineStart;
+  }
+
+  /**
+   * Extract initial value identifier from $state() call
+   * For example: $state(initialCount) -> extracts "initialCount"
+   * Handles: initialCount, props.initialCount, initialCount || 0, initialCount ?? 0
+   */
+  private extractInitialValueIdentifier(expr: swc.Expression): string | undefined {
+    // Handle direct identifier: $state(initialCount)
+    if (expr.type === 'Identifier') {
+      return expr.value;
+    }
+    
+    // Handle member expression: $state(props.initialCount)
+    if (expr.type === 'MemberExpression') {
+      return this.extractIdentifierFromMemberExpression(expr);
+    }
+    
+    // Handle binary expressions with || or ?? operators: $state(initialCount || 0)
+    if (expr.type === 'BinaryExpression') {
+      const operator = expr.operator;
+      
+      // Check for logical OR (||) or nullish coalescing (??)
+      if (operator === '||' || operator === '??') {
+        const left = expr.left;
+        
+        // Check if left side is an identifier
+        if (left.type === 'Identifier') {
+          return left.value;
+        }
+        
+        // Check if left side is a member expression
+        if (left.type === 'MemberExpression') {
+          return this.extractIdentifierFromMemberExpression(left);
+        }
+      }
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Extract identifier from member expression
+   * For props.initialCount -> returns "initialCount"
+   */
+  private extractIdentifierFromMemberExpression(expr: swc.MemberExpression): string | undefined {
+    // Get the property name
+    if (expr.property.type === 'Identifier') {
+      return expr.property.value;
+    }
+    
+    return undefined;
   }
 }

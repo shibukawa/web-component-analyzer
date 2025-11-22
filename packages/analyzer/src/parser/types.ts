@@ -214,6 +214,9 @@ export interface ProcessInfo {
   // For useImperativeHandle
   exportedHandlers?: ExportedHandlerInfo[]; // Methods exposed through the hook
   parentProcessId?: string; // Reference to parent useImperativeHandle process
+  
+  // For tracking write operations (Svelte state modifications)
+  writes?: string[]; // Variables that are being modified/written to in this process
 }
 
 /**

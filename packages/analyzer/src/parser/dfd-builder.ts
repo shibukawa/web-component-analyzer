@@ -257,6 +257,10 @@ export class DefaultDFDBuilder implements DFDBuilder {
     this.buildProcessToProcessEdges(analysis);
     this.log('🚚 DFD Builder: Created process to process edges');
     
+    // Build edges from props to states (initial values) - works for both React and Vue
+    this.buildPropToStateInitialValueEdges(analysis);
+    this.log('🚚 DFD Builder: Created prop to state initial value edges');
+    
     // Create exported handlers subgroups for imperative handle calls
     this.createImperativeHandlerSubgroups(analysis.processes);
 
@@ -323,10 +327,6 @@ export class DefaultDFDBuilder implements DFDBuilder {
       // Build edges from processes to custom hook functions
       this.buildProcessToCustomHookFunctionEdges(analysis);
       this.log('🚚 DFD Builder: Created process to custom hook function edges');
-      
-      // Build edges from props to states (initial values)
-      this.buildPropToStateInitialValueEdges(analysis);
-      this.log('🚚 DFD Builder: Created prop to state initial value edges');
       
       // Build edges from data stores to processes (reads)
       this.buildProcessToDataStoreEdges(analysis);
@@ -510,8 +510,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
       node => node.type === 'external-entity-input' && node.metadata?.category === 'prop'
     );
     
+    // Include React state, Vue state, and Svelte state nodes
     const stateNodes = this.nodes.filter(
-      node => node.type === 'data-store' && node.metadata?.category === 'state'
+      node => node.type === 'data-store' && 
+      (node.metadata?.category === 'state' || 
+       node.metadata?.category === 'vue-ref' ||
+       node.metadata?.category === 'vue-reactive' ||
+       node.metadata?.category === 'svelte-state')
     );
     
     this.log('🚚 buildPropToStateInitialValueEdges: Prop nodes:', propNodes.length);
@@ -1593,7 +1598,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
    */
   private createVueStateNodes(vueState: any[]): void {
     for (const state of vueState) {
-      console.log(`[DFDBuilder] Creating Vue state node: ${state.name}, type: ${state.type}, dataType: ${state.dataType}`);
+      console.log(`[DFDBuilder] Creating Vue state node: ${state.name}, type: ${state.type}, dataType: ${state.dataType}, initialValue: ${state.initialValue}`);
       
       this.nodes.push({
         id: this.generateNodeId('vue_state'),
@@ -1605,6 +1610,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           category: `vue-${state.type}`, // 'vue-ref', 'vue-reactive', or 'vue-computed'
           dataType: state.dataType,
           vueStateType: state.type,
+          initialValue: state.initialValue, // Store initial value for edge creation
           line: state.line,
           column: state.column
         }
@@ -1634,6 +1640,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
             line: rune.line,
             column: rune.column,
             dependencies: rune.dependencies, // For derived runes
+            initialValue: rune.initialValue, // Store initial value for edge creation
           }
         });
       }
@@ -2128,10 +2135,18 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
           if (stateNode) {
             // Determine if this is a read or write operation
-            // If the reference includes method calls like .update, .set, it's a write
-            const isWrite = ref.includes('.update') || ref.includes('.set') || ref.includes('=');
+            // Check if the reference is in the writes list (from process analyzer)
+            const isWrite = (processInfo.writes && processInfo.writes.includes(baseRef)) ||
+                           ref.includes('.update') || ref.includes('.set') || ref.includes('=');
             
             if (isWrite) {
+              // Remove any existing "reads" edge from state to process
+              this.edges = this.edges.filter(edge =>
+                !(edge.from === stateNode.id &&
+                  edge.to === processNode.id &&
+                  edge.label === 'reads')
+              );
+              
               // Check if edge already exists
               const edgeExists = this.edges.some(edge =>
                 edge.from === processNode.id &&

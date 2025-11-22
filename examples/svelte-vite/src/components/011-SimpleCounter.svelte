@@ -17,7 +17,7 @@
 <div class="counter">
   <h2>Simple Counter</h2>
   <p>Count: {count}</p>
-  <button onclick={increment}>Increment</button>
-  <button onclick={decrement}>Decrement</button>
-  <button onclick={reset}>Reset</button>
+  <button on:click={increment}>Increment</button>
+  <button on:click={decrement}>Decrement</button>
+  <button on:click={reset}>Reset</button>
 </div>

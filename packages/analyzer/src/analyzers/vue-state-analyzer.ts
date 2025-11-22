@@ -20,6 +20,7 @@ export interface VueStateInfo {
   line?: number;
   column?: number;
   dependencies?: string[]; // For computed properties: list of state variables they depend on
+  initialValue?: string; // For ref/reactive: identifier used for initialization (e.g., prop name)
 }
 
 /**
@@ -162,6 +163,15 @@ export class VueStateAnalyzer {
       console.log('[VueStateAnalyzer] Found', stateType, 'declaration:', variableName, 'type:', dataType);
     }
 
+    // Extract initial value identifier for ref/reactive
+    let initialValue: string | undefined;
+    if (stateType === 'ref' || stateType === 'reactive') {
+      initialValue = this.extractInitialValueIdentifier(callExpr);
+      if (initialValue) {
+        console.log('[VueStateAnalyzer] Found initial value for', variableName, ':', initialValue);
+      }
+    }
+
     return {
       name: variableName,
       type: stateType,
@@ -169,6 +179,7 @@ export class VueStateAnalyzer {
       line: position?.line,
       column: position?.column,
       dependencies,
+      initialValue,
     };
   }
 
@@ -198,6 +209,71 @@ export class VueStateAnalyzer {
     this.extractIdentifiersFromExpression(argExpr.body, dependencies);
     
     return dependencies;
+  }
+
+  /**
+   * Extract initial value identifier from ref() or reactive() call
+   * For example: ref(props.initialCount || 0) -> extracts "initialCount"
+   * Handles: props.x, x, props.x || default, props.x ?? default
+   */
+  private extractInitialValueIdentifier(callExpr: swc.CallExpression): string | undefined {
+    // Get the first argument
+    if (callExpr.arguments.length === 0) {
+      return undefined;
+    }
+    
+    const firstArg = callExpr.arguments[0];
+    if (!firstArg || firstArg.spread) {
+      return undefined;
+    }
+    
+    const argExpr = firstArg.expression;
+    
+    // Handle direct identifier: ref(initialCount)
+    if (argExpr.type === 'Identifier') {
+      return argExpr.value;
+    }
+    
+    // Handle member expression: ref(props.initialCount)
+    if (argExpr.type === 'MemberExpression') {
+      return this.extractIdentifierFromMemberExpression(argExpr);
+    }
+    
+    // Handle binary expressions with || or ?? operators: ref(props.initialCount || 0)
+    if (argExpr.type === 'BinaryExpression') {
+      const operator = argExpr.operator;
+      
+      // Check for logical OR (||) or nullish coalescing (??)
+      if (operator === '||' || operator === '??') {
+        const left = argExpr.left;
+        
+        // Check if left side is an identifier
+        if (left.type === 'Identifier') {
+          return left.value;
+        }
+        
+        // Check if left side is a member expression
+        if (left.type === 'MemberExpression') {
+          return this.extractIdentifierFromMemberExpression(left);
+        }
+      }
+    }
+    
+    return undefined;
+  }
+  
+  /**
+   * Extract identifier from member expression
+   * For props.initialCount -> returns "initialCount"
+   * For user.name -> returns "name"
+   */
+  private extractIdentifierFromMemberExpression(expr: swc.MemberExpression): string | undefined {
+    // Get the property name
+    if (expr.property.type === 'Identifier') {
+      return expr.property.value;
+    }
+    
+    return undefined;
   }
   
   /**
