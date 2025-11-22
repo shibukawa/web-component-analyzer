@@ -914,8 +914,10 @@ export class VueTemplateAnalyzer {
    */
   private getLineNumber(template: string, position: number): number {
     const lines = template.substring(0, position).split('\n');
-    // Add 1 because split creates one less element than actual lines
-    // Then add the template's starting line offset (minus 1 because offset is 1-based)
-    return lines.length + this.templateLineOffset - 1;
+    // lines.length gives us the number of lines up to position (1-based)
+    // templateLineOffset is the line where the template tag's > is (1-based)
+    // The actual template content starts on the next line
+    // So: lines.length + templateLineOffset
+    return lines.length + this.templateLineOffset;
   }
 }

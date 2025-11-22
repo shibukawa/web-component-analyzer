@@ -39,6 +39,7 @@ export class VueComposablesAnalyzer {
   private typeResolver?: TypeResolver;
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private lineOffset: number = 1;
 
   /**
    * Constructor
@@ -46,6 +47,14 @@ export class VueComposablesAnalyzer {
    */
   constructor(typeResolver?: TypeResolver) {
     this.typeResolver = typeResolver;
+  }
+
+  /**
+   * Set line offset for file-relative line numbers
+   * @param lineOffset - Starting line number of the source code in the original file (1-based)
+   */
+  setLineOffset(lineOffset: number): void {
+    this.lineOffset = lineOffset;
   }
 
   /**
@@ -752,17 +761,17 @@ export class VueComposablesAnalyzer {
    */
   private getLineFromSpan(spanStart: number): number {
     if (this.lineStarts.length === 0) {
-      return 1; // Default to line 1 if no source code
+      return this.lineOffset; // Default to lineOffset if no source code
     }
 
     // Find the line number: lineStarts[i] is the start of line (i+1)
     for (let i = this.lineStarts.length - 1; i >= 0; i--) {
       if (spanStart >= this.lineStarts[i]) {
-        return i + 1;
+        return i + 1 + (this.lineOffset - 1);
       }
     }
 
-    return 1;
+    return this.lineOffset;
   }
 
   /**

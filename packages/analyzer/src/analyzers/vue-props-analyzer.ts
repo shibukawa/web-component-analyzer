@@ -20,6 +20,7 @@ export class VuePropsAnalyzer {
   private typeResolver?: TypeResolver;
   private sourceCode: string = '';
   private lineStarts: number[] = [];
+  private lineOffset: number = 1;
 
   /**
    * Constructor
@@ -36,6 +37,14 @@ export class VuePropsAnalyzer {
   setSourceCode(sourceCode: string): void {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
+  }
+
+  /**
+   * Set line offset for file-relative line numbers
+   * @param lineOffset - Starting line number of the source code in the original file (1-based)
+   */
+  setLineOffset(lineOffset: number): void {
+    this.lineOffset = lineOffset;
   }
 
   /**
@@ -398,17 +407,17 @@ export class VuePropsAnalyzer {
   /**
    * Get line number from span position
    * @param spanStart - Span start position (byte offset)
-   * @returns Line number (1-based)
+   * @returns Line number (1-based, adjusted by lineOffset)
    */
   private getLineFromSpan(spanStart: number): number {
     if (this.lineStarts.length === 0) {
-      return 1; // Default to line 1 if no source code
+      return this.lineOffset; // Default to lineOffset if no source code
     }
 
     // Find the line number: lineStarts[i] is the start of line (i+1)
     for (let i = this.lineStarts.length - 1; i >= 0; i--) {
       if (spanStart >= this.lineStarts[i]) {
-        return i + 1;
+        return i + 1 + (this.lineOffset - 1);
       }
     }
 

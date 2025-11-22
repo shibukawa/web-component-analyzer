@@ -3256,6 +3256,9 @@ export class DefaultDFDBuilder implements DFDBuilder {
 
       // Add the element node to the conditional subgraph
       conditionalSubgraph.elements.push(elementNode);
+      
+      // Add the element node to the nodes array for edge creation
+      this.nodes.push(elementNode);
 
       // Add the conditional subgraph to the root subgraph
       rootSubgraph.elements.push(conditionalSubgraph);
@@ -3515,6 +3518,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           
           createdElements.set(line, elementNode);
           rootSubgraph.elements.push(elementNode);
+          this.nodes.push(elementNode);  // Add to nodes array for edge creation
           console.log(`[DFDBuilder] Created element ${elementNodeId} for <${element.tagName}>`);
         }
         
@@ -3561,6 +3565,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           
           createdElements.set(line, elementNode);
           rootSubgraph.elements.push(elementNode);
+          this.nodes.push(elementNode);  // Add to nodes array for edge creation
           console.log(`[DFDBuilder] Created element ${elementNodeId} for <${element.tagName}> with v-model`);
         } else {
           // Add v-model to existing element
@@ -3600,6 +3605,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
             
             createdElements.set(line, elementNode);
             rootSubgraph.elements.push(elementNode);
+            this.nodes.push(elementNode);  // Add to nodes array for edge creation
             console.log(`[DFDBuilder] Created element ${elementNodeId} for mustache binding`);
           } else {
             // Add to display dependencies of existing element

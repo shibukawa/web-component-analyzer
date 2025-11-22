@@ -35,6 +35,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     this.sourceCode = sourceCode;
     this.lineStarts = this.calculateLineStarts(sourceCode);
     this.imperativeHandleAnalyzer.setSourceCode(sourceCode);
+    console.log('[ProcessAnalyzer] setSourceCode: sourceCode.length=' + sourceCode.length + ', lineStarts.length=' + this.lineStarts.length);
   }
 
   /**
@@ -44,6 +45,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
    */
   setLineOffset(lineOffset: number): void {
     this.lineOffset = lineOffset;
+    console.log('[ProcessAnalyzer] setLineOffset:', lineOffset);
   }
 
   /**
@@ -58,6 +60,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
         lineStarts.push(i + 1);
       }
     }
+    console.log('[ProcessAnalyzer] calculateLineStarts: sourceCode.length=' + sourceCode.length + ', lineStarts.length=' + lineStarts.length);
     return lineStarts;
   }
   /**
@@ -422,7 +425,11 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     
     // Add line offset to get file-relative line number
     // The offset is 1-based, so we subtract 1 before adding to get the correct result
-    return line + this.lineOffset - 1;
+    const result = line + this.lineOffset - 1;
+    if (position > 1000) {
+      console.log('[ProcessAnalyzer] getLineNumber: position=' + position + ', line=' + line + ', lineOffset=' + this.lineOffset + ', result=' + result + ', lineStarts.length=' + this.lineStarts.length);
+    }
+    return result;
   }
 
   /**
@@ -492,7 +499,7 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     const line = funcDecl.span?.start ? this.getLineNumber(funcDecl.span.start) : undefined;
     const column = funcDecl.span?.start ? this.getColumnNumber(funcDecl.span.start) : undefined;
 
-    console.log(`[ProcessAnalyzer] Extracted function (decl): ${name}, type: custom-function, line: ${line}, column: ${column}`);
+    console.log(`[ProcessAnalyzer] Extracted function (decl): ${name}, type: custom-function, span.start=${funcDecl.span?.start}, line: ${line}, column: ${column}`);
 
     return {
       name,

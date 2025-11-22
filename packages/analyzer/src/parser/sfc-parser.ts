@@ -270,10 +270,9 @@ export class SFCParser {
       const matchIndex = match.index || 0;
       const trimmedContent = content.trim();
 
-      // Calculate line and column of the FIRST CHARACTER of the trimmed template content
-      // We need to find where the trimmed content starts in the original source
-      const trimStartOffset = content.indexOf(trimmedContent);
-      const templateStartIndex = matchIndex + match[0].indexOf('>') + 1 + trimStartOffset;
+      // Calculate line and column of the FIRST CHARACTER of the original content (not trimmed)
+      // This ensures line numbers in the template analyzer match the actual source
+      const templateStartIndex = matchIndex + match[0].indexOf('>') + 1;
       const { line, column } = this.getLineColumn(source, templateStartIndex);
 
       return {

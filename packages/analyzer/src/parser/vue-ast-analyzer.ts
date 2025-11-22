@@ -105,6 +105,7 @@ export class VueASTAnalyzer implements ASTAnalyzer {
       }
 
       console.log('🔍 VueASTAnalyzer: Script setup found, lang:', sfc.script.lang);
+      console.log('🔍 VueASTAnalyzer: Script line:', sfc.script.line);
       console.log('🔍 VueASTAnalyzer: Template found:', !!sfc.template);
 
       // Step 2: Parse script setup content using SWC
@@ -125,7 +126,7 @@ export class VueASTAnalyzer implements ASTAnalyzer {
       // Step 3: Analyze script setup to extract component information
       let scriptAnalysis: ScriptAnalysis;
       try {
-        scriptAnalysis = await this.analyzeScriptSetup(scriptModule, filePath, sfc.script.content);
+        scriptAnalysis = await this.analyzeScriptSetup(scriptModule, filePath, sfc.script.content, sfc.script.line);
         
         // Store partial result for error recovery
         partialResult = {
@@ -181,6 +182,8 @@ export class VueASTAnalyzer implements ASTAnalyzer {
     try {
       // Use the injected parser function
       const filePath = `temp.${lang}`;
+      console.log('🔍 VueASTAnalyzer: parseScriptSetup: content.length=' + content.length + ', lang=' + lang);
+      console.log('🔍 VueASTAnalyzer: parseScriptSetup: content (first 100 chars)=' + content.substring(0, 100));
       const parseResult: ParseResult = await this.parserFn(content, filePath);
 
       // Handle parse errors
@@ -212,18 +215,28 @@ export class VueASTAnalyzer implements ASTAnalyzer {
   private async analyzeScriptSetup(
     module: swc.Module,
     filePath?: string,
-    sourceCode?: string
+    sourceCode?: string,
+    scriptLineOffset?: number
   ): Promise<ScriptAnalysis> {
     console.log('🔍 VueASTAnalyzer: Analyzing script setup...');
     console.log('🔍 VueASTAnalyzer: Module body statements:', module.body.length);
 
     try {
-      // Set source code for line number calculation
+      // Set source code and line offset for line number calculation
       if (sourceCode) {
+        console.log('🔍 VueASTAnalyzer: Setting source code, length:', sourceCode.length, 'lines:', sourceCode.split('\n').length);
         this.propsAnalyzer.setSourceCode(sourceCode);
         this.stateAnalyzer.setSourceCode(sourceCode);
         this.composablesAnalyzer.setSourceCode(sourceCode);
         this.emitsAnalyzer.setSourceCode(sourceCode);
+      }
+      
+      // Set line offset for all analyzers
+      if (scriptLineOffset !== undefined) {
+        this.propsAnalyzer.setLineOffset(scriptLineOffset);
+        this.stateAnalyzer.setLineOffset(scriptLineOffset);
+        this.composablesAnalyzer.setLineOffset(scriptLineOffset);
+        this.emitsAnalyzer.setLineOffset(scriptLineOffset);
       }
 
       // Analyze props using VuePropsAnalyzer
@@ -280,9 +293,13 @@ export class VueASTAnalyzer implements ASTAnalyzer {
       // Analyze functions as processes using ProcessAnalyzer
       let functionProcesses: ProcessInfo[] = [];
       try {
-        // Set source code for line number calculation
+        // Set source code and line offset for line number calculation
         if (sourceCode) {
+          console.log('🔍 VueASTAnalyzer: Setting ProcessAnalyzer source code, length:', sourceCode.length, 'lines:', sourceCode.split('\n').length);
           this.processAnalyzer.setSourceCode(sourceCode);
+        }
+        if (scriptLineOffset !== undefined) {
+          this.processAnalyzer.setLineOffset(scriptLineOffset);
         }
         functionProcesses = this.processAnalyzer.analyzeProcesses(module.body);
         console.log('🔍 VueASTAnalyzer: Found', functionProcesses.length, 'function processes');
