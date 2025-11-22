@@ -342,7 +342,7 @@
     - _Requirements: 5.2, 5.3, 4.1, 4.2, 4.3, 6.5_
 
 - [ ] 10. Fix element creation duplication and line number tracking issues
-  - [ ] 10.1 Integrate Svelte markup element creation methods
+  - [x] 10.1 Integrate Svelte markup element creation methods
     - Analyze root cause: `createSvelteMarkupOutputNodes` and `createSvelteElementNodesWithEventHandlers` create duplicate elements
     - Consolidate element creation into single unified method that handles both event handlers and bind directives
     - Update DFD builder to call unified method instead of two separate methods
@@ -370,7 +370,7 @@
     - Run Vue acceptance tests to verify fixes
     - _Requirements: 5.2, 5.3, 6.5_
 
-  - [ ] 10.4 Implement bind directive edge creation fix
+  - [x] 10.4 Implement bind directive edge creation fix
     - Fix `buildSvelteBindingEdges` to correctly find element nodes created by unified method
     - Ensure bind:value edges are created from state to element nodes
     - Verify bidirectional edges are created (state → element with "binds", element → state with "oninput")
@@ -378,7 +378,7 @@
     - Update acceptance tests to verify bind edges are correctly generated
     - _Requirements: 5.2, 5.3, 6.5_
 
-  - [ ] 10.5 Remove colons from Svelte event handler edge labels
+  - [x] 10.5 Remove colons from Svelte event handler edge labels
     - Update DFD builder to generate event labels without colons: "onclick" instead of "on:click", "oninput" instead of "on:input"
     - Modify `buildSvelteEventHandlerDataFlows` method to strip "on:" prefix from event labels
     - Modify `buildSvelteBindingEdges` method to use "input" instead of "on:input" for bind directive edges

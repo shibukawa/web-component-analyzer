@@ -2,6 +2,8 @@
 
 Visualize the internal structure of frontend components through Data Flow Diagrams (DFD) like the following mermaid.js style.
 
+You can try it without installing on the [playground](https://shibukawa.github.io/web-component-analyzer/) site.
+
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Comic Sans MS, cursive'}, 'flowchart': {'curve': 'basis', 'padding': 20}}}%%
 flowchart LR

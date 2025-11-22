@@ -5,34 +5,34 @@ flowchart LR
   svelte_event_2("cancel")
   jsx_element_4["&lt;button&gt;"]
   jsx_element_5["&lt;button&gt;"]
-  process_6[["handleSubmit"]]
-  process_7[["handleCancel"]]
-  jsx_element_8["&lt;input&gt;"]
+  jsx_element_6["&lt;input&gt;"]
+  process_7[["handleSubmit"]]
+  process_8[["handleCancel"]]
   subgraph subgraph_0["&lt;template&gt;"]
     direction TB
       jsx_element_4@{ shape: hex, label: "&lt;button&gt;" }
       jsx_element_5@{ shape: hex, label: "&lt;button&gt;" }
-      jsx_element_8@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_6@{ shape: hex, label: "&lt;input&gt;" }
   end
   subgraph events_subgraph_3["Events"]
     direction TB
       svelte_event_1@{ shape: rounded, label: "submit" }
       svelte_event_2@{ shape: rounded, label: "cancel" }
   end
-  jsx_element_4 ejsx_element_4_process_6@-->|"on:click"| process_6
-  ejsx_element_4_process_6@{ animate: true }
-  svelte_state_0 esvelte_state_0_process_6@-->|"reads"| process_6
-  esvelte_state_0_process_6@{ animate: true }
-  jsx_element_5 ejsx_element_5_process_7@-->|"on:click"| process_7
-  ejsx_element_5_process_7@{ animate: true }
-  svelte_state_0 esvelte_state_0_jsx_element_8@-->|"binds"| jsx_element_8
-  esvelte_state_0_jsx_element_8@{ animate: true }
-  jsx_element_8 ejsx_element_8_svelte_state_0@-->|"on:input"| svelte_state_0
-  ejsx_element_8_svelte_state_0@{ animate: true }
-  process_6 eprocess_6_svelte_event_1@-->|"dispatches"| svelte_event_1
-  eprocess_6_svelte_event_1@{ animate: true }
-  process_7 eprocess_7_svelte_event_2@-->|"dispatches"| svelte_event_2
-  eprocess_7_svelte_event_2@{ animate: true }
+  jsx_element_4 ejsx_element_4_process_7@-->|"click"| process_7
+  ejsx_element_4_process_7@{ animate: true }
+  svelte_state_0 esvelte_state_0_process_7@-->|"reads"| process_7
+  esvelte_state_0_process_7@{ animate: true }
+  jsx_element_5 ejsx_element_5_process_8@-->|"click"| process_8
+  ejsx_element_5_process_8@{ animate: true }
+  svelte_state_0 esvelte_state_0_jsx_element_6@-->|"binds"| jsx_element_6
+  esvelte_state_0_jsx_element_6@{ animate: true }
+  jsx_element_6 ejsx_element_6_svelte_state_0@-->|"input"| svelte_state_0
+  ejsx_element_6_svelte_state_0@{ animate: true }
+  process_7 eprocess_7_svelte_event_1@-->|"dispatches"| svelte_event_1
+  eprocess_7_svelte_event_1@{ animate: true }
+  process_8 eprocess_8_svelte_event_2@-->|"dispatches"| svelte_event_2
+  eprocess_8_svelte_event_2@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -44,8 +44,8 @@ flowchart LR
   classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
   classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
   class svelte_state_0 dataStore
-  class process_6 process
   class process_7 process
+  class process_8 process
   class jsx_element_4 jsxElement
   class jsx_element_5 jsxElement
-  class jsx_element_8 jsxElement
+  class jsx_element_6 jsxElement

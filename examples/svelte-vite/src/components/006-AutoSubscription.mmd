@@ -25,16 +25,12 @@ flowchart LR
   esvelte_computed_2_jsx_element_5@{ animate: true }
   svelte_computed_3 esvelte_computed_3_jsx_element_6@-->|"displays"| jsx_element_6
   esvelte_computed_3_jsx_element_6@{ animate: true }
-  jsx_element_7 ejsx_element_7_process_9@-->|"on:click"| process_9
+  jsx_element_7 ejsx_element_7_process_9@-->|"click"| process_9
   ejsx_element_7_process_9@{ animate: true }
-  svelte_store_0 esvelte_store_0_process_9@-->|"reads"| process_9
-  esvelte_store_0_process_9@{ animate: true }
-  jsx_element_8 ejsx_element_8_process_10@-->|"on:click"| process_10
-  ejsx_element_8_process_10@{ animate: true }
-  svelte_store_1 esvelte_store_1_process_10@-->|"reads"| process_10
-  esvelte_store_1_process_10@{ animate: true }
   process_9 eprocess_9_svelte_store_0@-->|"updates"| svelte_store_0
   eprocess_9_svelte_store_0@{ animate: true }
+  jsx_element_8 ejsx_element_8_process_10@-->|"click"| process_10
+  ejsx_element_8_process_10@{ animate: true }
   process_10 eprocess_10_svelte_store_1@-->|"updates"| svelte_store_1
   eprocess_10_svelte_store_1@{ animate: true }
   svelte_store_0 esvelte_store_0_svelte_computed_2@-->|"provides data"| svelte_computed_2

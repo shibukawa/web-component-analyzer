@@ -8,8 +8,8 @@ flowchart LR
   jsx_element_5["&lt;div&gt;"]
   jsx_element_6["&lt;span&gt;"]
   jsx_element_7["&lt;button&gt;"]
-  process_8[["handleClick"]]
-  jsx_element_9["&lt;input&gt;"]
+  jsx_element_8["&lt;input&gt;"]
+  process_9[["handleClick"]]
   subgraph subgraph_0["&lt;template&gt;"]
     direction TB
       jsx_element_3@{ shape: hex, label: "&lt;div&gt;" }
@@ -17,7 +17,7 @@ flowchart LR
       jsx_element_5@{ shape: hex, label: "&lt;div&gt;" }
       jsx_element_6@{ shape: hex, label: "&lt;span&gt;" }
       jsx_element_7@{ shape: hex, label: "&lt;button&gt;" }
-      jsx_element_9@{ shape: hex, label: "&lt;input&gt;" }
+      jsx_element_8@{ shape: hex, label: "&lt;input&gt;" }
   end
   svelte_state_1 esvelte_state_1_jsx_element_3@-->|"displays"| jsx_element_3
   esvelte_state_1_jsx_element_3@{ animate: true }
@@ -27,14 +27,14 @@ flowchart LR
   esvelte_state_1_jsx_element_5@{ animate: true }
   svelte_state_2 esvelte_state_2_jsx_element_6@-->|"binds"| jsx_element_6
   esvelte_state_2_jsx_element_6@{ animate: true }
-  jsx_element_7 ejsx_element_7_process_8@-->|"on:click"| process_8
-  ejsx_element_7_process_8@{ animate: true }
-  svelte_state_1 esvelte_state_1_process_8@-->|"reads"| process_8
-  esvelte_state_1_process_8@{ animate: true }
-  svelte_state_0 esvelte_state_0_jsx_element_9@-->|"binds"| jsx_element_9
-  esvelte_state_0_jsx_element_9@{ animate: true }
-  jsx_element_9 ejsx_element_9_svelte_state_0@-->|"on:input"| svelte_state_0
-  ejsx_element_9_svelte_state_0@{ animate: true }
+  jsx_element_7 ejsx_element_7_process_9@-->|"click"| process_9
+  ejsx_element_7_process_9@{ animate: true }
+  process_9 eprocess_9_svelte_state_1@-->|"updates"| svelte_state_1
+  eprocess_9_svelte_state_1@{ animate: true }
+  svelte_state_0 esvelte_state_0_jsx_element_8@-->|"binds"| jsx_element_8
+  esvelte_state_0_jsx_element_8@{ animate: true }
+  jsx_element_8 ejsx_element_8_svelte_state_0@-->|"input"| svelte_state_0
+  ejsx_element_8_svelte_state_0@{ animate: true }
 
   %% Styling
   classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
@@ -48,10 +48,10 @@ flowchart LR
   class svelte_state_0 dataStore
   class svelte_state_1 dataStore
   class svelte_state_2 dataStore
-  class process_8 process
+  class process_9 process
   class jsx_element_3 jsxElement
   class jsx_element_4 jsxElement
   class jsx_element_5 jsxElement
   class jsx_element_6 jsxElement
   class jsx_element_7 jsxElement
-  class jsx_element_9 jsxElement
+  class jsx_element_8 jsxElement

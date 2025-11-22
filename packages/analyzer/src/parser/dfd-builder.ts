@@ -143,18 +143,14 @@ export class DefaultDFDBuilder implements DFDBuilder {
       this.log('🚚 DFD Builder: Created', analysis.metadata.svelteEvents.length, 'Svelte event nodes');
     }
     
-    // Create nodes for Svelte markup elements (if present)
-    if (analysis.metadata?.svelteMarkupElements && Array.isArray(analysis.metadata.svelteMarkupElements)) {
-      this.createSvelteMarkupOutputNodes(analysis.metadata.svelteMarkupElements);
-      this.log('🚚 DFD Builder: Created', analysis.metadata.svelteMarkupElements.length, 'Svelte markup output nodes');
-      
-      // Note: Edges will be built after process nodes are created
-    }
+    // Create unified Svelte element nodes (handles bindings, event handlers, and bind directives)
+    const markupElements = analysis.metadata?.svelteMarkupElements || [];
+    const elementsWithEventHandlers = analysis.metadata?.svelteElementsWithEventHandlers || [];
+    const elementsWithBind = analysis.metadata?.svelteElementsWithBind || [];
     
-    // Create element nodes for Svelte elements with event handlers (if present)
-    if (analysis.metadata?.svelteElementsWithEventHandlers && Array.isArray(analysis.metadata.svelteElementsWithEventHandlers)) {
-      this.createSvelteElementNodesWithEventHandlers(analysis.metadata.svelteElementsWithEventHandlers);
-      this.log('🚚 DFD Builder: Created Svelte element nodes with event handlers');
+    if (markupElements.length > 0 || elementsWithEventHandlers.length > 0 || elementsWithBind.length > 0) {
+      this.createUnifiedSvelteElementNodes(markupElements, elementsWithEventHandlers, elementsWithBind);
+      this.log('🚚 DFD Builder: Created unified Svelte element nodes');
     }
     
     // Note: Svelte control flow subgraphs will be built after markup elements are created
@@ -194,8 +190,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
     }
     
     // Build edges for Svelte bind: directives (after state and element nodes are created)
-    if (analysis.metadata?.svelteMarkupBindings && Array.isArray(analysis.metadata.svelteMarkupBindings)) {
-      this.buildSvelteBindingEdges(analysis.metadata.svelteMarkupBindings);
+    if (analysis.metadata?.svelteElementsWithBind && Array.isArray(analysis.metadata.svelteElementsWithBind)) {
+      this.buildSvelteBindingEdges(analysis.metadata.svelteElementsWithBind);
       this.log('🚚 DFD Builder: Built Svelte binding edges');
     }
     
@@ -1884,11 +1880,18 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
-   * Create External Entity Output nodes for Svelte markup bindings
-   * Wraps all template output nodes in a <template> subgraph (like Vue implementation)
-   * @param markupBindings - Array of Svelte markup binding information
+   * Create unified Svelte element nodes that handles both bindings and event handlers
+   * This consolidates createSvelteMarkupOutputNodes and createSvelteElementNodesWithEventHandlers
+   * into a single method to avoid duplicate element creation.
+   * 
+   * @param markupElements - Array of elements with bindings (from extractElementBindings)
+   * @param elementsWithEventHandlers - Array of elements with event handlers (from extractElementsWithEventHandlers)
    */
-  private createSvelteMarkupOutputNodes(markupElements: any[]): void {
+  private createUnifiedSvelteElementNodes(
+    markupElements: any[],
+    elementsWithEventHandlers: any[],
+    elementsWithBind: any[] = []
+  ): void {
     // Create a root template subgraph if it doesn't exist
     if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
       if (this.currentAnalysis?.jsxOutput) {
@@ -1901,34 +1904,136 @@ export class DefaultDFDBuilder implements DFDBuilder {
       }
     }
 
-    // Create one output node per element
-    // Note: Elements inside control flow blocks are already filtered out by the markup analyzer
+    // Create a map to track elements by tagName and line to avoid duplicates
+    const elementMap = new Map<string, any>();
+
+    // First, process elements with bindings
     for (const element of markupElements) {
       const tagName = element.tagName;
       const bindings = element.bindings || [];
-      
-      // Convert tag name to <tag> format with HTML entities
-      const label = `&lt;${tagName}&gt;`;
-      
-      const nodeId = this.generateNodeId('jsx_element');
-      const node: any = {
-        id: nodeId,
-        label,
-        type: 'external-entity-output',
-        line: element.line,
-        column: element.column,
-        metadata: {
-          category: 'svelte-template',
-          target: tagName,
-          boundVariables: bindings, // Track which variables are bound to this element
+      const key = `${tagName}:${element.line}:${element.column}`;
+
+      if (!elementMap.has(key)) {
+        const label = `&lt;${tagName}&gt;`;
+        const nodeId = this.generateNodeId('jsx_element');
+        const node: any = {
+          id: nodeId,
+          label,
+          type: 'external-entity-output',
           line: element.line,
           column: element.column,
-        },
-      };
-      
+          metadata: {
+            category: 'svelte-element',
+            target: tagName,
+            tagName: tagName,
+            boundVariables: bindings,
+            eventHandlers: [],
+            bindDirectives: [],
+            line: element.line,
+            column: element.column,
+          },
+        };
+
+        elementMap.set(key, node);
+      }
+    }
+
+    // Then, process elements with event handlers, merging with existing elements
+    for (const element of elementsWithEventHandlers) {
+      const tagName = element.tagName;
+      const key = `${tagName}:${element.line}:${element.column}`;
+
+      if (elementMap.has(key)) {
+        // Element already exists, add event handler to metadata
+        const existingNode = elementMap.get(key);
+        if (!existingNode.metadata.eventHandlers) {
+          existingNode.metadata.eventHandlers = [];
+        }
+        existingNode.metadata.eventHandlers.push({
+          event: element.event,
+          handler: element.handler,
+        });
+      } else {
+        // New element with event handler
+        const label = `&lt;${tagName}&gt;`;
+        const nodeId = this.generateNodeId('jsx_element');
+        const node: any = {
+          id: nodeId,
+          label,
+          type: 'external-entity-output',
+          line: element.line,
+          column: element.column,
+          metadata: {
+            category: 'svelte-element',
+            target: tagName,
+            tagName: tagName,
+            boundVariables: [],
+            eventHandlers: [
+              {
+                event: element.event,
+                handler: element.handler,
+              },
+            ],
+            bindDirectives: [],
+            line: element.line,
+            column: element.column,
+          },
+        };
+
+        elementMap.set(key, node);
+      }
+    }
+
+    // Finally, process elements with bind directives, merging with existing elements
+    for (const element of elementsWithBind) {
+      const tagName = element.tagName;
+      const key = `${tagName}:${element.line}:${element.column}`;
+
+      if (elementMap.has(key)) {
+        // Element already exists, add bind directive to metadata
+        const existingNode = elementMap.get(key);
+        if (!existingNode.metadata.bindDirectives) {
+          existingNode.metadata.bindDirectives = [];
+        }
+        existingNode.metadata.bindDirectives.push({
+          attribute: element.attribute,
+          variable: element.variable,
+        });
+      } else {
+        // New element with bind directive
+        const label = `&lt;${tagName}&gt;`;
+        const nodeId = this.generateNodeId('jsx_element');
+        const node: any = {
+          id: nodeId,
+          label,
+          type: 'external-entity-output',
+          line: element.line,
+          column: element.column,
+          metadata: {
+            category: 'svelte-element',
+            target: tagName,
+            tagName: tagName,
+            boundVariables: [],
+            eventHandlers: [],
+            bindDirectives: [
+              {
+                attribute: element.attribute,
+                variable: element.variable,
+              },
+            ],
+            line: element.line,
+            column: element.column,
+          },
+        };
+
+        elementMap.set(key, node);
+      }
+    }
+
+    // Add all unique elements to nodes array and subgraph
+    for (const node of elementMap.values()) {
       this.nodes.push(node);
-      
-      // Add node to root template subgraph
+
       if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
         this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(node);
       }
@@ -1936,17 +2041,28 @@ export class DefaultDFDBuilder implements DFDBuilder {
   }
 
   /**
+   * Create External Entity Output nodes for Svelte markup bindings
+   * @deprecated Use createUnifiedSvelteElementNodes instead
+   * @param markupBindings - Array of Svelte markup binding information
+   */
+  private createSvelteMarkupOutputNodes(markupElements: any[]): void {
+    // Deprecated - kept for backward compatibility
+    // This method is now handled by createUnifiedSvelteElementNodes
+  }
+
+  /**
    * Create event input nodes from Svelte markup bindings
+   * @deprecated Use createUnifiedSvelteElementNodes instead
    * @param markupBindings - Array of Svelte markup binding information
    */
   private createSvelteEventNodesFromMarkup(markupBindings: any[]): void {
-    // This method is deprecated - use createSvelteElementNodesWithEventHandlers instead
-    // Kept for backward compatibility but does nothing
+    // Deprecated - kept for backward compatibility
+    // This method is now handled by createUnifiedSvelteElementNodes
   }
 
   /**
    * Create element nodes for Svelte elements with event handlers (e.g., buttons with on:click)
-   * Similar to Vue's createVueElementNodesWithEventHandlers
+   * @deprecated Use createUnifiedSvelteElementNodes instead
    * @param elementsWithEventHandlers - Array of Svelte element information with event handlers
    */
   private createSvelteElementNodesWithEventHandlers(elementsWithEventHandlers: Array<{
@@ -1956,52 +2072,13 @@ export class DefaultDFDBuilder implements DFDBuilder {
     line?: number;
     column?: number;
   }>): void {
-    // Create a root template subgraph if it doesn't exist
-    // This ensures event handler elements are placed in the same subgraph as other template elements
-    if (!this.currentAnalysis?.jsxOutput.rootSubgraph) {
-      if (this.currentAnalysis?.jsxOutput) {
-        this.currentAnalysis.jsxOutput.rootSubgraph = {
-          id: 'subgraph-0',
-          label: '&lt;template&gt;',
-          type: 'jsx-output',
-          elements: [],
-        };
-      }
-    }
-    
-    for (const element of elementsWithEventHandlers) {
-      // Convert tag name to <tag> format with HTML entities
-      const label = `&lt;${element.tagName}&gt;`;
-      
-      const elementNode: any = {
-        id: this.generateNodeId('jsx_element'),
-        label,
-        type: 'external-entity-output',
-        line: element.line,
-        column: element.column,
-        metadata: {
-          category: 'svelte-element',
-          tagName: element.tagName,
-          event: element.event,
-          handler: element.handler,
-          line: element.line,
-          column: element.column,
-        }
-      };
-      
-      // Add to both nodes array (for edge creation) and subgraph elements
-      this.nodes.push(elementNode);
-      
-      // Add node to root template subgraph
-      if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
-        this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(elementNode);
-      }
-    }
+    // Deprecated - kept for backward compatibility
+    // This method is now handled by createUnifiedSvelteElementNodes
   }
 
   /**
    * Build data flow edges from variables to Svelte markup output nodes
-   * @param markupBindings - Array of Svelte markup binding information
+   * @param markupElements - Array of Svelte markup elements
    */
   private buildSvelteMarkupEdges(markupElements: any[]): void {
     // Get markup bindings from metadata to determine binding types
@@ -2011,19 +2088,21 @@ export class DefaultDFDBuilder implements DFDBuilder {
       const tagName = element.tagName;
       const bindings = element.bindings || [];
       
-      // Find the template node for this element
-      const templateNode = this.nodes.find(n => 
+      // Find the element node created by the unified method
+      // Look for element nodes with svelte-element category
+      const elementNode = this.nodes.find(n => 
         n.type === 'external-entity-output' &&
-        n.metadata?.category === 'svelte-template' &&
+        n.metadata?.category === 'svelte-element' &&
         n.metadata?.target === tagName &&
-        n.line === element.line
+        n.line === element.line &&
+        (element.column === undefined || n.column === element.column)
       );
       
-      if (!templateNode) {
+      if (!elementNode) {
         continue;
       }
       
-      // Create edges from each bound variable to the template node
+      // Create edges from each bound variable to the element node
       for (const variable of bindings) {
         // Check if this is a store auto-subscription (starts with $)
         let sourceVariableName = variable;
@@ -2058,7 +2137,7 @@ export class DefaultDFDBuilder implements DFDBuilder {
           
           this.edges.push({
             from: sourceNode.id,
-            to: templateNode.id,
+            to: elementNode.id,
             label: label
           });
         }
@@ -2086,11 +2165,11 @@ export class DefaultDFDBuilder implements DFDBuilder {
     }
 
     for (const element of analysis.metadata.svelteElementsWithEventHandlers) {
-      // Find the element node
+      // Find the element node by tagName and line
+      // The element node should have been created by createUnifiedSvelteElementNodes
       const elementNode = this.nodes.find(node =>
         node.metadata?.category === 'svelte-element' &&
         node.metadata?.tagName === element.tagName &&
-        node.metadata?.handler === element.handler &&
         node.line === element.line
       );
 
@@ -2111,8 +2190,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue;
       }
 
-      // Create edge from element to process with event label
-      const eventLabel = `on:${element.event}`;
+      // Create edge from element to process with event label (without "on:" prefix)
+      const eventLabel = element.event;
       
       this.edges.push({
         from: elementNode.id,
@@ -2188,18 +2267,14 @@ export class DefaultDFDBuilder implements DFDBuilder {
    * Creates bidirectional edges for two-way bindings like bind:value
    * @param markupBindings - Array of markup bindings from Svelte analyzer
    */
-  private buildSvelteBindingEdges(markupBindings: any[]): void {
-    if (!markupBindings || markupBindings.length === 0) {
+  private buildSvelteBindingEdges(elementsWithBind: any[]): void {
+    if (!elementsWithBind || elementsWithBind.length === 0) {
       return;
     }
 
-    for (const binding of markupBindings) {
-      if (binding.type !== 'bind') {
-        continue;
-      }
-
-      const variable = binding.variable;
-      const target = binding.target; // e.g., "value", "checked"
+    for (const element of elementsWithBind) {
+      const variable = element.variable;
+      const attribute = element.attribute; // e.g., "value", "checked"
       
       // Find the state node
       const stateNode = this.nodes.find(n =>
@@ -2211,38 +2286,19 @@ export class DefaultDFDBuilder implements DFDBuilder {
         continue;
       }
 
-      // Find or create the input element node
-      // Look for existing element node at the same line
-      let elementNode = this.nodes.find(n =>
+      // Find the element node created by the unified method
+      // Look for element nodes with svelte-element category
+      // Match by line and column if available, otherwise just by line
+      const elementNode = this.nodes.find(n =>
         n.type === 'external-entity-output' &&
         n.metadata?.category === 'svelte-element' &&
-        n.line === binding.line
+        n.line === element.line &&
+        (element.column === undefined || n.column === element.column)
       );
 
-      // If no element node exists, create one
       if (!elementNode) {
-        // Find the tag name from markup at this line
-        const tagName = this.findTagNameAtLine(binding.line);
-        
-        elementNode = {
-          id: this.generateNodeId('jsx_element'),
-          label: `<${tagName}>`,
-          type: 'external-entity-output',
-          line: binding.line,
-          column: binding.column,
-          metadata: {
-            category: 'svelte-element',
-            tagName: tagName,
-            bindTarget: target,
-          }
-        };
-        
-        this.nodes.push(elementNode);
-        
-        // Add to template subgraph if it exists
-        if (this.currentAnalysis?.jsxOutput.rootSubgraph) {
-          this.currentAnalysis.jsxOutput.rootSubgraph.elements.push(elementNode);
-        }
+        // Element node not found - this shouldn't happen if unified method was called
+        continue;
       }
 
       // Create bidirectional edges for two-way binding
@@ -2253,8 +2309,8 @@ export class DefaultDFDBuilder implements DFDBuilder {
         label: 'binds'
       });
 
-      // 2. Element -> State (on:change/on:input)
-      const changeEvent = target === 'checked' ? 'on:change' : 'on:input';
+      // 2. Element -> State (change/input - without "on:" prefix)
+      const changeEvent = attribute === 'checked' ? 'change' : 'input';
       this.edges.push({
         from: elementNode.id,
         to: stateNode.id,

@@ -178,6 +178,7 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
       let markupBindings: any[] = [];
       let markupElements: any[] = [];
       let elementsWithEventHandlers: any[] = [];
+      let elementsWithBind: any[] = [];
       let conditionalStructures: any[] = [];
       let loopStructures: any[] = [];
       let awaitStructures: any[] = [];
@@ -189,6 +190,7 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
         markupBindings = this.markupAnalyzer.analyzeMarkup(sfc.template.content);
         markupElements = this.markupAnalyzer.extractElementBindings(sfc.template.content);
         elementsWithEventHandlers = this.markupAnalyzer.extractElementsWithEventHandlers(sfc.template.content);
+        elementsWithBind = this.markupAnalyzer.extractElementsWithBind(sfc.template.content);
         conditionalStructures = this.markupAnalyzer.extractConditionalStructures(sfc.template.content);
         loopStructures = this.markupAnalyzer.extractLoopStructures(sfc.template.content);
         awaitStructures = this.markupAnalyzer.extractAwaitStructures(sfc.template.content);
@@ -248,6 +250,7 @@ export class SvelteASTAnalyzer implements ASTAnalyzer {
           svelteMarkupBindings: markupBindings,
           svelteMarkupElements: markupElements,
           svelteElementsWithEventHandlers: elementsWithEventHandlers,
+          svelteElementsWithBind: elementsWithBind,
           svelteConditionalStructures: conditionalStructures,
           svelteLoopStructures: loopStructures,
           svelteAwaitStructures: awaitStructures,
