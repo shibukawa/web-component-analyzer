@@ -32,11 +32,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "web-component-analyzer.showStructure",
-        "title": "Web Component Analyzer: Show Component Structure",
-        "category": "Web Component Analyzer"
-      },
-      {
         "command": "web-component-analyzer.showDFD",
         "title": "Show Component DFD",
         "category": "Web Component Analyzer"
