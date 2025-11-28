@@ -100,13 +100,13 @@ Each test component has a corresponding `.mmd` file that defines the expected Me
 
 ```bash
 # Run all Vue acceptance tests
-pnpm run test -- --grep "vue"
+npm run test -- --grep "vue"
 
 # Run specific test
-pnpm run test -- --grep "006-Emits"
+npm run test -- --grep "006-Emits"
 
 # Update reference files when output is correct
-pnpm run test -- --update-refs
+npm run test -- --update-refs
 ```
 
 ## Test Development Workflow

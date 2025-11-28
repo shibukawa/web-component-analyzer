@@ -75,22 +75,22 @@ This extension is part of a monorepo. See the root README for setup instructions
 
 ```bash
 # From workspace root
-pnpm --filter web-component-analyzer run build
+npm run --workspace web-component-analyzer build
 
 # Or from this directory
-pnpm run build
+npm run build
 ```
 
 ### Testing
 
 ```bash
-pnpm run test
+npm run test
 ```
 
 ### Packaging
 
 ```bash
-pnpm run vscode:prepublish
+npm run vscode:prepublish
 vsce package
 ```
 

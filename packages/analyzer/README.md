@@ -13,7 +13,7 @@ Core parsing and analysis library for frontend component DFD generation.
 ## Installation
 
 ```bash
-pnpm add @web-component-analyzer/analyzer
+npm install @web-component-analyzer/analyzer
 ```
 
 ## Usage

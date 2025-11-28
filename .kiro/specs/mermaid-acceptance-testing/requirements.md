@@ -77,7 +77,7 @@ The current acceptance testing approach uses embedded YAML specifications within
 
 #### Acceptance Criteria
 
-1. WHEN running `pnpm run test`, THE system SHALL execute acceptance tests alongside other tests
+1. WHEN running `npm run test`, THE system SHALL execute acceptance tests alongside other tests
 2. WHERE acceptance tests are defined, THE system SHALL report results in the standard test output format
 3. WHILE running tests, THE system SHALL support filtering by test name or component number
 4. WHEN all tests pass, THE system SHALL exit with success code 0

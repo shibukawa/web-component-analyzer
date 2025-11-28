@@ -2,7 +2,7 @@
 
 ## Monorepo Layout
 
-This is a pnpm workspace monorepo with three main packages:
+This is an npm workspaces monorepo with three main packages:
 
 ```
 .
@@ -18,8 +18,8 @@ This is a pnpm workspace monorepo with three main packages:
 │   └── steering/        # AI steering rules
 ├── .vscode/             # VS Code workspace settings
 ├── docs/                # Documentation
-├── pnpm-workspace.yaml  # pnpm workspace configuration
-└── package.json         # Root package.json
+├── package-lock.json    # npm workspace lockfile
+└── package.json         # Root workspace manifest
 ```
 
 ## Package: analyzer
@@ -130,7 +130,7 @@ Each component has a corresponding `.mmd` file with the expected Mermaid diagram
 
 ## Key Files
 
-- **pnpm-workspace.yaml**: Defines workspace packages
+- **package-lock.json**: Locks workspace dependency graph
 - **packages/analyzer/src/index.ts**: Public API for analyzer package
 - **packages/extension/src/extension.ts**: VS Code extension entry point
 - **packages/web/src/main.tsx**: Web playground entry point

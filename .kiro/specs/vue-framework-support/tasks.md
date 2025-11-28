@@ -160,10 +160,10 @@
   - _Requirements: 7.4_
 
 - [x] 20. Run and validate acceptance tests
-  - Run acceptance tests: `pnpm run test`
+  - Run acceptance tests: `npm run test`
   - Analyze test failures and identify missing patterns
   - Iterate on analyzer implementations to fix failures
-  - Update `.mmd` reference files when output is correct: `pnpm run test -- --update-refs`
+  - Update `.mmd` reference files when output is correct: `npm run test -- --update-refs`
   - Ensure all Vue acceptance tests pass
   - _Requirements: 6.2, 6.3, 6.4, 6.5_
 
@@ -254,7 +254,7 @@
   - Run acceptance tests for updated components
   - Validate subgraph generation for v-if, v-for, v-else
   - Validate event handler data flows with labels
-  - Update `.mmd` reference files if needed: `pnpm run test -- --update-refs`
+  - Update `.mmd` reference files if needed: `npm run test -- --update-refs`
   - Ensure all enhanced Vue acceptance tests pass
   - _Requirements: 6.2, 6.3, 6.4, 6.5_
 
@@ -291,11 +291,11 @@
   - Clean up unused code related to template output node creation
   - _Requirements: 7.2_
 - [x] 31.4 Update and validate Vue acceptance tests
-  - Run acceptance tests: `pnpm run test`
+  - Run acceptance tests: `npm run test`
   - Verify `_display` nodes are removed from all Vue test outputs
   - Verify direct edges from props to JSX elements are created
   - Verify multiple display edges for variables used in multiple places (e.g., count in 001-SimpleProps)
-  - Update `.mmd` reference files: `pnpm run test -- --update-refs`
+  - Update `.mmd` reference files: `npm run test -- --update-refs`
   - Ensure all Vue acceptance tests pass with new architecture
   - _Requirements: 6.2, 6.3, 6.4, 6.5_
 
@@ -338,11 +338,11 @@
   - Support various call patterns: "functionName", functionName(), functionName(args)
   - _Requirements: 3.4, 5.3, 7.2_
 - [x] 32.5 Update acceptance tests for composables
-  - Run tests: `pnpm run test`
+  - Run tests: `npm run test`
   - Verify single composable nodes are created (useCounter, useLocalStorage)
   - Verify display edges with property labels (count, doubled, storedValue)
   - Verify function call edges with function labels (increment, decrement)
-  - Update `.mmd` reference files: `pnpm run test -- --update-refs`
+  - Update `.mmd` reference files: `npm run test -- --update-refs`
   - Ensure 004-Composables test passes
   - _Requirements: 6.2, 6.3_
 
@@ -355,7 +355,7 @@
   - For `005-Lifecycle.vue`: create edges from `onMounted` → `mountCount` and `onUpdated` → `updateCount`
   - Label edges with "write" or "update" to indicate state modification
   - Update `examples/vue-vite/src/components/005-Lifecycle.mmd` reference file
-  - Run acceptance tests to validate: `pnpm run test -- --filter=005`
+  - Run acceptance tests to validate: `npm run test -- --filter=005`
   - _Requirements: 3.2, 3.5, 7.2_
 
 - [x] 34. Debug and fix Vue component visualizations (006-011)
@@ -372,7 +372,7 @@
   - Update `packages/analyzer/src/analyzers/vue-emits-analyzer.ts` to mark emits for subgraph grouping
   - Update `packages/analyzer/src/parser/dfd-builder.ts` to create emits subgraph structure
   - Update `examples/vue-vite/src/components/006-Emits.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=006`
+  - Run acceptance tests: `npm run test -- --filter=006`
   - _Requirements: 4.2, 4.3, 7.2_
 - [x] 34.2 Fix 007-VueRouter.vue - URL input and router calls
   - Create "URL: Input" node before useRoute composable
@@ -384,7 +384,7 @@
   - Update `packages/analyzer/src/libraries/vue-router.ts` to handle URL input node
   - Update `packages/analyzer/src/parser/dfd-builder.ts` for router call data flows
   - Update `examples/vue-vite/src/components/007-VueRouter.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=007`
+  - Run acceptance tests: `npm run test -- --filter=007`
   - _Requirements: 8.1, 8.2, 8.3, 7.2_
 - [x] 34.3 Fix 008-Pinia.vue - Store property displays and action calls
   - Create data flows from store properties to template elements with "displays: {propertyName}" label
@@ -394,7 +394,7 @@
   - Example: `increment` button → `useCounterStore` with label "calls: increment"
   - Update `packages/analyzer/src/libraries/pinia.ts` to create proper data flows
   - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - Run acceptance tests: `npm run test -- --filter=008`
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_
 - [x] 34.4 Fix 009-TemplateBindings.vue - v-model, bindings, and events
   - Remove `<key>` tag nodes (these should not be created)
@@ -406,7 +406,7 @@
   - Create data flows for `@focus` events with "@focus" label connecting element to handler
   - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` for all binding types
   - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - Run acceptance tests: `npm run test -- --filter=009`
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 7.2_
 - [x] 34.5 Fix 010-Watchers.vue - Watcher process nodes and data flows
   - Create process nodes for watchers with label "watch"
@@ -416,7 +416,7 @@
   - Update `packages/analyzer/src/analyzers/vue-composables-analyzer.ts` for watcher visualization
   - Update `packages/analyzer/src/parser/dfd-builder.ts` to create watcher data flows
   - Update `examples/vue-vite/src/components/010-Watchers.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=010`
+  - Run acceptance tests: `npm run test -- --filter=010`
   - _Requirements: 4.1, 4.5, 7.2_
 - [x] 34.6 Fix 011-ControlStructures.vue - v-for subgraphs and parent-child relationships
   - Remove `<key>` tag nodes (same issue as 009)
@@ -428,7 +428,7 @@
   - Ensure proper nesting of template elements within control structure subgraphs
   - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts` for parent-child relationships
   - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - Run acceptance tests: `npm run test -- --filter=011`
   - _Requirements: 5.1, 5.5, 7.2_
 
 - [x] 35. Refine Vue component visualizations - node shapes and data flows
@@ -442,7 +442,7 @@
   - Emit nodes should use `(` `)` shape prefix/suffix in Mermaid
   - Update `packages/extension/src/visualization/mermaid-transformer.ts`
   - Update `examples/vue-vite/src/components/006-Emits.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=006`
+  - Run acceptance tests: `npm run test -- --filter=006`
   - _Requirements: 4.2, 4.3, 7.2_
 - [x] 35.2 Fix 007-VueRouter.vue - URL nodes and useRoute shape
   - Change `URL: Input` and `URL: Output` node shapes to `rounded` (rounded rectangle)
@@ -451,7 +451,7 @@
   - `onBeforeRouteUpdate` and `onBeforeRouteLeave` should be process nodes
   - Update `packages/analyzer/src/libraries/vue-router.ts`
   - Update `examples/vue-vite/src/components/007-VueRouter.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=007`
+  - Run acceptance tests: `npm run test -- --filter=007`
   - _Requirements: 8.1, 8.2, 8.3, 7.2_
 - [x] 35.3 Fix 008-Pinia.vue - Store node shapes and data flows
   - Change `useCounterStore` and `useUserStore` node shapes to `cylinder` (data store shape)
@@ -460,7 +460,7 @@
   - Fix duplicate data flows - one should be from `useUserStore` instead of `useCounterStore`
   - Update `packages/analyzer/src/libraries/pinia.ts`
   - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - Run acceptance tests: `npm run test -- --filter=008`
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_
 - [x] 35.4 Fix 009-TemplateBindings.vue - v-for subgraphs and data flows
   - Create subgraphs for `v-for` loops (similar to `v-if`)
@@ -471,7 +471,7 @@
   - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts`
   - Update `packages/analyzer/src/parser/dfd-builder.ts`
   - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - Run acceptance tests: `npm run test -- --filter=009`
   - _Requirements: 5.2, 5.3, 5.4, 5.5, 7.2_
 - [x] 35.5 Fix 010-Watchers.vue - watchEffect data flows and cleanup
   - Fix `watchEffect` for `doubled` - should only write to `doubled`, not watch it
@@ -479,7 +479,7 @@
   - Update `packages/analyzer/src/analyzers/vue-composables-analyzer.ts`
   - Update `packages/analyzer/src/parser/dfd-builder.ts`
   - Update `examples/vue-vite/src/components/010-Watchers.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=010`
+  - Run acceptance tests: `npm run test -- --filter=010`
   - _Requirements: 4.1, 4.5, 7.2_
 - [x] 35.6 Fix 011-ControlStructures.vue - Combined v-for and v-if subgraphs
   - When a single tag has both `v-for` and `v-if` directives, create a single combined subgraph
@@ -488,7 +488,7 @@
   - Update `packages/analyzer/src/analyzers/vue-template-analyzer.ts`
   - Update `packages/analyzer/src/parser/dfd-builder.ts`
   - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - Run acceptance tests: `npm run test -- --filter=011`
   - _Requirements: 5.1, 5.5, 7.2_
 
 - [-] 36. Fix remaining Vue component visualization issues
@@ -502,7 +502,7 @@
   - Update `packages/analyzer/src/parser/dfd-builder.ts` to add the element node to the combined subgraph
   - The structure should be: `subgraph_14["{v-for: items, v-if: item.active}"]` contains `jsx_element_X["<li>"]`
   - Update `examples/vue-vite/src/components/011-ControlStructures.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=011`
+  - Run acceptance tests: `npm run test -- --filter=011`
   - _Requirements: 5.1, 5.5, 7.2_
 - [x] 36.2 Fix 009-TemplateBindings.vue - Add computed property dependency edges
   - Create "computes" edge from `showContent` → `dynamicClass`
@@ -511,7 +511,7 @@
   - Update `packages/analyzer/src/analyzers/vue-state-analyzer.ts` to properly detect computed dependencies
   - The analyzer should parse the computed function body to find referenced reactive variables
   - Update `examples/vue-vite/src/components/009-TemplateBindings.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=009`
+  - Run acceptance tests: `npm run test -- --filter=009`
   - _Requirements: 2.4, 7.2_
 - [x] 36.3 Fix 008-Pinia.vue - Add display edges from store properties to template elements
   - Create display edges from Pinia store properties to `<p>` elements
@@ -521,5 +521,5 @@
   - Or update `packages/analyzer/src/parser/dfd-builder.ts` to recognize store properties as valid display sources
   - The store properties should be accessible as data nodes that can flow to display elements
   - Update `examples/vue-vite/src/components/008-Pinia.mmd` reference file
-  - Run acceptance tests: `pnpm run test -- --filter=008`
+  - Run acceptance tests: `npm run test -- --filter=008`
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 7.2_

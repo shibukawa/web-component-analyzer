@@ -11,6 +11,6 @@
   },
   "then": {
     "type": "askAgent",
-    "prompt": "Start vitest in watch mode and eslint in watch mode. Run these commands in the background: 'pnpm run test -- --watch' and 'pnpm run lint -- --watch'. Keep them running throughout the session."
+    "prompt": "Start vitest in watch mode and eslint in watch mode. Run these commands in the background: 'npm run test -- --watch' and 'npm run lint -- --watch'. Keep them running throughout the session."
   }
 }

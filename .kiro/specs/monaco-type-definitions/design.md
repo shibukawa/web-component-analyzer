@@ -433,7 +433,7 @@ interface LibraryConfig {
    - Write a complete React component and verify type checking
 
 2. **Build Testing**
-   - Run `pnpm run build`
+   - Run `npm run build`
    - Verify no build errors
    - Check bundle size
    - Verify type definitions are included in the bundle

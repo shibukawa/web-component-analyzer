@@ -289,7 +289,7 @@
 
 - [x] 12.2 Create GitHub Actions workflow
   - Set up workflow to build on push to main branch
-  - Install dependencies using pnpm
+  - Install dependencies using npm workspaces
   - Build web package
   - Deploy to gh-pages branch
   - _Requirements: 5.1, 5.4_

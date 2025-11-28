@@ -508,9 +508,9 @@ Following the existing acceptance test pattern:
    - Tests compare generated output against references
 
 3. **Test Execution**
-   - Run acceptance tests: `pnpm run test`
-   - Update references: `pnpm run test -- --update-refs`
-   - Filter tests: `pnpm run test -- --filter=vue`
+   - Run acceptance tests: `npm run test`
+   - Update references: `npm run test -- --update-refs`
+   - Filter tests: `npm run test -- --filter=vue`
 
 ### Integration Tests
 

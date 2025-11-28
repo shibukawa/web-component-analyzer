@@ -6,8 +6,8 @@
 		{
 			"label": "watch analyzer",
 			"type": "shell",
-			"command": "pnpm",
-			"args": ["--filter", "@web-component-analyzer/analyzer", "run", "dev"],
+			"command": "npm",
+			"args": ["run", "dev", "--workspace", "@web-component-analyzer/analyzer"],
 			"isBackground": true,
 			"problemMatcher": "$tsc-watch",
 			"presentation": {

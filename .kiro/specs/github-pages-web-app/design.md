@@ -689,13 +689,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
           node-version: 22
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm --filter @web-component-analyzer/web build
+          cache: 'npm'
+      - run: npm install --workspaces --include-workspace-root
+      - run: npm run --workspace @web-component-analyzer/web build
       - uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

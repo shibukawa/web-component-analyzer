@@ -105,9 +105,9 @@ interface ParsedComponent {
 ## Running Tests
 
 ```bash
-pnpm run test                    # All tests
-pnpm run test -- --grep "react" # Framework-specific
-pnpm run test -- --grep "001"   # Specific test number
+npm run test                    # All tests
+npm run test -- --grep "react" # Framework-specific
+npm run test -- --grep "001"   # Specific test number
 ```
 
 ## Test Failure Reporting
@@ -124,7 +124,7 @@ Failures report:
 When implementing parser features:
 
 1. Check for existing tests in `examples/{framework}-vite/src/components/`
-2. Run tests after implementing parser logic: `pnpm run test`
+2. Run tests after implementing parser logic: `npm run test`
 3. Add new tests when implementing new parser capabilities
 4. Update YAML specs if parser output format changes
 5. Use test failures as debugging guidance

@@ -152,8 +152,8 @@ Each component should generate a DFD showing:
 
 ```bash
 cd examples/react-vite
-pnpm install
-pnpm run dev
+npm install
+npm run dev
 ```
 
 Then open http://localhost:5173 and click "Show Component Demo" to see all components in action.

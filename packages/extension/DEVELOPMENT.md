@@ -5,12 +5,12 @@
 1. Install dependencies from workspace root:
 ```bash
 cd ../..  # Go to workspace root
-pnpm install
+npm install
 ```
 
 2. Build analyzer package:
 ```bash
-pnpm --filter @web-component-analyzer/analyzer run build
+npm run --workspace @web-component-analyzer/analyzer build
 ```
 
 ## Running the Extension
@@ -29,11 +29,11 @@ pnpm --filter @web-component-analyzer/analyzer run build
 ```bash
 # Terminal 1: Watch analyzer
 cd ../analyzer
-pnpm run dev
+npm run dev
 
 # Terminal 2: Watch extension
 cd ../extension
-pnpm run watch
+npm run watch
 
 # Then press F5 in VS Code
 ```
@@ -42,28 +42,28 @@ pnpm run watch
 
 ```bash
 # Run all tests
-pnpm run test
+npm run test
 
 # Run specific test
-pnpm run test -- --grep "DFD"
+npm run test -- --grep "DFD"
 ```
 
 ## Building
 
 ```bash
 # Build extension only
-pnpm run build
+npm run build
 
 # Build all packages (from workspace root)
 cd ../..
-pnpm build
+npm run build --workspaces
 ```
 
 ## Packaging
 
 ```bash
 # Prepare for publishing
-pnpm run vscode:prepublish
+npm run vscode:prepublish
 
 # Create .vsix package
 vsce package
@@ -81,7 +81,7 @@ vsce package
 
 Solution: Build the analyzer package first:
 ```bash
-pnpm --filter @web-component-analyzer/analyzer run build
+npm run --workspace @web-component-analyzer/analyzer build
 ```
 
 ### Changes not reflected
@@ -93,5 +93,5 @@ Solution: Make sure both watchers are running (check tasks.json)
 Solution: Rebuild analyzer with composite project:
 ```bash
 cd ../analyzer
-pnpm run build
+npm run build
 ```

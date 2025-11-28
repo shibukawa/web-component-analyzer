@@ -1,6 +1,6 @@
 ## Monorepo Structure
 
-This project uses pnpm workspaces to manage multiple packages:
+This project uses npm workspaces to manage multiple packages:
 
 ```
 packages/
@@ -13,45 +13,44 @@ packages/
 
 ### Prerequisites
 
-- Node.js 22.x
-- pnpm 9.x
+- Node.js 22.x (with npm 10+)
 
 ### Installation
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### Development
 
 ```bash
 # Build all packages
-pnpm build
+npm run build --workspaces
 
 # Watch mode for all packages
-pnpm dev
+npm run dev --workspaces --if-present
 
 # Run linter
-pnpm lint
+npm run lint --workspaces --if-present
 
 # Run tests
-pnpm test
+npm run test --workspaces --if-present
 ```
 
 ### Package-specific Commands
 
 ```bash
 # Build analyzer only
-pnpm --filter @web-component-analyzer/analyzer run build
+npm run --workspace @web-component-analyzer/analyzer build
 
 # Build extension only
-pnpm --filter web-component-analyzer run build
+npm run --workspace web-component-analyzer build
 
 # Build web app only
-pnpm --filter @web-component-analyzer/web run build
+npm run --workspace @web-component-analyzer/web build
 
 # Start web dev server
-pnpm --filter @web-component-analyzer/web run dev
+npm run --workspace @web-component-analyzer/web dev
 ```
 
 ## Packages
@@ -103,8 +102,20 @@ Changes to the analyzer package are automatically reflected in both extension an
 
 ### VS Code Extension
 
+`vsce package` expects a single-package workspace. To keep npm workspaces for development while producing a clean package, use the helper script that vendors the analyzer into a temporary folder:
+
 ```bash
-cd packages/extension
-pnpm run vscode:prepublish
-vsce package
+# From repo root
+./scripts/package-extension.sh
+
+# Result: web-component-analyzer-<version>.vsix placed in repo root
 ```
+
+The script performs these steps for you:
+
+1. Builds `@web-component-analyzer/analyzer` so the `dist/` artifacts are current.
+2. Copies both `packages/extension` and `packages/analyzer` into a temporary workspace-free directory.
+3. Rewrites the extension's dependency graph to point at the vendored analyzer copy (no pnpm/npm workspace symlinks).
+4. Runs `npm install` and `vsce package` inside the temporary directory, then copies the generated `.vsix` back to the repository root.
+
+You can keep the temporary directory for debugging by setting `WCA_KEEP_PACKAGE_TEMP=1` before running the script. Additional `vsce package` flags may be passed through as arguments, e.g. `./scripts/package-extension.sh --target darwin-arm64`.

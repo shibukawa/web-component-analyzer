@@ -60,7 +60,7 @@
   - _Requirements: 1.3_
 
 - [x] 9. Verify extension package builds and runs
-  - Run `pnpm run compile` in extension package
+  - Run `npm run compile` in extension package
   - Fix any TypeScript compilation errors
   - Test extension with Vue component files
   - Test extension with Svelte component files
@@ -68,16 +68,16 @@
   - _Requirements: 4.3, 4.4, 4.5_
 
 - [x] 10. Verify web package builds and runs
-  - Run `pnpm run build` in web package
+  - Run `npm run build` in web package
   - Verify Vite does not attempt to bundle `@swc/core`
-  - Run `pnpm run dev` to start development server
+  - Run `npm run dev` to start development server
   - Test web app with Vue component samples
   - Test web app with Svelte component samples
   - Verify DFD generation works correctly in browser
   - _Requirements: 5.3, 5.4, 5.5, 5.6, 1.5_
 
 - [x] 11. Run acceptance tests to verify backward compatibility
-  - Run `pnpm run test` in root directory
+  - Run `npm run test` in root directory
   - Verify all Vue acceptance tests pass
   - Verify all Svelte acceptance tests pass
   - Verify all React acceptance tests pass

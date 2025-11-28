@@ -65,7 +65,7 @@ For detailed DNS configuration, see: https://docs.github.com/en/pages/configurin
 
 - Check the **Actions** tab for error logs
 - Ensure all dependencies are correctly specified in `package.json`
-- Verify the build completes successfully locally: `pnpm --filter @web-component-analyzer/web run build`
+- Verify the build completes successfully locally: `npm run --workspace @web-component-analyzer/web build`
 
 ### 404 Error on Deployed Site
 
@@ -94,10 +94,10 @@ To test the production build locally:
 
 ```bash
 # Build the application
-pnpm --filter @web-component-analyzer/web run build
+npm run --workspace @web-component-analyzer/web build
 
 # Preview the production build
-pnpm --filter @web-component-analyzer/web run preview
+npm run --workspace @web-component-analyzer/web preview
 ```
 
 The preview server will simulate the GitHub Pages environment with the correct base path.

@@ -5,7 +5,7 @@
 - **Language**: TypeScript (strict mode enabled)
 - **Platform**: VS Code Extension API (v1.105.0+)
 - **Runtime**: Node.js 22.x
-- **Package Manager**: pnpm
+- **Package Manager**: npm workspaces
 
 ## Build System
 
@@ -24,22 +24,22 @@
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Compile TypeScript
-pnpm run compile
+npm run compile
 
 # Watch mode for development
-pnpm run watch
+npm run watch
 
 # Run linter
-pnpm run lint
+npm run lint
 
 # Run tests
-pnpm run test
+npm run test
 
 # Prepare for publishing
-pnpm run vscode:prepublish
+npm run vscode:prepublish
 ```
 
 ## TypeScript Configuration

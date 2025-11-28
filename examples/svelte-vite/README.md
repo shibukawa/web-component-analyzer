@@ -5,13 +5,13 @@ This directory contains example Svelte 5 components for testing the web-componen
 ## Setup
 
 ```bash
-pnpm install
+npm install
 ```
 
 ## Development
 
 ```bash
-pnpm run dev
+npm run dev
 ```
 
 ## Components

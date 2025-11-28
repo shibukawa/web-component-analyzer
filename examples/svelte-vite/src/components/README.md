@@ -36,7 +36,7 @@ Acceptance tests are run from the extension package:
 
 ```bash
 cd packages/extension
-pnpm run test
+npm run test
 ```
 
 ## Creating New Tests

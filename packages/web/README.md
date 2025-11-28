@@ -117,16 +117,16 @@ For comprehensive Vue 3 documentation, see [Vue 3 Support Guide](../../docs/vue-
 ### Prerequisites
 
 - Node.js 22.x
-- pnpm 9.x
+- npm 10.x (bundled with Node 22)
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Start development server
-pnpm run dev
+npm run dev
 ```
 
 The app will be available at `http://localhost:5173`
@@ -137,7 +137,7 @@ The app will be available at `http://localhost:5173`
 
 ```bash
 # Build for production
-pnpm run build
+npm run build
 ```
 
 Output will be in `dist/` directory, ready for deployment to GitHub Pages.
@@ -166,9 +166,9 @@ To add type definitions for a new library:
 
 1. **Install the type package:**
    ```bash
-   pnpm add -D @types/library-name
+   npm install -D @types/library-name
    # or if the package includes types:
-   pnpm add library-name
+   npm install library-name
    ```
 
 2. **Add configuration** to `src/config/type-config.json`:
@@ -185,8 +185,8 @@ To add type definitions for a new library:
 
 3. **Extract and test:**
    ```bash
-   pnpm run extract-types
-   pnpm run dev
+   npm run extract-types
+   npm run dev
    ```
 
 4. **Verify** in the editor that imports work without type errors
@@ -198,13 +198,13 @@ For detailed instructions, see [scripts/README.md](./scripts/README.md).
 To manually regenerate type definitions:
 
 ```bash
-pnpm run extract-types
+npm run extract-types
 
 # With verbose logging:
-pnpm run extract-types -- --verbose
+npm run extract-types -- --verbose
 
 # Custom paths:
-pnpm run extract-types -- --config path/to/config.json --output path/to/output.ts
+npm run extract-types -- --config path/to/config.json --output path/to/output.ts
 ```
 
 #### Configuration Schema
@@ -230,7 +230,7 @@ Each library in `type-config.json` requires:
 
 ```bash
 # Run ESLint
-pnpm run lint
+npm run lint
 ```
 
 ## Deployment

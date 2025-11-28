@@ -36,13 +36,13 @@ When adding a new framework sample:
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Start dev server
-pnpm run dev
+npm run dev
 
 # Build for production
-pnpm run build
+npm run build
 ```
 
 ## Testing with Extension

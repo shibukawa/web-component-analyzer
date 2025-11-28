@@ -13,13 +13,13 @@ const testPath = path.join(__dirname, 'out/test/hooks-analyzer.test.js');
 
 if (!fs.existsSync(testPath)) {
   console.log('❌ Test file not found:', testPath);
-  console.log('   Please run: pnpm run compile');
+  console.log('   Please run: npm run compile');
   process.exit(1);
 }
 
 console.log('✅ Test file found:', testPath);
 console.log('\nTo run the full test suite, use:');
-console.log('  cd packages/extension && pnpm test');
+console.log('  cd packages/extension && npm run test');
 console.log('\nFor now, let\'s verify the key components are in place:\n');
 
 // Check example components

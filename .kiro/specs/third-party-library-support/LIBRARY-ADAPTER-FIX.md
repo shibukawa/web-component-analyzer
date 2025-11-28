@@ -76,8 +76,8 @@ export * from './parser/ast-parser.js';
 
 After applying these fixes:
 
-1. Rebuild the analyzer package: `cd packages/analyzer && pnpm run build`
-2. Rebuild the extension: `cd packages/extension && pnpm run compile`
+1. Rebuild the analyzer package: `cd packages/analyzer && npm run build`
+2. Rebuild the extension: `cd packages/extension && npm run compile`
 3. Reload the VS Code extension
 4. Open `examples/react-vite/src/components/101-SWR-BasicFetch.tsx`
 5. Run "Show Component Structure Preview"

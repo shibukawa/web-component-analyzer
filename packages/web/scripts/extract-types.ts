@@ -172,7 +172,7 @@ function loadConfig(configPath: string, verbose: boolean): TypeConfig {
  * 
  * Searches for the package in two locations:
  * 1. packages/web/node_modules (local to web package)
- * 2. node_modules at workspace root (hoisted by pnpm)
+ * 2. node_modules at workspace root (hoisted by npm workspaces)
  * 
  * @param packageName - Name of the npm package (e.g., "@types/react", "swr")
  * @param verbose - Whether to log the found package path
@@ -284,7 +284,7 @@ function generateOutputFile(libraries: LibraryTypes[], outputPath: string, verbo
  * Libraries: ${libraries.map(lib => lib.name).join(', ')}
  * 
  * To regenerate this file, run:
- *   pnpm exec tsx scripts/extract-types.ts
+ *   npm exec tsx scripts/extract-types.ts
  */
 
 export interface TypeDefinition {

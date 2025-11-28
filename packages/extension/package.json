@@ -27,6 +27,10 @@
     "composables",
     "runes"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shibukawa/web-component-analyzer.git"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -67,16 +71,16 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run compile && pnpm run compile:webview",
+    "vscode:prepublish": "npm run compile && npm run compile:webview",
     "compile": "node esbuild.mjs",
     "compile:webview": "node esbuild.webview.mjs",
     "compile:tests": "tsc",
     "watch": "node esbuild.mjs --watch",
     "watch:webview": "node esbuild.webview.mjs --watch",
-    "pretest": "pnpm run compile && pnpm run compile:tests && pnpm run lint",
+    "pretest": "npm run compile && npm run compile:tests && npm run lint",
     "lint": "eslint src",
     "test": "node out/test/acceptance/acceptance-test-runner.js",
-    "build": "pnpm run compile && pnpm run compile:webview"
+    "build": "npm run compile && npm run compile:webview"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -88,11 +92,12 @@
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.25.12",
     "eslint": "^9.36.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vsce": "^2.15.0"
   },
   "dependencies": {
     "@swc/core": "^1.15.1",
-    "@web-component-analyzer/analyzer": "workspace:*",
+    "@web-component-analyzer/analyzer": "file:../analyzer",
     "mermaid": "^11.12.1"
   },
   "license": "Apache-2.0"

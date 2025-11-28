@@ -14,8 +14,8 @@
   ],
   "scripts": {
     "extract-types": "tsx scripts/extract-types.ts",
-    "prebuild": "pnpm run extract-types",
-    "dev": "pnpm run extract-types && vite",
+    "prebuild": "npm run extract-types",
+    "dev": "npm run extract-types && vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@swc/wasm-web": "^1.15.1",
-    "@web-component-analyzer/analyzer": "workspace:*",
+    "@web-component-analyzer/analyzer": "file:../analyzer",
     "mermaid": "^11.12.1",
     "monaco-editor": "^0.54.0",
     "react": "^18.3.1",

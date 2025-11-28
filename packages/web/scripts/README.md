@@ -21,19 +21,19 @@ The main type extraction script that:
 
 ```bash
 # Run with default options
-pnpm exec tsx scripts/extract-types.ts
+npm exec tsx scripts/extract-types.ts
 
 # Specify custom config path
-pnpm exec tsx scripts/extract-types.ts --config path/to/config.json
+npm exec tsx scripts/extract-types.ts --config path/to/config.json
 
 # Specify custom output path
-pnpm exec tsx scripts/extract-types.ts --output path/to/output.ts
+npm exec tsx scripts/extract-types.ts --output path/to/output.ts
 
 # Enable verbose logging
-pnpm exec tsx scripts/extract-types.ts --verbose
+npm exec tsx scripts/extract-types.ts --verbose
 
 # Show help
-pnpm exec tsx scripts/extract-types.ts --help
+npm exec tsx scripts/extract-types.ts --help
 ```
 
 **Default Paths:**
@@ -43,9 +43,9 @@ pnpm exec tsx scripts/extract-types.ts --help
 **Integration:**
 
 The script is automatically run during the build process:
-- `pnpm run dev` - Extracts types before starting Vite dev server
-- `pnpm run build` - Extracts types before building for production
-- `pnpm run extract-types` - Manually extract types
+- `npm run dev` - Extracts types before starting Vite dev server
+- `npm run build` - Extracts types before building for production
+- `npm run extract-types` - Manually extract types
 
 ## Configuration
 
@@ -230,10 +230,10 @@ Install the library's type definitions (if not already installed):
 
 ```bash
 # For DefinitelyTyped packages
-pnpm add -D @types/library-name
+npm install -D @types/library-name
 
 # For packages with built-in types
-pnpm add library-name
+npm install library-name
 ```
 
 ### Step 2: Find the Entry Point
@@ -277,10 +277,10 @@ Run the extractor and test in the editor:
 
 ```bash
 # Extract types
-pnpm run extract-types
+npm run extract-types
 
 # Start dev server
-pnpm run dev
+npm run dev
 ```
 
 In the Monaco Editor, test the import:
@@ -376,7 +376,7 @@ If the library depends on other libraries (e.g., React), add them to the `depend
 
 **Solutions:**
 1. Verify the package is installed: `ls node_modules/@types/library-name`
-2. Install the package: `pnpm add -D @types/library-name`
+2. Install the package: `npm install -D @types/library-name`
 3. Check the `packageName` in configuration matches the actual package name
 
 ### Entry Point Not Found

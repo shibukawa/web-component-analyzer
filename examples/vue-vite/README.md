@@ -17,19 +17,19 @@ This is a minimal Vite + Vue 3 + TypeScript project with Vue Router and Pinia fo
 ## Installation
 
 ```bash
-pnpm install
+npm install
 ```
 
 ## Development
 
 ```bash
-pnpm run dev
+npm run dev
 ```
 
 ## Build
 
 ```bash
-pnpm run build
+npm run build
 ```
 
 ## Project Structure

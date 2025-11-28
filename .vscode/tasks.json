@@ -6,8 +6,8 @@
 		{
 			"label": "build-extension",
 			"type": "shell",
-			"command": "pnpm",
-			"args": ["--filter", "@web-component-analyzer/extension", "run", "build"],
+			"command": "npm",
+			"args": ["run", "build", "--workspace", "@web-component-analyzer/extension"],
 			"problemMatcher": [],
 			"presentation": {
 				"reveal": "silent",

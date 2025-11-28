@@ -16,20 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: 'npm'
       
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm install --workspaces --include-workspace-root
       
       - name: Build analyzer package
-        run: pnpm --filter @web-component-analyzer/analyzer run build:clean
+        run: npm run --workspace @web-component-analyzer/analyzer build:clean
       
       - name: Verify analyzer build
         run: |
@@ -42,7 +38,7 @@ jobs:
           fi
       
       - name: Build web package
-        run: pnpm --filter @web-component-analyzer/web run build
+        run: npm run --workspace @web-component-analyzer/web build
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -26,23 +26,23 @@ This document describes the recommended workflow for developing features using M
 
 ### Run Tests
 ```bash
-pnpm run test
+npm run test
 ```
 
 ### Run Tests with Reference Update
 When test failures are only due to ID/ordering differences, update reference files:
 ```bash
-pnpm run test -- --update-refs
+npm run test -- --update-refs
 ```
 
 ### Run Specific Test
 ```bash
-pnpm run test -- --filter=001
+npm run test -- --filter=001
 ```
 
 ### Run Specific Test with Reference Update
 ```bash
-pnpm run test -- --filter=001 --update-refs
+npm run test -- --filter=001 --update-refs
 ```
 
 ## Workflow Example
@@ -61,7 +61,7 @@ done
 
 ### Step 2: Run Tests and Analyze Failures
 ```bash
-pnpm run test
+npm run test
 # Review error messages to understand what needs to be fixed
 ```
 
@@ -73,7 +73,7 @@ pnpm run test
 ### Step 4: Update References When Close
 ```bash
 # When only ID/ordering differences remain:
-pnpm run test -- --update-refs
+npm run test -- --update-refs
 ```
 
 ## Test Output Interpretation
