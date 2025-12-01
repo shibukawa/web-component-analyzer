@@ -4,12 +4,13 @@ VS Code extension for visualizing component Data Flow Diagrams (DFD).
 
 ## Features
 
-- **Framework Support**: Analyze React and Vue 3 components
+- **Framework Support**: Analyze React, Vue 3, and Svelte 5 components
 - **Interactive Visualization**: Generate DFD diagrams with Mermaid
 - **Real-time Updates**: Automatic refresh on file changes
 - **Rich Analysis**: 
   - React: Props, hooks, context, state management
   - Vue 3: Props, reactive state, composables, lifecycle hooks, template directives
+  - Svelte 5: Props, runes (`$state`, `$derived`), stores, events, reactive statements
 - **Library Support**: Vue Router, Pinia, React Router, SWR, TanStack Query, Zustand, and more
 
 ## Usage
@@ -22,6 +23,7 @@ VS Code extension for visualizing component Data Flow Diagrams (DFD).
 
 - **React**: `.tsx`, `.jsx` files with functional components
 - **Vue 3**: `.vue` files with `<script setup>` syntax (Composition API)
+- **Svelte 5**: `.svelte` files using runes-based syntax or legacy `$:` reactivity
 
 ### Example: React Component
 
@@ -66,6 +68,26 @@ function increment() {
 ```
 
 For comprehensive Vue 3 support documentation, see [Vue 3 Support Guide](../../docs/vue-support.md).
+
+### Example: Svelte 5 Component
+
+```svelte
+<script lang="ts">
+  export let initialCount: number = 0;
+  const count = $state(initialCount);
+
+  function increment() {
+    count.set(count.get() + 1);
+  }
+</script>
+
+<div>
+  <p>Count: {$derived count.get()}</p>
+  <button on:click={increment}>Increment</button>
+</div>
+```
+
+Svelte-specific capabilities include rune tracking, store resolution, and event wiring in the generated DFD.
 
 ## Development
 

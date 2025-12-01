@@ -40,6 +40,6 @@ for TARGET in "${WCA_TARGETS[@]}"; do
   echo "[wca-publish] Publishing $TARGET using $VSIX_PATH ..."
   npx vsce publish --packagePath "$VSIX_PATH" "$@"
   echo "[wca-publish] ✓ Published $TARGET"
-fi
+done
 
 echo "[wca-publish] All targets published successfully"
