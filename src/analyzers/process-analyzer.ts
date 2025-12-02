@@ -444,8 +444,10 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     // Determine if it's an event handler or custom function
     const isEventHandler = this.isEventHandlerName(name);
 
-    const line = declaration.span?.start ? this.getLineNumber(declaration.span.start) : undefined;
-    const column = declaration.span?.start ? this.getColumnNumber(declaration.span.start) : undefined;
+    // Use the identifier's span for accurate line/column (avoids including leading whitespace)
+    const idSpan = declaration.id.type === 'Identifier' ? declaration.id.span : declaration.span;
+    const line = idSpan?.start ? this.getLineNumber(idSpan.start) : undefined;
+    const column = idSpan?.start ? this.getColumnNumber(idSpan.start) : undefined;
 
     console.log(`[ProcessAnalyzer] Extracted function (var): ${name}, type: ${isEventHandler ? 'event-handler' : 'custom-function'}, line: ${line}, column: ${column}`);
 

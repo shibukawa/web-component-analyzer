@@ -465,8 +465,10 @@ export class SWCProcessAnalyzer implements ProcessAnalyzer {
     // Event handler detection is now handled by EventHandlerUsageAnalyzer
     // which analyzes JSX attribute usage patterns instead of relying on naming conventions
 
-    const line = declaration.span?.start ? this.getLineNumber(declaration.span.start) : undefined;
-    const column = declaration.span?.start ? this.getColumnNumber(declaration.span.start) : undefined;
+    // Use the identifier's span for accurate line/column (avoids including leading whitespace)
+    const idSpan = declaration.id.type === 'Identifier' ? declaration.id.span : declaration.span;
+    const line = idSpan?.start ? this.getLineNumber(idSpan.start) : undefined;
+    const column = idSpan?.start ? this.getColumnNumber(idSpan.start) : undefined;
 
     console.log(`[ProcessAnalyzer] Extracted function (var): ${name}, type: custom-function, line: ${line}, column: ${column}`);
 
