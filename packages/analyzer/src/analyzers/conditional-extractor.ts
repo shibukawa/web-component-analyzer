@@ -807,19 +807,12 @@ export class ConditionalStructureExtractor {
    */
   getColumnFromSpan(spanStart: number): number {
     if (this.lineStarts.length === 0) {
-      console.log(`⚠️ getColumnFromSpan: lineStarts is empty, returning 0`);
       return 0;
     }
 
     const line = this.getLineFromSpan(spanStart);
     const lineStartPos = this.lineStarts[line - 1];
     const column = spanStart - lineStartPos;
-    
-    // Debug: log if column seems wrong
-    if (column > 200) {
-      console.log(`⚠️ getColumnFromSpan: Suspicious column value: spanStart=${spanStart}, line=${line}, lineStartPos=${lineStartPos}, column=${column}`);
-      console.log(`⚠️ lineStarts.length=${this.lineStarts.length}, first few:`, this.lineStarts.slice(0, 5));
-    }
     
     return column;
   }

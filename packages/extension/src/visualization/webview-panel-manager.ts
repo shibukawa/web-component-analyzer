@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DFDSourceData } from '@web-component-analyzer/analyzer';
+import { DFDSourceData, DFDNode, DFDSubgraph } from '@web-component-analyzer/analyzer';
 import { HTMLContentGenerator } from './html-content-generator';
 import { transformToMermaid, sanitizeId } from './mermaid-transformer';
 import { MessageHandler, ErrorMessage } from './message-handler';
@@ -159,17 +159,8 @@ export class WebviewPanelManager {
     // Transform DFD data to Mermaid format with current theme
     const mermaidDiagram = transformToMermaid(dfdData, theme === 'dark' ? 'dark' : 'light');
 
-    // Create metadata map for nodes (nodeId -> metadata)
-    // Use sanitized IDs to match Mermaid node IDs
-    const metadata: Record<string, any> = {};
-    for (const node of dfdData.nodes) {
-      const sanitizedId = sanitizeId(node.id);
-      metadata[sanitizedId] = {
-        line: node.line,
-        column: node.column,
-        ...node.metadata
-      };
-    }
+    // Create metadata map for ALL nodes (including subgraph nodes)
+    const metadata = this.collectAllNodeMetadata(dfdData);
 
     // Send diagram and metadata to webview
     panel.webview.postMessage({
@@ -257,8 +248,8 @@ export class WebviewPanelManager {
 
     // Register navigate to code handler
     messageHandler.onNavigateToCode((message) => {
-      // Call async handler without awaiting (fire and forget)
-      this.handleNavigateToCode(message.data.nodeId, message.data.metadata).catch(error => {
+      // Call async handler with the URI of the panel that sent the message
+      this.handleNavigateToCode(uri, message.data.nodeId, message.data.metadata).catch(error => {
         console.error('[DFD Visualization] Error in navigate to code handler:', error);
       });
     });
@@ -344,23 +335,26 @@ export class WebviewPanelManager {
    * double-clicks on a node. Extracts the node ID and metadata,
    * and calls the Code Navigation Service to navigate to the code location.
    * 
+   * @param panelUri - The URI of the panel that sent the message
    * @param nodeId - The node ID to navigate to
    * @param metadata - Node metadata containing location information (line, column, etc.)
    */
-  private async handleNavigateToCode(nodeId: string, metadata: any): Promise<void> {
-    // Find the document for the current panel
-    // We need to find which panel sent this message
-    let document: vscode.TextDocument | undefined;
+  private async handleNavigateToCode(panelUri: string, nodeId: string, metadata: any): Promise<void> {
+    // Find the document for this specific panel using the URI
+    let document = this.documentMap.get(panelUri);
     
-    // Try to find the document from our document map
-    for (const [uri, doc] of this.documentMap.entries()) {
-      if (this.panels.has(uri)) {
-        document = doc;
-        break;
+    // If we can't find the document in our map, try to find it in visible editors
+    if (!document) {
+      // Try to find an editor with matching URI
+      const matchingEditor = vscode.window.visibleTextEditors.find(
+        editor => editor.document.uri.toString() === panelUri
+      );
+      if (matchingEditor) {
+        document = matchingEditor.document;
       }
     }
     
-    // If we can't find the document, try the active text editor
+    // Last resort: try the active text editor
     if (!document) {
       document = vscode.window.activeTextEditor?.document;
     }
@@ -421,16 +415,8 @@ export class WebviewPanelManager {
           // Re-transform diagram with new theme
           const mermaidDiagram = transformToMermaid(dfdData, newTheme === 'dark' ? 'dark' : 'light');
           
-          // Create metadata map for nodes
-          const metadata: Record<string, any> = {};
-          for (const node of dfdData.nodes) {
-            const sanitizedId = sanitizeId(node.id);
-            metadata[sanitizedId] = {
-              line: node.line,
-              column: node.column,
-              ...node.metadata
-            };
-          }
+          // Create metadata map for ALL nodes (including subgraph nodes)
+          const metadata = this.collectAllNodeMetadata(dfdData);
           
           // Send new diagram with updated theme
           panel.webview.postMessage({
@@ -452,5 +438,94 @@ export class WebviewPanelManager {
     });
 
     this.disposables.push(themeChangeListener);
+  }
+
+  /**
+   * Collect metadata from all nodes in DFD data, including nodes in subgraphs
+   * 
+   * @param dfdData - The DFD source data
+   * @returns A map of sanitized node IDs to their metadata
+   */
+  private collectAllNodeMetadata(dfdData: DFDSourceData): Record<string, any> {
+    const metadata: Record<string, any> = {};
+
+    // Add metadata from top-level nodes
+    for (const node of dfdData.nodes) {
+      const sanitizedId = sanitizeId(node.id);
+      metadata[sanitizedId] = {
+        ...node.metadata,
+        // line and column from node properties take precedence over metadata
+        line: node.line,
+        column: node.column
+      };
+    }
+
+    // Add metadata from rootSubgraph nodes
+    if (dfdData.rootSubgraph) {
+      this.collectNodesFromSubgraph(dfdData.rootSubgraph, metadata);
+    }
+
+    // Add metadata from additional subgraphs
+    if (dfdData.subgraphs) {
+      for (const subgraph of dfdData.subgraphs) {
+        this.collectNodesFromSubgraph(subgraph, metadata);
+      }
+    }
+
+    return metadata;
+  }
+
+  /**
+   * Recursively collect nodes from a subgraph and add their metadata
+   * 
+   * @param subgraph - The subgraph to process
+   * @param metadata - The metadata map to populate
+   */
+  private collectNodesFromSubgraph(
+    subgraph: DFDSubgraph,
+    metadata: Record<string, any>
+  ): void {
+    for (const element of subgraph.elements) {
+      // Check if element is a DFDNode (has 'type' but is not a subgraph type)
+      if (this.isDFDNode(element)) {
+        const node = element as DFDNode;
+        const sanitizedId = sanitizeId(node.id);
+        // Only add if not already present (top-level nodes take precedence)
+        if (!metadata[sanitizedId]) {
+          metadata[sanitizedId] = {
+            ...node.metadata,
+            // line and column from node properties take precedence over metadata
+            line: node.line,
+            column: node.column
+          };
+        }
+      } else if (this.isDFDSubgraph(element)) {
+        // Recursively process nested subgraph
+        this.collectNodesFromSubgraph(element as DFDSubgraph, metadata);
+      }
+    }
+  }
+
+  /**
+   * Check if an element is a DFDNode
+   */
+  private isDFDNode(element: DFDNode | DFDSubgraph): element is DFDNode {
+    return 'type' in element && 
+           element.type !== 'conditional' && 
+           element.type !== 'jsx-output' &&
+           element.type !== 'loop' &&
+           element.type !== 'loop-conditional' &&
+           element.type !== 'await' &&
+           element.type !== 'lifecycle-hooks' &&
+           element.type !== 'emits' &&
+           element.type !== 'exported-handlers' &&
+           !('elements' in element);
+  }
+
+  /**
+   * Check if an element is a DFDSubgraph
+   */
+  private isDFDSubgraph(element: DFDNode | DFDSubgraph): element is DFDSubgraph {
+    return 'elements' in element;
   }
 }

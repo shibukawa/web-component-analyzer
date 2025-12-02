@@ -332,10 +332,8 @@ export class HTMLContentGenerator {
         }
         
         try {
-          // Store metadata for nodes
-          if (metadata) {
-            nodeMetadata = new Map(Object.entries(metadata));
-          }
+          // Store metadata for nodes - always replace with new metadata
+          nodeMetadata = new Map(metadata ? Object.entries(metadata) : []);
           
           // Clear previous diagram
           container.innerHTML = '';
