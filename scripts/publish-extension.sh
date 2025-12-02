@@ -19,19 +19,24 @@ else
   echo "[wca-publish] Skipping package step because WCA_SKIP_PACKAGE is set"
 fi
 
+pushd "$ROOT_DIR" >/dev/null
+EXT_NAME="$(node -pe "require('./packages/extension/package.json').name")"
+EXT_VERSION="$(node -pe "require('./packages/extension/package.json').version")"
+EXT_PUBLISHER="$(node -pe "require('./packages/extension/package.json').publisher")"
+popd >/dev/null
+
 OVSX_ENABLED=1
 if [[ -n "${WCA_SKIP_OVSX:-}" ]]; then
   OVSX_ENABLED=0
   echo "[wca-publish] Skipping Open VSX upload because WCA_SKIP_OVSX is set"
-elif [[ -z "${OVSX_PAT:-}" ]]; then
-  echo "[wca-publish] ERROR: OVSX_PAT is not set. Export an Open VSX personal access token or set WCA_SKIP_OVSX=1 to skip."
-  exit 1
+else
+  echo "[wca-publish] Verifying Open VSX PAT for publisher '$EXT_PUBLISHER' ..."
+  if ! npx ovsx verify-pat "$EXT_PUBLISHER"; then
+    echo "[wca-publish] ERROR: Open VSX PAT verification failed. Register a token with 'ovsx create-namespace' or set WCA_SKIP_OVSX=1 to skip."
+    exit 1
+  fi
+  echo "[wca-publish] ✓ Open VSX PAT verified"
 fi
-
-pushd "$ROOT_DIR" >/dev/null
-EXT_NAME="$(node -pe "require('./packages/extension/package.json').name")"
-EXT_VERSION="$(node -pe "require('./packages/extension/package.json').version")"
-popd >/dev/null
 
 if [[ -z "$EXT_NAME" || -z "$EXT_VERSION" ]]; then
   echo "[wca-publish] ERROR: Unable to read extension package metadata"
