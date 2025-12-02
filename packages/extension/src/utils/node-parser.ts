@@ -85,4 +85,3 @@ export async function parseComponent(sourceCode: string, filePath: string = 'com
     };
   }
 }
-}
