@@ -7,7 +7,10 @@
 			"label": "build-extension",
 			"type": "shell",
 			"command": "npm",
-			"args": ["run", "build", "--workspace", "@web-component-analyzer/extension"],
+			"args": ["run", "build", "--workspace", "packages/extension"],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
 			"problemMatcher": [],
 			"presentation": {
 				"reveal": "silent",

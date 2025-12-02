@@ -19,6 +19,15 @@ else
   echo "[wca-publish] Skipping package step because WCA_SKIP_PACKAGE is set"
 fi
 
+OVSX_ENABLED=1
+if [[ -n "${WCA_SKIP_OVSX:-}" ]]; then
+  OVSX_ENABLED=0
+  echo "[wca-publish] Skipping Open VSX upload because WCA_SKIP_OVSX is set"
+elif [[ -z "${OVSX_PAT:-}" ]]; then
+  echo "[wca-publish] ERROR: OVSX_PAT is not set. Export an Open VSX personal access token or set WCA_SKIP_OVSX=1 to skip."
+  exit 1
+fi
+
 pushd "$ROOT_DIR" >/dev/null
 EXT_NAME="$(node -pe "require('./packages/extension/package.json').name")"
 EXT_VERSION="$(node -pe "require('./packages/extension/package.json').version")"
@@ -37,9 +46,19 @@ for TARGET in "${WCA_TARGETS[@]}"; do
     echo "[wca-publish] ERROR: Expected artifact $VSIX_PATH not found"
     exit 1
   fi
-  echo "[wca-publish] Publishing $TARGET using $VSIX_PATH ..."
+  echo "[wca-publish] Publishing $TARGET to VS Marketplace using $VSIX_PATH ..."
   npx vsce publish --packagePath "$VSIX_PATH" "$@"
-  echo "[wca-publish] ✓ Published $TARGET"
+  echo "[wca-publish] ✓ Published $TARGET to VS Marketplace"
+
+  if [[ "$OVSX_ENABLED" -eq 1 ]]; then
+    echo "[wca-publish] Publishing $TARGET to Open VSX using $VSIX_PATH ..."
+    npx ovsx publish --packagePath "$VSIX_PATH" "$@"
+    echo "[wca-publish] ✓ Published $TARGET to Open VSX"
+  fi
 done
 
-echo "[wca-publish] All targets published successfully"
+if [[ "$OVSX_ENABLED" -eq 1 ]]; then
+  echo "[wca-publish] All targets published to VS Marketplace and Open VSX successfully"
+else
+  echo "[wca-publish] All targets published to VS Marketplace successfully"
+fi

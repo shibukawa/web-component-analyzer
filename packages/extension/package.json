@@ -2,11 +2,11 @@
   "name": "web-component-analyzer",
   "displayName": "Web Component Analyzer",
   "description": "Visualize React, Vue 3, and Svelte 5 component structure through Data Flow Diagrams (DFD)",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "shibukawa",
   "type": "commonjs",
   "engines": {
-    "vscode": "^1.105.0"
+    "vscode": "^1.103.0"
   },
   "categories": [
     "Visualization",
@@ -85,7 +85,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.105.0",
+    "@types/vscode": "^1.103.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
     "@vscode/test-cli": "^0.0.11",
@@ -93,6 +93,7 @@
     "esbuild": "^0.25.12",
     "eslint": "^9.36.0",
     "mermaid": "^11.12.1",
+    "ovsx": "^0.10.7",
     "typescript": "^5.9.3",
     "vsce": "^2.15.0"
   },
