@@ -14,6 +14,8 @@ import { CodeNavigationService } from './code-navigation-service';
  * - Update panels with new DFD data
  * - Handle panel disposal and cleanup
  */
+import { ThemeConfig } from './theme-config';
+
 export class WebviewPanelManager {
   private panels: Map<string, vscode.WebviewPanel> = new Map();
   private messageHandlers: Map<string, MessageHandler> = new Map();
@@ -21,6 +23,7 @@ export class WebviewPanelManager {
   private disposables: vscode.Disposable[] = [];
   private codeNavigationService: CodeNavigationService;
   private documentMap: Map<string, vscode.TextDocument> = new Map();
+  private dfdDataMap: Map<string, DFDSourceData> = new Map();
 
   constructor(
     private readonly context: vscode.ExtensionContext
@@ -101,10 +104,14 @@ export class WebviewPanelManager {
       }
     );
 
-    // Set HTML content
+    // Detect current theme
+    const currentTheme = this.getCurrentTheme();
+
+    // Set HTML content with current theme
     panel.webview.html = this.htmlGenerator.generateHTML(
       panel.webview,
-      this.context.extensionUri
+      this.context.extensionUri,
+      currentTheme
     );
 
     // Store panel in map
@@ -129,12 +136,28 @@ export class WebviewPanelManager {
     panel: vscode.WebviewPanel,
     dfdData: DFDSourceData
   ): void {
+    // Find the URI for this panel to store DFD data
+    let panelUri: string | undefined;
+    for (const [uri, p] of this.panels.entries()) {
+      if (p === panel) {
+        panelUri = uri;
+        break;
+      }
+    }
+    
+    // Store DFD data for later use when theme changes
+    if (panelUri) {
+      this.dfdDataMap.set(panelUri, dfdData);
+    }
+    
     // Detect current theme
     const theme = this.getCurrentTheme();
+    
+    // Get full theme configuration
+    const themeConfig = ThemeConfig.getTheme(theme);
 
-    // Transform DFD data to Mermaid format
-    const mermaidDiagram = transformToMermaid(dfdData);
-    console.log('[WebviewPanelManager] Generated Mermaid diagram:\n', mermaidDiagram);
+    // Transform DFD data to Mermaid format with current theme
+    const mermaidDiagram = transformToMermaid(dfdData, theme === 'dark' ? 'dark' : 'light');
 
     // Create metadata map for nodes (nodeId -> metadata)
     // Use sanitized IDs to match Mermaid node IDs
@@ -148,14 +171,13 @@ export class WebviewPanelManager {
       };
     }
 
-    console.log('[WebviewPanelManager] Sending metadata to webview:', metadata);
-
     // Send diagram and metadata to webview
     panel.webview.postMessage({
       type: 'renderDFD',
       diagram: mermaidDiagram,
       metadata: metadata,
-      theme: theme
+      theme: theme,
+      themeVariables: themeConfig.themeVariables
     });
   }
 
@@ -198,6 +220,9 @@ export class WebviewPanelManager {
 
     // Clear document map
     this.documentMap.clear();
+
+    // Clear DFD data map
+    this.dfdDataMap.clear();
 
     // Dispose all event listeners
     this.disposables.forEach(d => d.dispose());
@@ -259,6 +284,7 @@ export class WebviewPanelManager {
       this.panels.delete(uri);
       this.messageHandlers.delete(uri);
       this.documentMap.delete(uri);
+      this.dfdDataMap.delete(uri);
     }, null, this.disposables);
 
     // Handle messages from webview
@@ -293,18 +319,9 @@ export class WebviewPanelManager {
   /**
    * Handle node selection from webview
    * 
-   * Logs selected node information to the extension console.
-   * This provides visibility into user interactions with the diagram.
-   * 
    * @param nodeId - The selected node ID
    */
   private handleNodeSelection(nodeId: string): void {
-    // Log selected node information to extension console
-    console.log('[DFD Visualization] Node selected:', {
-      nodeId: nodeId,
-      timestamp: new Date().toISOString()
-    });
-    
     // Future enhancements:
     // - Show node details in a hover tooltip
     // - Display node properties in a side panel
@@ -331,13 +348,6 @@ export class WebviewPanelManager {
    * @param metadata - Node metadata containing location information (line, column, etc.)
    */
   private async handleNavigateToCode(nodeId: string, metadata: any): Promise<void> {
-    // Log navigation request
-    console.log('[DFD Visualization] Navigate to code requested:', {
-      nodeId: nodeId,
-      metadata: metadata,
-      timestamp: new Date().toISOString()
-    });
-
     // Find the document for the current panel
     // We need to find which panel sent this message
     let document: vscode.TextDocument | undefined;
@@ -388,7 +398,7 @@ export class WebviewPanelManager {
    * Set up theme change listener
    * 
    * Listens for VS Code theme change events and updates all
-   * active webview panels with the new theme colors.
+   * active webview panels with the new theme colors and re-renders diagrams.
    */
   private setupThemeChangeListener(): void {
     // Listen for theme changes
@@ -399,12 +409,45 @@ export class WebviewPanelManager {
         ? 'dark'
         : 'light';
       
+      // Get full theme configuration
+      const themeConfig = ThemeConfig.getTheme(newTheme);
+      
       // Send theme update message to all active webview panels
-      this.panels.forEach(panel => {
-        panel.webview.postMessage({
-          type: 'themeChanged',
-          theme: newTheme
-        });
+      this.panels.forEach((panel, uri) => {
+        // Get stored DFD data for this panel
+        const dfdData = this.dfdDataMap.get(uri);
+        
+        if (dfdData) {
+          // Re-transform diagram with new theme
+          const mermaidDiagram = transformToMermaid(dfdData, newTheme === 'dark' ? 'dark' : 'light');
+          
+          // Create metadata map for nodes
+          const metadata: Record<string, any> = {};
+          for (const node of dfdData.nodes) {
+            const sanitizedId = sanitizeId(node.id);
+            metadata[sanitizedId] = {
+              line: node.line,
+              column: node.column,
+              ...node.metadata
+            };
+          }
+          
+          // Send new diagram with updated theme
+          panel.webview.postMessage({
+            type: 'renderDFD',
+            diagram: mermaidDiagram,
+            metadata: metadata,
+            theme: newTheme,
+            themeVariables: themeConfig.themeVariables
+          });
+        } else {
+          // Fallback: just send theme update if we don't have DFD data
+          panel.webview.postMessage({
+            type: 'themeChanged',
+            theme: newTheme,
+            themeVariables: themeConfig.themeVariables
+          });
+        }
       });
     });
 

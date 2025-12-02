@@ -1,5 +1,5 @@
 {
   "require": [],
-  "spec": "out/test/mermaid-acceptance.test.js",
+  "spec": "out/test/**/*.test.js",
   "timeout": 60000
 }

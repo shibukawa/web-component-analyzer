@@ -7,6 +7,7 @@ VS Code extension for visualizing component Data Flow Diagrams (DFD).
 - **Framework Support**: Analyze React, Vue 3, and Svelte 5 components
 - **Interactive Visualization**: Generate DFD diagrams with Mermaid
 - **Real-time Updates**: Automatic refresh on file changes
+- **Theme Support**: Automatic detection and rendering of diagrams with light, dark, and high-contrast themes matching your VS Code preferences
 - **Rich Analysis**: 
   - React: Props, hooks, context, state management
   - Vue 3: Props, reactive state, composables, lifecycle hooks, template directives
@@ -18,6 +19,16 @@ VS Code extension for visualizing component Data Flow Diagrams (DFD).
 1. Open a component file (`.tsx`, `.jsx`, `.vue`)
 2. Run command: "Show Component DFD" (Cmd+Shift+D / Ctrl+Shift+D)
 3. View the DFD in the webview panel
+
+### Theme Support
+
+The extension automatically detects and applies your VS Code theme preference to the DFD diagrams:
+
+- **Light Theme**: Diagrams render with light colors for comfortable viewing in bright environments
+- **Dark Theme**: Diagrams render with dark colors for comfortable viewing in low-light environments
+- **High-Contrast Theme**: Diagrams render with high-contrast colors for improved accessibility
+
+Theme changes are applied automatically when you switch VS Code themes—no manual refresh required. The diagram structure and layout remain unchanged; only the colors update to match your theme preference.
 
 ### Supported File Types
 

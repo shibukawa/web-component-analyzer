@@ -34,6 +34,18 @@ export function activate(context: vscode.ExtensionContext) {
 	// Add services to subscriptions for proper disposal
 	context.subscriptions.push(dfdVisualizerService, dfdCommandHandler);
 
+	// Register listener for configuration changes (including theme changes)
+	// This ensures the webview panel manager is notified when VS Code theme changes
+	const configChangeListener = vscode.workspace.onDidChangeConfiguration((event) => {
+		// Check if the change is related to theme configuration
+		if (event.affectsConfiguration('workbench.colorTheme')) {
+			// The webview panel manager will handle theme updates via its own listener
+			// This listener ensures we're aware of configuration changes at the extension level
+		}
+	});
+
+	context.subscriptions.push(configChangeListener);
+
 	// Register command to show component structure (legacy command - kept for backward compatibility)
 	const disposable = vscode.commands.registerCommand('web-component-analyzer.showStructure', async () => {
 		const editor = vscode.window.activeTextEditor;

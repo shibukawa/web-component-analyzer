@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { ThemeConfig, type VSCodeTheme } from './theme-config';
 
 /**
  * Generator for webview HTML content
@@ -13,7 +14,8 @@ export class HTMLContentGenerator {
    */
   generateHTML(
     webview: vscode.Webview,
-    extensionUri: vscode.Uri
+    extensionUri: vscode.Uri,
+    theme?: VSCodeTheme
   ): string {
     // Get URIs for webview resources
     const mermaidJsUri = webview.asWebviewUri(
@@ -22,6 +24,10 @@ export class HTMLContentGenerator {
 
     // Generate nonce for CSP
     const nonce = this.getNonce();
+
+    // Detect theme if not provided
+    const detectedTheme = theme || ThemeConfig.detectVSCodeTheme();
+    const themeConfig = ThemeConfig.getTheme(detectedTheme);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -36,7 +42,7 @@ export class HTMLContentGenerator {
                  font-src ${webview.cspSource};">
   <title>Component DFD</title>
   <style>
-    ${this.getStyles()}
+    ${this.getStyles(themeConfig)}
   </style>
 </head>
 <body>
@@ -58,7 +64,7 @@ export class HTMLContentGenerator {
   
   <script src="${mermaidJsUri}"></script>
   <script nonce="${nonce}">
-    ${this.getWebviewScript()}
+    ${this.getWebviewScript(themeConfig)}
   </script>
 </body>
 </html>`;
@@ -68,6 +74,9 @@ export class HTMLContentGenerator {
    * Generate error display HTML
    */
   generateErrorHTML(errorMessage: string): string {
+    // Use default light theme for error display
+    const defaultTheme = ThemeConfig.getTheme('light');
+    
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,7 +84,7 @@ export class HTMLContentGenerator {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DFD Error</title>
   <style>
-    ${this.getStyles()}
+    ${this.getStyles(defaultTheme)}
   </style>
 </head>
 <body>
@@ -91,8 +100,24 @@ export class HTMLContentGenerator {
   /**
    * Get CSS styles for the webview
    */
-  private getStyles(): string {
+  private getStyles(themeConfig: any): string {
+    // Extract theme colors for CSS custom properties
+    const themeVars = themeConfig.themeVariables;
+    const cssCustomProperties = `
+      --theme-background: ${themeVars.background || '#ffffff'};
+      --theme-foreground: ${themeVars.textColor || '#1e1e1e'};
+      --theme-primary: ${themeVars.primaryColor || '#E3F2FD'};
+      --theme-secondary: ${themeVars.secondaryColor || '#F3E5F5'};
+      --theme-tertiary: ${themeVars.tertiaryColor || '#E8F5E9'};
+      --theme-border: ${themeVars.nodeBorder || '#e0e0e0'};
+      --theme-line: ${themeVars.lineColor || '#666666'};
+    `;
+
     return `
+      :root {
+        ${cssCustomProperties}
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -114,7 +139,7 @@ export class HTMLContentGenerator {
         top: 0;
         left: 0;
         overflow: hidden;
-        background-color: var(--vscode-editor-background);
+        background-color: var(--theme-background);
         cursor: grab;
       }
       
@@ -161,6 +186,8 @@ export class HTMLContentGenerator {
         height: 100vh;
         padding: 40px;
         text-align: center;
+        background-color: var(--theme-background);
+        color: var(--theme-foreground);
       }
 
       .error-container.hidden {
@@ -181,7 +208,7 @@ export class HTMLContentGenerator {
 
       .error-message {
         font-size: 14px;
-        color: var(--vscode-descriptionForeground);
+        color: var(--theme-foreground);
         margin-bottom: 24px;
         max-width: 600px;
         line-height: 1.5;
@@ -230,10 +257,18 @@ export class HTMLContentGenerator {
   /**
    * Get inline JavaScript for webview initialization and Mermaid configuration
    */
-  private getWebviewScript(): string {
+  private getWebviewScript(themeConfig: any): string {
+    // Serialize theme config for injection into script
+    const themeConfigJson = JSON.stringify(themeConfig.themeVariables);
+    const flowchartConfigJson = JSON.stringify(themeConfig.flowchart);
+    
     return `
       // VS Code API
       const vscode = acquireVsCodeApi();
+      
+      // Theme configuration from server
+      const THEME_CONFIG = ${themeConfigJson};
+      const FLOWCHART_CONFIG = ${flowchartConfigJson};
       
       // Current theme and diagram
       let currentTheme = 'light';
@@ -246,36 +281,43 @@ export class HTMLContentGenerator {
       let startY = 0;
       let nodeMetadata = new Map();
       
-      // Detect initial theme
+      // Detect initial theme from VS Code CSS classes
       function detectTheme() {
-        const isDark = document.body.classList.contains('vscode-dark') || 
-                       document.body.classList.contains('vscode-high-contrast');
-        return isDark ? 'dark' : 'light';
+        // Check for high-contrast mode first (highest priority)
+        if (document.body.classList.contains('vscode-high-contrast')) {
+          return 'high-contrast';
+        }
+        
+        // Check for dark mode
+        if (document.body.classList.contains('vscode-dark')) {
+          return 'dark';
+        }
+        
+        // Check for light mode explicitly
+        if (document.body.classList.contains('vscode-light')) {
+          return 'light';
+        }
+        
+        // Default to light theme if no theme class is found
+        return 'light';
       }
       
+      // Detect and store initial theme
       currentTheme = detectTheme();
       
       // Initialize Mermaid when loaded
-      async function initMermaid() {
+      async function initMermaid(themeVariables = THEME_CONFIG) {
         if (typeof mermaid === 'undefined') {
           // Wait for mermaid to load
-          setTimeout(initMermaid, 100);
+          setTimeout(() => initMermaid(themeVariables), 100);
           return;
         }
         
-        const isDark = currentTheme === 'dark';
-        
         mermaid.initialize({
           startOnLoad: false,
-          theme: isDark ? 'dark' : 'default',
-          flowchart: {
-            useMaxWidth: true,
-            htmlLabels: true,
-            curve: 'basis',
-            padding: 10,
-            nodeSpacing: 40,
-            rankSpacing: 60
-          },
+          theme: 'base',
+          themeVariables: themeVariables,
+          flowchart: FLOWCHART_CONFIG,
           securityLevel: 'loose'
         });
       }
@@ -291,11 +333,8 @@ export class HTMLContentGenerator {
         
         try {
           // Store metadata for nodes
-          console.log('Received metadata:', metadata);
           if (metadata) {
             nodeMetadata = new Map(Object.entries(metadata));
-            console.log('NodeMetadata map size:', nodeMetadata.size);
-            console.log('NodeMetadata entries:', Array.from(nodeMetadata.entries()));
           }
           
           // Clear previous diagram
@@ -314,6 +353,9 @@ export class HTMLContentGenerator {
           
           // Add click handlers to nodes
           addNodeClickHandlers();
+          
+          // Restore zoom and pan state after rendering
+          applyZoom();
           
           // Hide error container if visible
           document.getElementById('error-container').classList.add('hidden');
@@ -342,12 +384,9 @@ export class HTMLContentGenerator {
           // Get metadata for this node
           const metadata = nodeMetadata.get(cleanId) || {};
           
-          console.log('Node click handler setup:', cleanId, metadata);
-          
           // Add click handler for navigation (single click)
           node.addEventListener('click', (e) => {
             e.stopPropagation();
-            console.log('Node clicked:', cleanId, metadata);
             vscode.postMessage({
               type: 'navigateToCode',
               data: {
@@ -494,16 +533,72 @@ export class HTMLContentGenerator {
         switch (message.type) {
           case 'renderDFD':
             if (message.diagram) {
+              // Update theme variables if provided
+              if (message.themeVariables) {
+                Object.assign(THEME_CONFIG, message.themeVariables);
+                
+                // Update CSS custom properties for theme colors
+                const root = document.documentElement;
+                root.style.setProperty('--theme-background', message.themeVariables.background || '#ffffff');
+                root.style.setProperty('--theme-foreground', message.themeVariables.textColor || '#1e1e1e');
+                root.style.setProperty('--theme-primary', message.themeVariables.primaryColor || '#E3F2FD');
+                root.style.setProperty('--theme-secondary', message.themeVariables.secondaryColor || '#F3E5F5');
+                root.style.setProperty('--theme-tertiary', message.themeVariables.tertiaryColor || '#E8F5E9');
+                root.style.setProperty('--theme-border', message.themeVariables.nodeBorder || '#e0e0e0');
+                root.style.setProperty('--theme-line', message.themeVariables.lineColor || '#666666');
+              }
+              
               await renderDiagram(message.diagram, message.metadata);
             }
             break;
             
           case 'themeChanged':
             currentTheme = message.theme;
-            // Re-render diagram with new theme
+            
+            // Update theme variables from message
+            if (message.themeVariables) {
+              Object.assign(THEME_CONFIG, message.themeVariables);
+              
+              // Update CSS custom properties for theme colors
+              const root = document.documentElement;
+              root.style.setProperty('--theme-background', message.themeVariables.background || '#ffffff');
+              root.style.setProperty('--theme-foreground', message.themeVariables.textColor || '#1e1e1e');
+              root.style.setProperty('--theme-primary', message.themeVariables.primaryColor || '#E3F2FD');
+              root.style.setProperty('--theme-secondary', message.themeVariables.secondaryColor || '#F3E5F5');
+              root.style.setProperty('--theme-tertiary', message.themeVariables.tertiaryColor || '#E8F5E9');
+              root.style.setProperty('--theme-border', message.themeVariables.nodeBorder || '#e0e0e0');
+              root.style.setProperty('--theme-line', message.themeVariables.lineColor || '#666666');
+              
+              // Update container background color for smooth transition
+              const container = document.getElementById('mermaid-container');
+              if (container) {
+                container.style.backgroundColor = message.themeVariables.background || '#ffffff';
+              }
+            }
+            
+            // Re-render diagram with new theme if diagram exists
             if (currentDiagram) {
-              await initMermaid();
-              await renderDiagram(currentDiagram, nodeMetadata);
+              try {
+                // Store current zoom/pan state before re-rendering
+                const savedScale = currentScale;
+                const savedPanX = panX;
+                const savedPanY = panY;
+                
+                // Re-initialize Mermaid with new theme variables
+                await initMermaid(THEME_CONFIG);
+                
+                // Re-render diagram (this will clear and redraw)
+                await renderDiagram(currentDiagram, nodeMetadata);
+                
+                // Restore zoom/pan state after re-rendering
+                currentScale = savedScale;
+                panX = savedPanX;
+                panY = savedPanY;
+                applyZoom();
+              } catch (error) {
+                console.error('[Webview Script] Error during theme change:', error);
+                showError('Failed to apply theme change: ' + error.message);
+              }
             }
             break;
             

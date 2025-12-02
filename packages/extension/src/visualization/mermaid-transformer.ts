@@ -145,7 +145,8 @@ function collectNodesFromSubgraph(subgraph: DFDSubgraph): DFDNode[] {
   return nodes;
 }
 
-export function transformToMermaid(dfdData: DFDSourceData): string {
+export function transformToMermaid(dfdData: DFDSourceData, themeMode: 'light' | 'dark' = 'light'): string {
+  const isDark = themeMode === 'dark';
   const lines: string[] = [];
   
   // Check if there are any nodes to display
@@ -153,7 +154,9 @@ export function transformToMermaid(dfdData: DFDSourceData): string {
     // Return a simple message diagram
     lines.push('flowchart LR');
     lines.push('  message["No data flow detected in this component"]');
-    lines.push('  style message fill:#f9f9f9,stroke:#999,stroke-width:2px');
+    const bgColor = isDark ? '#2d2d2d' : '#f9f9f9';
+    const strokeColor = isDark ? '#666666' : '#999';
+    lines.push(`  style message fill:${bgColor},stroke:${strokeColor},stroke-width:2px`);
     return lines.join('\n');
   }
   
@@ -357,14 +360,28 @@ export function transformToMermaid(dfdData: DFDSourceData): string {
   // Add styling
   lines.push('');
   lines.push('  %% Styling');
-  lines.push('  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px');
-  lines.push('  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
-  lines.push('  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px');
-  lines.push('  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px');
-  lines.push('  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
-  lines.push('  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px');
-  lines.push('  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px');
-  lines.push('  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px');
+  
+  if (isDark) {
+    // Dark mode colors (matching web version)
+    lines.push('  classDef inputProp fill:#1a3a4a,stroke:#2196F3,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef outputProp fill:#3a2a1a,stroke:#FF9800,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef process fill:#3a1a4a,stroke:#9C27B0,stroke-width:3px,color:#ffffff');
+    lines.push('  classDef dataStore fill:#1a3a1a,stroke:#4CAF50,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef jsxElement fill:#3a2a1a,stroke:#FF9800,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef contextData fill:#1a3a3a,stroke:#0288D1,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef contextFunction fill:#3a2a1a,stroke:#F57C00,stroke-width:2px,color:#ffffff');
+    lines.push('  classDef exportedHandler fill:#1a3a1a,stroke:#4CAF50,stroke-width:2px,color:#ffffff');
+  } else {
+    // Light mode colors (matching web version)
+    lines.push('  classDef inputProp fill:#E3F2FD,stroke:#2196F3,stroke-width:2px');
+    lines.push('  classDef outputProp fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
+    lines.push('  classDef process fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px');
+    lines.push('  classDef dataStore fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px');
+    lines.push('  classDef jsxElement fill:#FFF3E0,stroke:#FF9800,stroke-width:2px');
+    lines.push('  classDef contextData fill:#E1F5FE,stroke:#0288D1,stroke-width:2px');
+    lines.push('  classDef contextFunction fill:#FFF9C4,stroke:#F57C00,stroke-width:2px');
+    lines.push('  classDef exportedHandler fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px');
+  }
   
   // Apply classes to nodes
   for (const node of inputProps) {
